@@ -75,7 +75,8 @@ Parenthesized join groups are unsupported; a parenthesized FROM source must be a
 query. FROM sources cannot reference siblings as if they were lateral subqueries.
 
 Derived tables, views and CTEs are materialized. AS MATERIALIZED and AS NOT MATERIALIZED
-parse successfully, but both currently use materialization. Query flattening,
+both currently use materialization. Their distinct cache-sharing behavior across
+DML and RETURNING is described in [RETURNING.md](RETURNING.md). Query flattening,
 coroutines and general streaming remain unfinished. Evaluation and error timing
 can therefore differ from native SQLite, particularly when an outer predicate or
 LIMIT could avoid evaluating a source expression. An infinite recursive CTE with

@@ -224,7 +224,7 @@ impl Resolver for Binding<'_, '_, '_, '_> {
         let used = core::mem::replace(&mut runtime.outer_reads, saved_reads);
         let tables = core::mem::replace(&mut runtime.tables_read, saved_tables);
         runtime.tables_read.extend(tables.iter().cloned());
-        let correlated = !used.is_empty();
+        let correlated = !used.is_empty() || runtime.returning_reads(&source.query, &e.scope);
         runtime
             .outer_reads
             .extend(used.into_iter().filter(|i| *i < outer_depth));
@@ -267,7 +267,11 @@ impl Subqueries for Expressions<'_> {
         context: &mut Eval<'_>,
     ) -> Result<Rc<Vec<Vec<Value>>>> {
         if !bound.correlated {
-            if let Some(rows) = self.runtime.scalar_cache.get(&bound.source.id) {
+            if let Some(rows) = self
+                .runtime
+                .scalar_cache
+                .get(&(bound.source.id, self.runtime.returning_site))
+            {
                 return Ok(rows.clone());
             }
         }
@@ -316,7 +320,7 @@ impl Subqueries for Expressions<'_> {
                 let rows = Rc::new(data.result.rows);
                 self.runtime
                     .scalar_cache
-                    .insert(bound.source.id, rows.clone());
+                    .insert((bound.source.id, self.runtime.returning_site), rows.clone());
                 Ok(rows)
             } else {
                 Ok(Rc::new(data.result.rows))
@@ -325,7 +329,7 @@ impl Subqueries for Expressions<'_> {
         self.runtime.existence = existence;
         self.runtime
             .cache
-            .retain(|(_, scope), _| *scope <= previous_scope);
+            .retain(|(_, scope, _), _| *scope <= previous_scope);
         self.runtime.outer.pop();
         result
     }

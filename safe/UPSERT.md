@@ -75,8 +75,11 @@ and native integrity of UTF-8/UTF-16 images in all three auto-vacuum modes. Nine
 additional real-file scenarios check native readers across persisted UPSERTs,
 failed updates and explicit commits.
 
+The RETURNING projection reports successful inserts and updates, with separate
+expression caches for each update clause; see [RETURNING.md](RETURNING.md).
+
 Expression/partial indexes, row-value assignment syntax, generated columns,
-STRICT/WITHOUT ROWID SQL tables, triggers, foreign keys and RETURNING remain
+STRICT/WITHOUT ROWID SQL tables, triggers and foreign keys remain
 unfinished. INSERT SELECT materializes input; query planning, streaming and the
 evaluation/error-timing differences documented in [QUERIES.md](QUERIES.md) still
 apply. This implementation is not evidence of complete upstream SQL parity.

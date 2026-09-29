@@ -49,7 +49,9 @@ impl Scope {
 }
 #[derive(Default)]
 pub(super) struct Runtime {
-    cache: BTreeMap<(usize, usize), Rc<Data>>,
+    // Declaration, lexical scope and RETURNING program; the value flag marks
+    // explicit MATERIALIZED results shared with the data-changing program.
+    cache: BTreeMap<(usize, usize, usize), (Rc<Data>, bool)>,
     next_scope: usize,
     active: Vec<usize>,
     depth: usize,
@@ -58,10 +60,54 @@ pub(super) struct Runtime {
     outer: Vec<expressions::Frame>,
     outer_reads: BTreeSet<usize>,
     tables_read: BTreeSet<String>,
-    scalar_cache: BTreeMap<usize, Rc<Vec<Vec<Value>>>>,
+    scalar_cache: BTreeMap<(usize, usize), Rc<Vec<Vec<Value>>>>,
     field_scopes: Vec<Rc<[Field]>>,
     views: Vec<usize>,
     pub(super) existence: Option<usize>,
+    returning_table: Option<String>,
+    pub(super) returning_site: usize,
+}
+impl Runtime {
+    pub(super) fn inherit_materialized(&mut self, other: &Self, fuel: &mut Fuel) -> Result<()> {
+        self.next_scope = self.next_scope.max(other.next_scope);
+        for (key, (data, materialized)) in &other.cache {
+            fuel.spend()?;
+            if *materialized {
+                self.cache
+                    .entry(*key)
+                    .or_insert_with(|| (data.clone(), true));
+            }
+        }
+        Ok(())
+    }
+    pub(super) fn for_returning(&self, table: &str) -> Self {
+        Self {
+            next_scope: self.next_scope,
+            returning_table: Some(table.into()),
+            ..Self::default()
+        }
+    }
+    fn returning_reads(&self, query: &Query, scope: &Option<Rc<Scope>>) -> bool {
+        let Some(table) = &self.returning_table else {
+            return false;
+        };
+        // SQLite marks the directly referenced SELECT, not its enclosing
+        // expressions, derived sources, views or CTEs. The final compound term
+        // supplies the SELECT node associated with a scalar expression.
+        let Some(QueryCore::Select(select)) = query.cores.last() else {
+            return false;
+        };
+        select.sources.iter().any(|source| {
+            source.query.is_none()
+                && source.name.eq_ignore_ascii_case(table)
+                && (source.qualified
+                    || (!query
+                        .with
+                        .iter()
+                        .any(|cte| cte.name.eq_ignore_ascii_case(table))
+                        && Scope::find(scope, table).is_none()))
+        })
+    }
 }
 #[derive(Clone)]
 pub(super) struct Data {
@@ -256,9 +302,17 @@ impl Connection {
                 {
                     return Err(error("recursive reference in a subquery"));
                 }
-                let cache_key = (table.id, scope.id);
+                let cache_key = (
+                    table.id,
+                    scope.id,
+                    if table.materialized != Some(false) {
+                        0
+                    } else {
+                        runtime.returning_site
+                    },
+                );
                 if let Some(data) = runtime.cache.get(&cache_key) {
-                    return Ok(SourceData::Query(data.clone()));
+                    return Ok(SourceData::Query(data.0.clone()));
                 }
                 if runtime.active.contains(&table.id) {
                     return Err(Error::Unsupported("recursive common table expressions"));
@@ -291,7 +345,9 @@ impl Connection {
                 }
                 let data = runtime.own(data, context.limits)?;
                 if !(schema_only || correlated || recursive && row_cap.is_some()) {
-                    runtime.cache.insert(cache_key, data.clone());
+                    runtime
+                        .cache
+                        .insert(cache_key, (data.clone(), table.materialized == Some(true)));
                 }
                 return Ok(SourceData::Query(data));
             }

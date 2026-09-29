@@ -156,7 +156,15 @@ impl Connection {
                 }
             }
         }
-        let cache_key = (table.id, scope.as_ref().map_or(0, |s| s.id));
+        let cache_key = (
+            table.id,
+            scope.as_ref().map_or(0, |s| s.id),
+            if table.materialized != Some(false) {
+                0
+            } else {
+                runtime.returning_site
+            },
+        );
         let scope = Scope::extend(scope, &query.with, runtime)?;
         let limit = self.expressions(scope.clone(), runtime).limit(
             query.limit.as_ref(),
@@ -199,7 +207,9 @@ impl Connection {
                 changes: 0,
             },
         };
-        runtime.cache.insert(cache_key, Rc::new(shape.clone()));
+        runtime
+            .cache
+            .insert(cache_key, (Rc::new(shape.clone()), false));
         runtime.recursive.push((table.id, runtime.depth));
         let result = (|| {
             // ORDER BY may refer to an alias/expression in any initial SELECT,
@@ -260,7 +270,7 @@ impl Connection {
                 }
                 let mut working = shape.clone();
                 working.result.rows.push(row);
-                runtime.cache.insert(cache_key, Rc::new(working));
+                runtime.cache.insert(cache_key, (Rc::new(working), false));
                 for core in &query.cores[start..] {
                     let generated =
                         self.query_core(core, context, scope.clone(), runtime, false)?;

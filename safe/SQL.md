@@ -49,6 +49,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Indexes | CREATE [UNIQUE] INDEX, DROP INDEX, composite column keys, ASC/DESC, built-in collations, automatic column-constraint indexes |
 | Data changes | INSERT VALUES/DEFAULT VALUES/SELECT, UPDATE, DELETE; five conflict policies, schema ON CONFLICT and REPLACE; rowid allocation without AUTOINCREMENT |
 | UPSERT | ON CONFLICT targets, multiple clauses, DO NOTHING/DO UPDATE, excluded values and conditional updates; see [UPSERT.md](UPSERT.md) |
+| RETURNING | Buffered row projections on INSERT/UPSERT, UPDATE and DELETE, expression subqueries, aliases and counters; see [RETURNING.md](RETURNING.md) |
 | Queries | Projection, stars, aliases, filtering, comma/inner/cross/left joins with ON, DISTINCT, GROUP BY, HAVING, ORDER BY, NULLS FIRST/LAST, LIMIT/OFFSET |
 | Query composition | Derived FROM tables, ordinary/recursive WITH, VALUES queries, UNION [ALL]/INTERSECT/EXCEPT; see [QUERIES.md](QUERIES.md) |
 | Expression subqueries | Scalar, EXISTS, single-column IN/NOT IN, correlated columns in queries and data changes; statement-local caching for uncorrelated results |
@@ -74,7 +75,7 @@ behaviors, not complete compatibility of every expression/feature combination.
   platform coverage remain unfinished. The CLI still uses snapshots.
 - No temporary schemas, triggers, window functions,
   virtual tables, foreign keys, STRICT/WITHOUT ROWID
-  SQL tables, AUTOINCREMENT, RETURNING, ALTER TABLE, ATTACH,
+  SQL tables, AUTOINCREMENT, ALTER TABLE, ATTACH,
   extension loading, or C ABI.
 - Row-value subqueries, the `value IN table_name` shorthand, and aggregates owned
   by an outer query (such as `SELECT (SELECT sum(t.x)) FROM t`) remain unsupported.
@@ -86,7 +87,8 @@ behaviors, not complete compatibility of every expression/feature combination.
   and simple outer LIMIT propagation. General streaming/coroutines and query
   flattening are pending. An infinite recursive query with an outer filter or
   join can exhaust budgets even when native SQLite stops after an outer LIMIT.
-  AS MATERIALIZED/AS NOT MATERIALIZED are accepted hints; both currently materialize.
+  AS MATERIALIZED/AS NOT MATERIALIZED both currently materialize; their distinct
+  RETURNING cache-sharing behavior is implemented for the tested cases.
 - No date/time, JSON, math, formatting, or other functions outside the list above.
   LIKE's infix ESCAPE syntax is pending; `like(pattern,text,escape)` is available.
   Tcl parameter suffixes and SQLite's double-quoted-string fallback are pending.

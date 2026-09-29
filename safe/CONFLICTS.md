@@ -66,8 +66,8 @@ in all three text encodings. The Python test harness loads the pinned SQLite
 native error messages/codes are not covered by this comparison.
 
 UPSERT (`ON CONFLICT ... DO UPDATE/NOTHING`) is described in [UPSERT.md](UPSERT.md).
-This does not implement RETURNING,
-AUTOINCREMENT, foreign keys, triggers, virtual tables, or the C API. Index access
+Buffered RETURNING rows and error behavior are described in [RETURNING.md](RETURNING.md).
+This does not implement AUTOINCREMENT, foreign keys, triggers, virtual tables, or the C API. Index access
 paths and streaming INSERT SELECT execution remain pending. Query materialization
 can change evaluation/error timing, and the lack of a planner can change which
 rows precede a FAIL when native SQLite chooses a different scan order. Arbitrary

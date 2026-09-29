@@ -196,6 +196,7 @@ pub struct CommonTable {
     pub name: String,
     pub columns: Option<Vec<String>>,
     pub query: Box<Query>,
+    pub materialized: Option<bool>,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct Query {
@@ -320,17 +321,22 @@ pub enum Statement {
         source: InsertSource,
         conflict: Conflict,
         upserts: Vec<Upsert>,
+        returning: Vec<SelectItem>,
     },
     Select(Box<Query>),
     Update {
         name: String,
+        alias: Option<String>,
         assignments: Vec<(String, Expr)>,
         filter: Option<Expr>,
         conflict: Conflict,
+        returning: Vec<SelectItem>,
     },
     Delete {
         name: String,
+        alias: Option<String>,
         filter: Option<Expr>,
+        returning: Vec<SelectItem>,
     },
     Begin,
     Commit,
@@ -1007,26 +1013,41 @@ impl Parser<'_> {
                 source,
                 conflict,
                 upserts,
+                returning: self.returning()?,
             });
         }
         if self.eat("UPDATE") {
             let conflict = self.or_conflict()?;
             let name = self.table_name()?;
+            let alias = if self.eat("AS") {
+                Some(self.name()?)
+            } else {
+                None
+            };
             self.expect("SET")?;
             let assignments = self.assignments()?;
             return Ok(Statement::Update {
                 name,
+                alias,
                 assignments,
                 filter: self.optional_where()?,
                 conflict,
+                returning: self.returning()?,
             });
         }
         if self.eat("DELETE") {
             self.expect("FROM")?;
             let name = self.table_name()?;
+            let alias = if self.eat("AS") {
+                Some(self.name()?)
+            } else {
+                None
+            };
             return Ok(Statement::Delete {
                 name,
+                alias,
                 filter: self.optional_where()?,
+                returning: self.returning()?,
             });
         }
         if self.eat("BEGIN") {
@@ -1140,6 +1161,9 @@ impl Parser<'_> {
     }
     fn alias(&mut self) -> Result<Option<String>> {
         if self.eat("AS") {
+            if self.is("RETURNING") {
+                return Err(self.expected("alias"));
+            }
             return Ok(Some(self.name()?));
         }
         if matches!(self.peek(), Kind::Word(_, true) | Kind::String(_)) {
@@ -1198,11 +1222,12 @@ impl Parser<'_> {
                 None
             };
             self.expect("AS")?;
-            if self.eat("NOT") {
+            let materialized = if self.eat("NOT") {
                 self.expect("MATERIALIZED")?;
+                Some(false)
             } else {
-                self.eat("MATERIALIZED");
-            }
+                self.eat("MATERIALIZED").then_some(true)
+            };
             self.expect("(")?;
             let query = Box::new(self.query()?);
             self.expect(")")?;
@@ -1211,6 +1236,7 @@ impl Parser<'_> {
                 name,
                 columns,
                 query,
+                materialized,
             });
             if tables.len() > 2000 {
                 return Err(Error::Limit("common table count"));
@@ -1301,11 +1327,14 @@ impl Parser<'_> {
             offset,
         })
     }
-    fn select_core(&mut self) -> Result<Select> {
-        let distinct = self.eat("DISTINCT");
-        if !distinct {
-            self.eat("ALL");
+    fn returning(&mut self) -> Result<Vec<SelectItem>> {
+        if self.eat("RETURNING") {
+            self.select_items()
+        } else {
+            Ok(Vec::new())
         }
+    }
+    fn select_items(&mut self) -> Result<Vec<SelectItem>> {
         let mut items = Vec::new();
         loop {
             let start = self.tokens[self.at].start;
@@ -1350,6 +1379,14 @@ impl Parser<'_> {
                 break;
             }
         }
+        Ok(items)
+    }
+    fn select_core(&mut self) -> Result<Select> {
+        let distinct = self.eat("DISTINCT");
+        if !distinct {
+            self.eat("ALL");
+        }
+        let items = self.select_items()?;
         let mut sources = Vec::new();
         if self.eat("FROM") {
             let mut left = false;

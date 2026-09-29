@@ -14,7 +14,8 @@ The public scope is pinned to SQLite 3.53.4 for reproducible comparison. See the
 The SQL API, implemented surface, CLI, and limitations are documented in
 [SQL.md](SQL.md). Derived tables, CTEs and compound queries have additional
 execution details in [QUERIES.md](QUERIES.md). Stored views and CREATE TABLE AS
-SELECT are described in [VIEWS.md](VIEWS.md). The lower-level physical storage API
+SELECT are described in [VIEWS.md](VIEWS.md). Data-change projections and their
+cache/error behavior are described in [RETURNING.md](RETURNING.md). The lower-level physical storage API
 is shown below.
 
 ## Storage API
@@ -107,6 +108,9 @@ python3 safe/scripts/query_differential.py
 python3 safe/scripts/subquery_differential.py
 python3 safe/scripts/view_differential.py
 python3 safe/scripts/type_differential.py
+python3 safe/scripts/conflict_differential.py
+python3 safe/scripts/upsert_differential.py
+python3 safe/scripts/returning_differential.py
 python3 safe/scripts/check_targets.py
 ```
 

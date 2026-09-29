@@ -57,6 +57,67 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn returning_persists_changes_and_keeps_fail_prefix_without_partial_results() {
+    let temp = Temp::new();
+    let path = temp.db();
+    seed(&path);
+    let mut c = open(&path);
+    let r = c
+        .execute(
+            "INSERT INTO t VALUES(2,'two'),(3,'three') RETURNING id",
+            &[],
+        )
+        .unwrap();
+    assert_eq!(
+        r.rows,
+        vec![vec![Value::Integer(2)], vec![Value::Integer(3)]]
+    );
+    drop(c);
+    let before = fs::read(&path).unwrap();
+    let mut c = open(&path);
+    assert!(c
+        .execute(
+            "DELETE FROM t RETURNING abs(CASE id WHEN 2 THEN -9223372036854775808 ELSE 1 END)",
+            &[]
+        )
+        .is_err());
+    drop(c);
+    assert_eq!(fs::read(&path).unwrap(), before);
+    let mut c = open(&path);
+    assert!(matches!(
+        c.execute(
+            "INSERT OR FAIL INTO t VALUES(4,'four'),(5,'old') RETURNING *",
+            &[]
+        ),
+        Err(Error::Constraint(_))
+    ));
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT id FROM t ORDER BY id", &[]).unwrap().rows,
+        vec![
+            vec![Value::Integer(1)],
+            vec![Value::Integer(2)],
+            vec![Value::Integer(3)],
+            vec![Value::Integer(4)]
+        ]
+    );
+    c.execute("BEGIN", &[]).unwrap();
+    let r = c
+        .execute("UPDATE t SET id=id+10 RETURNING id", &[])
+        .unwrap();
+    assert_eq!(r.rows.len(), 4);
+    c.execute("ROLLBACK", &[]).unwrap();
+    drop(c);
+    assert_eq!(
+        open(&path)
+            .execute("SELECT min(id) FROM t", &[])
+            .unwrap()
+            .rows,
+        vec![vec![Value::Integer(1)]]
+    );
+}
+#[test]
 fn upserts_commit_and_failed_update_preserves_the_persisted_database() {
     let temp = Temp::new();
     let path = temp.db();

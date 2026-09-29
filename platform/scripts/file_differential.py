@@ -151,6 +151,25 @@ def main():
                 assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
                 assert native(path,'PRAGMA auto_vacuum;')==[{'auto_vacuum':mode}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'returning-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(id INTEGER PRIMARY KEY,v TEXT UNIQUE);INSERT INTO t VALUES(1,'é');")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                assert connection.execute('SELECT * FROM t').fetchall()==[(1,'é')]
+                run(SQL,path,"INSERT INTO t VALUES(2,'é'),(3,'🦀') ON CONFLICT(v) DO UPDATE SET id=excluded.id RETURNING *")
+                assert connection.execute('SELECT * FROM t ORDER BY id').fetchall()==[(2,'é'),(3,'🦀')]
+                before=path.read_bytes()
+                run(SQL,path,'DELETE FROM t RETURNING abs(CASE id WHEN 3 THEN -9223372036854775808 ELSE 1 END)',expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,"INSERT OR FAIL INTO t VALUES(4,'four'),(5,'é') RETURNING id",expect=1)
+                assert connection.execute('SELECT id FROM t ORDER BY id').fetchall()==[(2,),(3,),(4,)]
+                run(SQL,path,'BEGIN',"UPDATE t SET v=v||'!' RETURNING *",'COMMIT','DELETE FROM t WHERE id=4 RETURNING *')
+                assert connection.execute('SELECT * FROM t ORDER BY id').fetchall()==[(2,'é!'),(3,'🦀!')]
+                connection.close()
+                assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
+                assert native(path,'PRAGMA auto_vacuum;')==[{'auto_vacuum':mode}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'

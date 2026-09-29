@@ -13,6 +13,7 @@ use alloc::{collections::BTreeMap, format, string::String, vec, vec::Vec};
 use core::cmp::Ordering as Compare;
 mod conflict;
 mod query;
+mod returning;
 mod schema;
 mod upsert;
 
@@ -381,6 +382,7 @@ impl Connection {
         scope: Option<alloc::rc::Rc<query::Scope>>,
         runtime: &mut query::Runtime,
     ) -> Result<QueryResult> {
+        let returned;
         let changes = match statement {
             Statement::CreateView {
                 name,
@@ -702,9 +704,18 @@ impl Connection {
                 source,
                 conflict,
                 upserts,
+                returning,
             } => {
                 let index = self.index(name)?;
                 let table = &self.state.tables[index];
+                let mut output = returning::Output::bind(
+                    self,
+                    table,
+                    returning,
+                    scope.clone(),
+                    runtime,
+                    context,
+                )?;
                 let upserts = self.bind_upserts(
                     table,
                     alias.as_deref().unwrap_or(name),
@@ -911,6 +922,15 @@ impl Connection {
                                 table.rows.remove(&old_id);
                                 table.rows.insert(id, values);
                                 count += 1;
+                                output.site(clause + 1);
+                                output.emit(
+                                    self,
+                                    id,
+                                    &self.state.tables[index].rows[&id],
+                                    runtime,
+                                    context,
+                                )?;
+                                output.site(0);
                             }
                             continue;
                         }
@@ -943,19 +963,37 @@ impl Connection {
                     if table.rows.len() > self.limits.max_rows {
                         return Err(Error::Limit("table rows"));
                     }
+                    output.emit(
+                        self,
+                        id,
+                        &self.state.tables[index].rows[&id],
+                        runtime,
+                        context,
+                    )?;
                 }
+                returned = output.finish(count);
                 count
             }
             Statement::Update {
                 name,
+                alias,
                 assignments,
                 filter,
                 conflict,
+                returning,
             } => {
                 let index = self.index(name)?;
                 let (mut database_bytes, _) = self.usage()?;
                 let table = &self.state.tables[index];
-                let fields = table.fields(name);
+                let mut output = returning::Output::bind(
+                    self,
+                    table,
+                    returning,
+                    scope.clone(),
+                    runtime,
+                    context,
+                )?;
+                let fields = table.fields(alias.as_deref().unwrap_or(name));
                 let assignments = assignments
                     .iter()
                     .map(|(name, expr)| {
@@ -1073,13 +1111,34 @@ impl Connection {
                     table.rows.remove(&old_id);
                     table.rows.insert(id, values);
                     count += 1;
+                    output.emit(
+                        self,
+                        id,
+                        &self.state.tables[index].rows[&id],
+                        runtime,
+                        context,
+                    )?;
                 }
+                returned = output.finish(count);
                 count
             }
-            Statement::Delete { name, filter } => {
+            Statement::Delete {
+                name,
+                alias,
+                filter,
+                returning,
+            } => {
                 let index = self.index(name)?;
                 let table = &self.state.tables[index];
-                let fields = table.fields(name);
+                let mut output = returning::Output::bind(
+                    self,
+                    table,
+                    returning,
+                    scope.clone(),
+                    runtime,
+                    context,
+                )?;
+                let fields = table.fields(alias.as_deref().unwrap_or(name));
                 let filter = filter
                     .as_ref()
                     .map(|e| {
@@ -1105,8 +1164,13 @@ impl Connection {
                     }
                 }
                 for id in &deleted {
-                    self.state.tables[index].rows.remove(id);
+                    let values = self.state.tables[index]
+                        .rows
+                        .remove(id)
+                        .ok_or(Error::Corrupt("deleted row missing"))?;
+                    output.emit(self, *id, &values, runtime, context)?;
                 }
+                returned = output.finish(deleted.len());
                 deleted.len()
             }
             Statement::Begin => {
@@ -1218,7 +1282,7 @@ impl Connection {
         };
         self.changes = changes;
         self.total_changes = self.total_changes.saturating_add(changes as u64);
-        Ok(QueryResult::changed(changes))
+        Ok(returned)
     }
     fn metadata(
         &self,
