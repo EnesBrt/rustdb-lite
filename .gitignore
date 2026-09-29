@@ -1,0 +1,22 @@
+/target/
+/safe/target/
+/legacy/target/
+/legacy/build/
+/legacy/.tools/
+/legacy/upstream/*.rs
+/legacy/upstream/compile_commands.json
+/.tools/
+/build/
+/upstream/*.rs
+/upstream/compile_commands.json
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+__pycache__/
+
+# Finder metadata and checked-in native test fixtures.
+.DS_Store
+!safe/tests/fixtures/*.db
+!safe/tests/fixtures/*.db-wal
+!safe/tests/fixtures/*.db-journal

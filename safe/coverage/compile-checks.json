@@ -1,0 +1,47 @@
+[
+  {
+    "target": "aarch64-apple-darwin",
+    "no_std_core": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "x86_64-unknown-linux-gnu",
+    "no_std_core": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "i686-unknown-linux-gnu",
+    "no_std_core": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "s390x-unknown-linux-gnu",
+    "no_std_core": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "x86_64-pc-windows-gnu",
+    "no_std_core": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "wasm32-unknown-unknown",
+    "no_std_core": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "aarch64-linux-android",
+    "no_std_core": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "aarch64-apple-ios",
+    "no_std_core": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "thumbv7em-none-eabi",
+    "no_std_core": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  }
+]

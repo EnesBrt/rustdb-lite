@@ -1,0 +1,32 @@
+[
+  {
+    "target": "aarch64-apple-darwin",
+    "unix_adapter": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "x86_64-unknown-linux-gnu",
+    "unix_adapter": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "i686-unknown-linux-gnu",
+    "unix_adapter": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "s390x-unknown-linux-gnu",
+    "unix_adapter": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "aarch64-linux-android",
+    "unix_adapter": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  },
+  {
+    "target": "aarch64-apple-ios",
+    "unix_adapter": "compile_checked",
+    "runtime": "not_run_by_this_script"
+  }
+]

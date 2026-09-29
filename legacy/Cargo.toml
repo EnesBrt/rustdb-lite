@@ -1,0 +1,32 @@
+[workspace]
+
+[package]
+name = "sqlite-rust"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Rust source port of SQLite 3.53.4"
+license = "MIT"
+
+[lib]
+name = "sqlite_rust"
+crate-type = ["rlib", "staticlib", "cdylib"]
+
+[[bin]]
+name = "sqlite-rust"
+path = "src/main.rs"
+
+[dependencies]
+c2rust-bitfields = "=0.22.1"
+libc = "0.2"
+serde_json = "1"
+
+[profile.dev]
+overflow-checks = false
+
+[profile.test]
+overflow-checks = false
+
+[profile.release]
+opt-level = 2
+debug = 1

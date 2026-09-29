@@ -1,0 +1,17 @@
+[package]
+name = "sqlite-safe-platform"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+publish = false
+license = "MIT"
+description = "Safe OS adapters for the SQLite Rust rewrite"
+
+[dependencies]
+sqlite-safe-core = { path = "../safe" }
+
+[target.'cfg(any(target_os = "linux", target_os = "android", target_os = "macos", target_os = "ios"))'.dependencies]
+rustix = { version = "=1.1.5", features = ["fs"] }
+
+[lints.rust]
+unsafe_code = "forbid"

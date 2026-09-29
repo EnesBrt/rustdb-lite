@@ -1,0 +1,32 @@
+{
+  "producer": "Python sqlite3 linked to SQLite 3.53.1",
+  "verified_with": "3.53.4 2026-07-24 19:02:57 bf7c7f30031888f4e796e429ab3978879485813aaca6f641c7b33e4e09459bcc (64-bit)",
+  "page_size": 512,
+  "table_root_page": 2,
+  "frame_count": 4,
+  "commit_row_counts": [
+    null,
+    0,
+    10,
+    11
+  ],
+  "uncommitted_variant_row_count": 10,
+  "files": {
+    "wal-base.bin": {
+      "bytes": 512,
+      "sha256": "6264b21d08bca2e00e1aabe9539247f9a1c702aaa90b502752f38810cb4434bd"
+    },
+    "wal-commits.bin": {
+      "bytes": 2176,
+      "sha256": "2c468efb308ad93c93fe87bfddd7a7800ea499f1bc490cf6d86db4f90fcaf86b"
+    },
+    "wal-commits-be.bin": {
+      "bytes": 2176,
+      "sha256": "26df09a4005e7d8a1246174ca24aa1950f616cc075abbf9b0e52059bdeb15c29"
+    },
+    "wal-uncommitted.bin": {
+      "bytes": 2176,
+      "sha256": "36a45f25d228b7e5ff2902a150f8d17e30840ec591dcfe9517b0016798a1f62d"
+    }
+  }
+}

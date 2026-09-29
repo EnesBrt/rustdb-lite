@@ -1,0 +1,108 @@
+name: Safe Rust rewrite
+on:
+  push:
+    paths: ["safe/**", "platform/**", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "legacy/upstream/**", "legacy/scripts/build_oracle.py", "legacy/scripts/config.py", ".github/workflows/safe-rust.yml"]
+  pull_request:
+    paths: ["safe/**", "platform/**", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "legacy/upstream/**", "legacy/scripts/build_oracle.py", "legacy/scripts/config.py", ".github/workflows/safe-rust.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  minimum-rust:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install 1.85.1 --profile minimal
+      - run: cargo +1.85.1 check --workspace --all-targets
+      - run: cargo +1.85.1 check --lib --no-default-features
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: safe
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable Rust
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+      - run: cargo +stable fmt --all --check
+      - run: cargo +stable clippy --all-targets -- -D warnings
+      - run: cargo +stable test --all-targets
+      - run: cargo +stable test --doc
+      - run: cargo +stable test --release --all-targets
+      - run: cargo +stable check --lib --no-default-features
+  cross-check:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [i686-unknown-linux-gnu, s390x-unknown-linux-gnu, wasm32-unknown-unknown, aarch64-linux-android, aarch64-apple-ios, thumbv7em-none-eabi]
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+      - run: rustup target add --toolchain stable ${{ matrix.target }}
+      - run: cargo +stable check --manifest-path safe/Cargo.toml --lib --no-default-features --target ${{ matrix.target }}
+  differential:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+      - name: Build native SQLite test reference
+        run: python3 legacy/scripts/build_oracle.py
+      - name: Compare safe storage with the native reference
+        run: python3 safe/scripts/differential.py
+      - name: Compare safe SQL with the native reference
+        run: python3 safe/scripts/sql_differential.py
+      - name: Compare indexed files with the native reference
+        run: python3 safe/scripts/index_differential.py
+      - name: Compare rollback journals with native recovery
+        run: python3 safe/scripts/journal_differential.py
+      - name: Compare encoding-sensitive SQL with the native reference
+        run: python3 safe/scripts/encoding_differential.py
+      - name: Compare auto-vacuum images with the native reference
+        run: python3 safe/scripts/autovacuum_differential.py
+      - name: Compare table constraints with the native reference
+        run: python3 safe/scripts/constraint_differential.py
+      - name: Compare schema-inspection pragmas with the native reference
+        run: python3 safe/scripts/pragma_differential.py
+      - name: Compare derived, recursive and compound queries with the native reference
+        run: python3 safe/scripts/query_differential.py
+      - name: Compare expression subqueries with the native reference
+        run: python3 safe/scripts/subquery_differential.py
+      - name: Compare views and CREATE TABLE AS SELECT with the native reference
+        run: python3 safe/scripts/view_differential.py
+      - name: Compare compound column types and stored values with the native reference
+        run: python3 safe/scripts/type_differential.py
+      - name: Compare conflict policies, retained rows and transaction counters
+        run: python3 safe/scripts/conflict_differential.py
+  platform-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal --component clippy
+      - run: cargo +stable clippy -p sqlite-safe-platform --all-targets -- -D warnings
+      - run: cargo +stable test -p sqlite-safe-platform --all-targets
+      - run: cargo +stable test -p sqlite-safe-platform --release --all-targets
+      - run: cargo +stable test -p sqlite-safe-platform --doc
+      - run: python3 legacy/scripts/build_oracle.py
+      - run: python3 platform/scripts/file_differential.py
+  platform-cross-check:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [i686-unknown-linux-gnu, s390x-unknown-linux-gnu, aarch64-linux-android, aarch64-apple-ios]
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+      - run: rustup target add --toolchain stable ${{ matrix.target }}
+      - run: cargo +stable check -p sqlite-safe-platform --lib --target ${{ matrix.target }}

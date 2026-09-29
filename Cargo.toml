@@ -1,0 +1,8 @@
+[workspace]
+members = ["safe", "platform"]
+default-members = ["safe"]
+exclude = ["legacy"]
+resolver = "2"
+
+[profile.release]
+overflow-checks = true

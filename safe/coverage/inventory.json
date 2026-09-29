@@ -1,0 +1,6137 @@
+{
+  "scope": "All public extensions and upstream utilities in the pinned SQLite 3.53.4 source archive. Commercial products are excluded by user instruction.",
+  "source_archive": "https://www.sqlite.org/2026/sqlite-src-3530400.zip",
+  "source_sha3_256": "b834d474b9b393d85a9e3ee4cc11f1329e007e9376a424ee740796f5c4bda3a8",
+  "extensions": [
+    {
+      "name": "expert",
+      "status": "not_started",
+      "sources": [
+        "ext/expert/README.md",
+        "ext/expert/expert.c",
+        "ext/expert/expert1.test",
+        "ext/expert/sqlite3expert.c",
+        "ext/expert/sqlite3expert.h",
+        "ext/expert/test_expert.c"
+      ]
+    },
+    {
+      "name": "fts3",
+      "status": "not_started",
+      "sources": [
+        "ext/fts3/README.content",
+        "ext/fts3/README.syntax",
+        "ext/fts3/README.tokenizers",
+        "ext/fts3/README.txt",
+        "ext/fts3/fts3.c",
+        "ext/fts3/fts3.h",
+        "ext/fts3/fts3Int.h",
+        "ext/fts3/fts3_aux.c",
+        "ext/fts3/fts3_expr.c",
+        "ext/fts3/fts3_hash.c",
+        "ext/fts3/fts3_hash.h",
+        "ext/fts3/fts3_icu.c",
+        "ext/fts3/fts3_porter.c",
+        "ext/fts3/fts3_snippet.c",
+        "ext/fts3/fts3_term.c",
+        "ext/fts3/fts3_test.c",
+        "ext/fts3/fts3_tokenize_vtab.c",
+        "ext/fts3/fts3_tokenizer.c",
+        "ext/fts3/fts3_tokenizer.h",
+        "ext/fts3/fts3_tokenizer1.c",
+        "ext/fts3/fts3_unicode.c",
+        "ext/fts3/fts3_unicode2.c",
+        "ext/fts3/fts3_write.c",
+        "ext/fts3/fts3speed.tcl",
+        "ext/fts3/tool/fts3cov.sh",
+        "ext/fts3/tool/fts3view.c",
+        "ext/fts3/unicode/CaseFolding.txt",
+        "ext/fts3/unicode/UnicodeData.txt",
+        "ext/fts3/unicode/mkunicode.tcl",
+        "ext/fts3/unicode/parseunicode.tcl"
+      ]
+    },
+    {
+      "name": "fts5",
+      "status": "not_started",
+      "sources": [
+        "ext/fts5/extract_api_docs.tcl",
+        "ext/fts5/fts5.h",
+        "ext/fts5/fts5Int.h",
+        "ext/fts5/fts5_aux.c",
+        "ext/fts5/fts5_buffer.c",
+        "ext/fts5/fts5_config.c",
+        "ext/fts5/fts5_expr.c",
+        "ext/fts5/fts5_hash.c",
+        "ext/fts5/fts5_index.c",
+        "ext/fts5/fts5_main.c",
+        "ext/fts5/fts5_storage.c",
+        "ext/fts5/fts5_tcl.c",
+        "ext/fts5/fts5_test_mi.c",
+        "ext/fts5/fts5_test_tok.c",
+        "ext/fts5/fts5_tokenize.c",
+        "ext/fts5/fts5_unicode2.c",
+        "ext/fts5/fts5_varint.c",
+        "ext/fts5/fts5_vocab.c",
+        "ext/fts5/fts5parse.y",
+        "ext/fts5/mkportersteps.tcl",
+        "ext/fts5/test/fts5_common.tcl",
+        "ext/fts5/test/fts5aa.test",
+        "ext/fts5/test/fts5ab.test",
+        "ext/fts5/test/fts5ac.test",
+        "ext/fts5/test/fts5ad.test",
+        "ext/fts5/test/fts5ae.test",
+        "ext/fts5/test/fts5af.test",
+        "ext/fts5/test/fts5ag.test",
+        "ext/fts5/test/fts5ah.test",
+        "ext/fts5/test/fts5ai.test",
+        "ext/fts5/test/fts5aj.test",
+        "ext/fts5/test/fts5ak.test",
+        "ext/fts5/test/fts5al.test",
+        "ext/fts5/test/fts5alter.test",
+        "ext/fts5/test/fts5auto.test",
+        "ext/fts5/test/fts5aux.test",
+        "ext/fts5/test/fts5aux2.test",
+        "ext/fts5/test/fts5auxdata.test",
+        "ext/fts5/test/fts5bigid.test",
+        "ext/fts5/test/fts5bigpl.test",
+        "ext/fts5/test/fts5bigtok.test",
+        "ext/fts5/test/fts5blob.test",
+        "ext/fts5/test/fts5cat.test",
+        "ext/fts5/test/fts5circref.test",
+        "ext/fts5/test/fts5colset.test",
+        "ext/fts5/test/fts5columnsize.test",
+        "ext/fts5/test/fts5config.test",
+        "ext/fts5/test/fts5conflict.test",
+        "ext/fts5/test/fts5connect.test",
+        "ext/fts5/test/fts5content.test",
+        "ext/fts5/test/fts5contentless.test",
+        "ext/fts5/test/fts5contentless2.test",
+        "ext/fts5/test/fts5contentless3.test",
+        "ext/fts5/test/fts5contentless4.test",
+        "ext/fts5/test/fts5contentless5.test",
+        "ext/fts5/test/fts5corrupt.test",
+        "ext/fts5/test/fts5corrupt2.test",
+        "ext/fts5/test/fts5corrupt3.test",
+        "ext/fts5/test/fts5corrupt4.test",
+        "ext/fts5/test/fts5corrupt5.test",
+        "ext/fts5/test/fts5corrupt6.test",
+        "ext/fts5/test/fts5corrupt7.test",
+        "ext/fts5/test/fts5corrupt8.test",
+        "ext/fts5/test/fts5corrupt9.test",
+        "ext/fts5/test/fts5corruptA.test",
+        "ext/fts5/test/fts5corruptB.test",
+        "ext/fts5/test/fts5corruptbig.test",
+        "ext/fts5/test/fts5delete.test",
+        "ext/fts5/test/fts5detail.test",
+        "ext/fts5/test/fts5determin.test",
+        "ext/fts5/test/fts5dlidx.test",
+        "ext/fts5/test/fts5doclist.test",
+        "ext/fts5/test/fts5ea.test",
+        "ext/fts5/test/fts5eb.test",
+        "ext/fts5/test/fts5expr.test",
+        "ext/fts5/test/fts5fault1.test",
+        "ext/fts5/test/fts5fault2.test",
+        "ext/fts5/test/fts5fault3.test",
+        "ext/fts5/test/fts5fault4.test",
+        "ext/fts5/test/fts5fault5.test",
+        "ext/fts5/test/fts5fault6.test",
+        "ext/fts5/test/fts5fault7.test",
+        "ext/fts5/test/fts5fault8.test",
+        "ext/fts5/test/fts5fault9.test",
+        "ext/fts5/test/fts5faultA.test",
+        "ext/fts5/test/fts5faultB.test",
+        "ext/fts5/test/fts5faultD.test",
+        "ext/fts5/test/fts5faultE.test",
+        "ext/fts5/test/fts5faultF.test",
+        "ext/fts5/test/fts5faultG.test",
+        "ext/fts5/test/fts5faultH.test",
+        "ext/fts5/test/fts5faultI.test",
+        "ext/fts5/test/fts5first.test",
+        "ext/fts5/test/fts5full.test",
+        "ext/fts5/test/fts5fuzz1.test",
+        "ext/fts5/test/fts5hash.test",
+        "ext/fts5/test/fts5integrity.test",
+        "ext/fts5/test/fts5integrity2.test",
+        "ext/fts5/test/fts5interrupt.test",
+        "ext/fts5/test/fts5join.test",
+        "ext/fts5/test/fts5lastrowid.test",
+        "ext/fts5/test/fts5leftjoin.test",
+        "ext/fts5/test/fts5limits.test",
+        "ext/fts5/test/fts5locale.test",
+        "ext/fts5/test/fts5matchinfo.test",
+        "ext/fts5/test/fts5merge.test",
+        "ext/fts5/test/fts5merge2.test",
+        "ext/fts5/test/fts5misc.test",
+        "ext/fts5/test/fts5multi.test",
+        "ext/fts5/test/fts5multiclient.test",
+        "ext/fts5/test/fts5near.test",
+        "ext/fts5/test/fts5onepass.test",
+        "ext/fts5/test/fts5optimize.test",
+        "ext/fts5/test/fts5optimize2.test",
+        "ext/fts5/test/fts5optimize3.test",
+        "ext/fts5/test/fts5origintext.test",
+        "ext/fts5/test/fts5origintext2.test",
+        "ext/fts5/test/fts5origintext3.test",
+        "ext/fts5/test/fts5origintext4.test",
+        "ext/fts5/test/fts5origintext5.test",
+        "ext/fts5/test/fts5origintext6.test",
+        "ext/fts5/test/fts5phrase.test",
+        "ext/fts5/test/fts5plan.test",
+        "ext/fts5/test/fts5porter.test",
+        "ext/fts5/test/fts5porter2.test",
+        "ext/fts5/test/fts5prefix.test",
+        "ext/fts5/test/fts5prefix2.test",
+        "ext/fts5/test/fts5query.test",
+        "ext/fts5/test/fts5rank.test",
+        "ext/fts5/test/fts5rebuild.test",
+        "ext/fts5/test/fts5restart.test",
+        "ext/fts5/test/fts5rowid.test",
+        "ext/fts5/test/fts5savepoint.test",
+        "ext/fts5/test/fts5secure.test",
+        "ext/fts5/test/fts5secure2.test",
+        "ext/fts5/test/fts5secure3.test",
+        "ext/fts5/test/fts5secure4.test",
+        "ext/fts5/test/fts5secure5.test",
+        "ext/fts5/test/fts5secure6.test",
+        "ext/fts5/test/fts5secure7.test",
+        "ext/fts5/test/fts5secure8.test",
+        "ext/fts5/test/fts5securefault.test",
+        "ext/fts5/test/fts5simple.test",
+        "ext/fts5/test/fts5simple2.test",
+        "ext/fts5/test/fts5simple3.test",
+        "ext/fts5/test/fts5synonym.test",
+        "ext/fts5/test/fts5synonym2.test",
+        "ext/fts5/test/fts5tok1.test",
+        "ext/fts5/test/fts5tok2.test",
+        "ext/fts5/test/fts5tokendata.test",
+        "ext/fts5/test/fts5tokenizer.test",
+        "ext/fts5/test/fts5tokenizer2.test",
+        "ext/fts5/test/fts5tokenizer3.test",
+        "ext/fts5/test/fts5trigram.test",
+        "ext/fts5/test/fts5trigram2.test",
+        "ext/fts5/test/fts5ubsan.test",
+        "ext/fts5/test/fts5umlaut.test",
+        "ext/fts5/test/fts5unicode.test",
+        "ext/fts5/test/fts5unicode2.test",
+        "ext/fts5/test/fts5unicode3.test",
+        "ext/fts5/test/fts5unicode4.test",
+        "ext/fts5/test/fts5unindexed.test",
+        "ext/fts5/test/fts5unindexed2.test",
+        "ext/fts5/test/fts5update.test",
+        "ext/fts5/test/fts5update2.test",
+        "ext/fts5/test/fts5version.test",
+        "ext/fts5/test/fts5vocab.test",
+        "ext/fts5/test/fts5vocab2.test",
+        "ext/fts5/tool/fts5cost.tcl",
+        "ext/fts5/tool/fts5speed.tcl",
+        "ext/fts5/tool/fts5txt2db.tcl",
+        "ext/fts5/tool/loadfts5.tcl",
+        "ext/fts5/tool/mkfts5c.tcl",
+        "ext/fts5/tool/showfts5.tcl"
+      ]
+    },
+    {
+      "name": "icu",
+      "status": "not_started",
+      "sources": [
+        "ext/icu/README.txt",
+        "ext/icu/icu.c",
+        "ext/icu/sqliteicu.h"
+      ]
+    },
+    {
+      "name": "intck",
+      "status": "not_started",
+      "sources": [
+        "ext/intck/intck1.test",
+        "ext/intck/intck2.test",
+        "ext/intck/intck_common.tcl",
+        "ext/intck/intckbusy.test",
+        "ext/intck/intckcorrupt.test",
+        "ext/intck/intckfault.test",
+        "ext/intck/sqlite3intck.c",
+        "ext/intck/sqlite3intck.h",
+        "ext/intck/test_intck.c"
+      ]
+    },
+    {
+      "name": "jni",
+      "status": "not_started",
+      "sources": [
+        "ext/jni/GNUmakefile",
+        "ext/jni/README.md",
+        "ext/jni/jar-dist.make",
+        "ext/jni/src/c/sqlite3-jni.c",
+        "ext/jni/src/c/sqlite3-jni.h",
+        "ext/jni/src/org/sqlite/jni/annotation/Experimental.java",
+        "ext/jni/src/org/sqlite/jni/annotation/NotNull.java",
+        "ext/jni/src/org/sqlite/jni/annotation/Nullable.java",
+        "ext/jni/src/org/sqlite/jni/annotation/package-info.java",
+        "ext/jni/src/org/sqlite/jni/capi/AbstractCollationCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/AggregateFunction.java",
+        "ext/jni/src/org/sqlite/jni/capi/AuthorizerCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/AutoExtensionCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/BusyHandlerCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/CApi.java",
+        "ext/jni/src/org/sqlite/jni/capi/CallbackProxy.java",
+        "ext/jni/src/org/sqlite/jni/capi/CollationCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/CollationNeededCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/CommitHookCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/ConfigLogCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/ConfigSqlLogCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/NativePointerHolder.java",
+        "ext/jni/src/org/sqlite/jni/capi/OutputPointer.java",
+        "ext/jni/src/org/sqlite/jni/capi/PrepareMultiCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/PreupdateHookCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/ProgressHandlerCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/ResultCode.java",
+        "ext/jni/src/org/sqlite/jni/capi/RollbackHookCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/SQLFunction.java",
+        "ext/jni/src/org/sqlite/jni/capi/SQLTester.java",
+        "ext/jni/src/org/sqlite/jni/capi/ScalarFunction.java",
+        "ext/jni/src/org/sqlite/jni/capi/TableColumnMetadata.java",
+        "ext/jni/src/org/sqlite/jni/capi/Tester1.java",
+        "ext/jni/src/org/sqlite/jni/capi/TraceV2Callback.java",
+        "ext/jni/src/org/sqlite/jni/capi/UpdateHookCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/ValueHolder.java",
+        "ext/jni/src/org/sqlite/jni/capi/WindowFunction.java",
+        "ext/jni/src/org/sqlite/jni/capi/XDestroyCallback.java",
+        "ext/jni/src/org/sqlite/jni/capi/package-info.java",
+        "ext/jni/src/org/sqlite/jni/capi/sqlite3.java",
+        "ext/jni/src/org/sqlite/jni/capi/sqlite3_backup.java",
+        "ext/jni/src/org/sqlite/jni/capi/sqlite3_blob.java",
+        "ext/jni/src/org/sqlite/jni/capi/sqlite3_context.java",
+        "ext/jni/src/org/sqlite/jni/capi/sqlite3_stmt.java",
+        "ext/jni/src/org/sqlite/jni/capi/sqlite3_value.java",
+        "ext/jni/src/org/sqlite/jni/fts5/Fts5.java",
+        "ext/jni/src/org/sqlite/jni/fts5/Fts5Context.java",
+        "ext/jni/src/org/sqlite/jni/fts5/Fts5ExtensionApi.java",
+        "ext/jni/src/org/sqlite/jni/fts5/Fts5PhraseIter.java",
+        "ext/jni/src/org/sqlite/jni/fts5/Fts5Tokenizer.java",
+        "ext/jni/src/org/sqlite/jni/fts5/TesterFts5.java",
+        "ext/jni/src/org/sqlite/jni/fts5/XTokenizeCallback.java",
+        "ext/jni/src/org/sqlite/jni/fts5/fts5_api.java",
+        "ext/jni/src/org/sqlite/jni/fts5/fts5_extension_function.java",
+        "ext/jni/src/org/sqlite/jni/fts5/fts5_tokenizer.java",
+        "ext/jni/src/org/sqlite/jni/test-script-interpreter.md",
+        "ext/jni/src/org/sqlite/jni/wrapper1/AggregateFunction.java",
+        "ext/jni/src/org/sqlite/jni/wrapper1/ScalarFunction.java",
+        "ext/jni/src/org/sqlite/jni/wrapper1/SqlFunction.java",
+        "ext/jni/src/org/sqlite/jni/wrapper1/Sqlite.java",
+        "ext/jni/src/org/sqlite/jni/wrapper1/SqliteException.java",
+        "ext/jni/src/org/sqlite/jni/wrapper1/Tester2.java",
+        "ext/jni/src/org/sqlite/jni/wrapper1/ValueHolder.java",
+        "ext/jni/src/org/sqlite/jni/wrapper1/WindowFunction.java",
+        "ext/jni/src/tests/000-000-sanity.test",
+        "ext/jni/src/tests/000-001-ignored.test",
+        "ext/jni/src/tests/900-001-fts.test"
+      ]
+    },
+    {
+      "name": "misc/amatch",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/amatch.c"
+      ]
+    },
+    {
+      "name": "misc/anycollseq",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/anycollseq.c"
+      ]
+    },
+    {
+      "name": "misc/appendvfs",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/appendvfs.c"
+      ]
+    },
+    {
+      "name": "misc/base64",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/base64.c"
+      ]
+    },
+    {
+      "name": "misc/base85",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/base85.c"
+      ]
+    },
+    {
+      "name": "misc/basexx",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/basexx.c"
+      ]
+    },
+    {
+      "name": "misc/blobio",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/blobio.c"
+      ]
+    },
+    {
+      "name": "misc/btreeinfo",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/btreeinfo.c"
+      ]
+    },
+    {
+      "name": "misc/cksumvfs",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/cksumvfs.c"
+      ]
+    },
+    {
+      "name": "misc/closure",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/closure.c"
+      ]
+    },
+    {
+      "name": "misc/completion",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/completion.c"
+      ]
+    },
+    {
+      "name": "misc/compress",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/compress.c"
+      ]
+    },
+    {
+      "name": "misc/csv",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/csv.c"
+      ]
+    },
+    {
+      "name": "misc/dbdump",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/dbdump.c"
+      ]
+    },
+    {
+      "name": "misc/decimal",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/decimal.c"
+      ]
+    },
+    {
+      "name": "misc/eval",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/eval.c"
+      ]
+    },
+    {
+      "name": "misc/explain",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/explain.c"
+      ]
+    },
+    {
+      "name": "misc/fileio",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/fileio.c"
+      ]
+    },
+    {
+      "name": "misc/fossildelta",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/fossildelta.c"
+      ]
+    },
+    {
+      "name": "misc/fuzzer",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/fuzzer.c"
+      ]
+    },
+    {
+      "name": "misc/ieee754",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/ieee754.c"
+      ]
+    },
+    {
+      "name": "misc/memstat",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/memstat.c"
+      ]
+    },
+    {
+      "name": "misc/memtrace",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/memtrace.c"
+      ]
+    },
+    {
+      "name": "misc/mmapwarm",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/mmapwarm.c"
+      ]
+    },
+    {
+      "name": "misc/nextchar",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/nextchar.c"
+      ]
+    },
+    {
+      "name": "misc/noop",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/noop.c"
+      ]
+    },
+    {
+      "name": "misc/normalize",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/normalize.c"
+      ]
+    },
+    {
+      "name": "misc/pcachetrace",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/pcachetrace.c"
+      ]
+    },
+    {
+      "name": "misc/percentile",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/percentile.c"
+      ]
+    },
+    {
+      "name": "misc/prefixes",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/prefixes.c"
+      ]
+    },
+    {
+      "name": "misc/qpvtab",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/qpvtab.c"
+      ]
+    },
+    {
+      "name": "misc/randomjson",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/randomjson.c"
+      ]
+    },
+    {
+      "name": "misc/regexp",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/regexp.c"
+      ]
+    },
+    {
+      "name": "misc/remember",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/remember.c"
+      ]
+    },
+    {
+      "name": "misc/rot13",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/rot13.c"
+      ]
+    },
+    {
+      "name": "misc/series",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/series.c"
+      ]
+    },
+    {
+      "name": "misc/sha1",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/sha1.c"
+      ]
+    },
+    {
+      "name": "misc/shathree",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/shathree.c"
+      ]
+    },
+    {
+      "name": "misc/showauth",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/showauth.c"
+      ]
+    },
+    {
+      "name": "misc/spellfix",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/spellfix.c"
+      ]
+    },
+    {
+      "name": "misc/sqlar",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/sqlar.c"
+      ]
+    },
+    {
+      "name": "misc/sqlite3_stdio",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/sqlite3_stdio.c"
+      ]
+    },
+    {
+      "name": "misc/stmt",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/stmt.c"
+      ]
+    },
+    {
+      "name": "misc/stmtrand",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/stmtrand.c"
+      ]
+    },
+    {
+      "name": "misc/templatevtab",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/templatevtab.c"
+      ]
+    },
+    {
+      "name": "misc/tmstmpvfs",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/tmstmpvfs.c"
+      ]
+    },
+    {
+      "name": "misc/totype",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/totype.c"
+      ]
+    },
+    {
+      "name": "misc/uint",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/uint.c"
+      ]
+    },
+    {
+      "name": "misc/unionvtab",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/unionvtab.c"
+      ]
+    },
+    {
+      "name": "misc/urifuncs",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/urifuncs.c"
+      ]
+    },
+    {
+      "name": "misc/uuid",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/uuid.c"
+      ]
+    },
+    {
+      "name": "misc/vfslog",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/vfslog.c"
+      ]
+    },
+    {
+      "name": "misc/vfsstat",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/vfsstat.c"
+      ]
+    },
+    {
+      "name": "misc/vfstrace",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/vfstrace.c"
+      ]
+    },
+    {
+      "name": "misc/vtablog",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/vtablog.c"
+      ]
+    },
+    {
+      "name": "misc/vtshim",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/vtshim.c"
+      ]
+    },
+    {
+      "name": "misc/wholenumber",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/wholenumber.c"
+      ]
+    },
+    {
+      "name": "misc/zipfile",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/zipfile.c"
+      ]
+    },
+    {
+      "name": "misc/zorder",
+      "status": "not_started",
+      "sources": [
+        "ext/misc/zorder.c"
+      ]
+    },
+    {
+      "name": "qrf",
+      "status": "not_started",
+      "sources": [
+        "ext/qrf/README.md",
+        "ext/qrf/dev-notes.md",
+        "ext/qrf/qrf.c",
+        "ext/qrf/qrf.h"
+      ]
+    },
+    {
+      "name": "rbu",
+      "status": "not_started",
+      "sources": [
+        "ext/rbu/rbu.c",
+        "ext/rbu/rbu1.test",
+        "ext/rbu/rbu10.test",
+        "ext/rbu/rbu11.test",
+        "ext/rbu/rbu12.test",
+        "ext/rbu/rbu13.test",
+        "ext/rbu/rbu14.test",
+        "ext/rbu/rbu3.test",
+        "ext/rbu/rbu5.test",
+        "ext/rbu/rbu6.test",
+        "ext/rbu/rbu7.test",
+        "ext/rbu/rbu8.test",
+        "ext/rbu/rbu9.test",
+        "ext/rbu/rbuA.test",
+        "ext/rbu/rbuB.test",
+        "ext/rbu/rbuC.test",
+        "ext/rbu/rbu_common.tcl",
+        "ext/rbu/rbubusy.test",
+        "ext/rbu/rbucollate.test",
+        "ext/rbu/rbucorrupt.test",
+        "ext/rbu/rbucrash.test",
+        "ext/rbu/rbucrash2.test",
+        "ext/rbu/rbudiff.test",
+        "ext/rbu/rbudor.test",
+        "ext/rbu/rbuexlock.test",
+        "ext/rbu/rbuexpr.test",
+        "ext/rbu/rbufault.test",
+        "ext/rbu/rbufault2.test",
+        "ext/rbu/rbufault3.test",
+        "ext/rbu/rbufault4.test",
+        "ext/rbu/rbufts.test",
+        "ext/rbu/rbumisc.test",
+        "ext/rbu/rbumulti.test",
+        "ext/rbu/rbupartial.test",
+        "ext/rbu/rbupass.test",
+        "ext/rbu/rbuprogress.test",
+        "ext/rbu/rburename.test",
+        "ext/rbu/rburesume.test",
+        "ext/rbu/rbusave.test",
+        "ext/rbu/rbusplit.test",
+        "ext/rbu/rbutemplimit.test",
+        "ext/rbu/rbuvacuum.test",
+        "ext/rbu/rbuvacuum2.test",
+        "ext/rbu/rbuvacuum3.test",
+        "ext/rbu/rbuvacuum4.test",
+        "ext/rbu/sqlite3rbu.c",
+        "ext/rbu/sqlite3rbu.h",
+        "ext/rbu/test_rbu.c"
+      ]
+    },
+    {
+      "name": "recover",
+      "status": "not_started",
+      "sources": [
+        "ext/recover/dbdata.c",
+        "ext/recover/recover1.test",
+        "ext/recover/recover_common.tcl",
+        "ext/recover/recoverbuild.test",
+        "ext/recover/recoverclobber.test",
+        "ext/recover/recovercorrupt.test",
+        "ext/recover/recovercorrupt2.test",
+        "ext/recover/recovercorrupt3.test",
+        "ext/recover/recovercorrupt4.test",
+        "ext/recover/recoverfault.test",
+        "ext/recover/recoverfault2.test",
+        "ext/recover/recoverold.test",
+        "ext/recover/recoverpgsz.test",
+        "ext/recover/recoverrowid.test",
+        "ext/recover/recoverslowidx.test",
+        "ext/recover/recoversql.test",
+        "ext/recover/sqlite3recover.c",
+        "ext/recover/sqlite3recover.h",
+        "ext/recover/test_recover.c"
+      ]
+    },
+    {
+      "name": "rtree",
+      "status": "not_started",
+      "sources": [
+        "ext/rtree/README",
+        "ext/rtree/geopoly.c",
+        "ext/rtree/rtree.c",
+        "ext/rtree/rtree.h",
+        "ext/rtree/rtree1.test",
+        "ext/rtree/rtree2.test",
+        "ext/rtree/rtree3.test",
+        "ext/rtree/rtree4.test",
+        "ext/rtree/rtree5.test",
+        "ext/rtree/rtree6.test",
+        "ext/rtree/rtree7.test",
+        "ext/rtree/rtree8.test",
+        "ext/rtree/rtree9.test",
+        "ext/rtree/rtreeA.test",
+        "ext/rtree/rtreeB.test",
+        "ext/rtree/rtreeC.test",
+        "ext/rtree/rtreeD.test",
+        "ext/rtree/rtreeE.test",
+        "ext/rtree/rtreeF.test",
+        "ext/rtree/rtreeG.test",
+        "ext/rtree/rtreeH.test",
+        "ext/rtree/rtreeI.test",
+        "ext/rtree/rtreeJ.test",
+        "ext/rtree/rtree_perf.tcl",
+        "ext/rtree/rtree_util.tcl",
+        "ext/rtree/rtreecheck.test",
+        "ext/rtree/rtreecirc.test",
+        "ext/rtree/rtreeconnect.test",
+        "ext/rtree/rtreedoc.test",
+        "ext/rtree/rtreedoc2.test",
+        "ext/rtree/rtreedoc3.test",
+        "ext/rtree/rtreefuzz001.test",
+        "ext/rtree/sqlite3rtree.h",
+        "ext/rtree/test_rtreedoc.c",
+        "ext/rtree/tkt3363.test",
+        "ext/rtree/util/randomshape.tcl",
+        "ext/rtree/viewrtree.tcl",
+        "ext/rtree/visual01.txt"
+      ]
+    },
+    {
+      "name": "session",
+      "status": "not_started",
+      "sources": [
+        "ext/session/changeset.c",
+        "ext/session/changesetfuzz.c",
+        "ext/session/changesetfuzz1.test",
+        "ext/session/session1.test",
+        "ext/session/session2.test",
+        "ext/session/session3.test",
+        "ext/session/session4.test",
+        "ext/session/session5.test",
+        "ext/session/session6.test",
+        "ext/session/session8.test",
+        "ext/session/session9.test",
+        "ext/session/sessionA.test",
+        "ext/session/sessionB.test",
+        "ext/session/sessionC.test",
+        "ext/session/sessionD.test",
+        "ext/session/sessionE.test",
+        "ext/session/sessionF.test",
+        "ext/session/sessionG.test",
+        "ext/session/sessionH.test",
+        "ext/session/sessionI.test",
+        "ext/session/session_common.tcl",
+        "ext/session/session_gen.test",
+        "ext/session/session_speed_test.c",
+        "ext/session/sessionalter.test",
+        "ext/session/sessionat.test",
+        "ext/session/sessionbig.test",
+        "ext/session/sessionbig2.test",
+        "ext/session/sessionblob.test",
+        "ext/session/sessionchange.test",
+        "ext/session/sessionchange2.test",
+        "ext/session/sessionconflict.test",
+        "ext/session/sessionconflict2.test",
+        "ext/session/sessiondiff.test",
+        "ext/session/sessionfault.test",
+        "ext/session/sessionfault2.test",
+        "ext/session/sessionfault3.test",
+        "ext/session/sessioninvert.test",
+        "ext/session/sessionmem.test",
+        "ext/session/sessionnoact.test",
+        "ext/session/sessionnoop.test",
+        "ext/session/sessionnoop2.test",
+        "ext/session/sessionrebase.test",
+        "ext/session/sessionrebase2.test",
+        "ext/session/sessionrowid.test",
+        "ext/session/sessionsize.test",
+        "ext/session/sessionstat1.test",
+        "ext/session/sessionwor.test",
+        "ext/session/sqlite3session.c",
+        "ext/session/sqlite3session.h",
+        "ext/session/test_session.c"
+      ]
+    },
+    {
+      "name": "wasm",
+      "status": "not_started",
+      "sources": [
+        "ext/wasm/GNUmakefile",
+        "ext/wasm/README-dist.txt",
+        "ext/wasm/README.md",
+        "ext/wasm/SQLTester/GNUmakefile",
+        "ext/wasm/SQLTester/SQLTester.mjs",
+        "ext/wasm/SQLTester/SQLTester.run.mjs",
+        "ext/wasm/SQLTester/index.html",
+        "ext/wasm/SQLTester/touint8array.c",
+        "ext/wasm/api/EXPORTED_FUNCTIONS.c-pp",
+        "ext/wasm/api/README.md",
+        "ext/wasm/api/extern-post-js.c-pp.js",
+        "ext/wasm/api/extern-pre-js.js",
+        "ext/wasm/api/opfs-common-inline.c-pp.js",
+        "ext/wasm/api/opfs-common-shared.c-pp.js",
+        "ext/wasm/api/post-js-footer.js",
+        "ext/wasm/api/post-js-header.js",
+        "ext/wasm/api/pre-js.c-pp.js",
+        "ext/wasm/api/sqlite3-api-glue.c-pp.js",
+        "ext/wasm/api/sqlite3-api-oo1.c-pp.js",
+        "ext/wasm/api/sqlite3-api-prologue.js",
+        "ext/wasm/api/sqlite3-api-worker1.c-pp.js",
+        "ext/wasm/api/sqlite3-license-version-header.js",
+        "ext/wasm/api/sqlite3-opfs-async-proxy.c-pp.js",
+        "ext/wasm/api/sqlite3-vfs-helper.c-pp.js",
+        "ext/wasm/api/sqlite3-vfs-kvvfs.c-pp.js",
+        "ext/wasm/api/sqlite3-vfs-opfs-sahpool.c-pp.js",
+        "ext/wasm/api/sqlite3-vfs-opfs-wl.c-pp.js",
+        "ext/wasm/api/sqlite3-vfs-opfs.c-pp.js",
+        "ext/wasm/api/sqlite3-vtab-helper.c-pp.js",
+        "ext/wasm/api/sqlite3-wasm.c",
+        "ext/wasm/api/sqlite3-worker1-promiser.c-pp.js",
+        "ext/wasm/api/sqlite3-worker1.c-pp.js",
+        "ext/wasm/common/SqliteTestUtil.js",
+        "ext/wasm/common/emscripten.css",
+        "ext/wasm/common/testing.css",
+        "ext/wasm/common/whwasmutil.js",
+        "ext/wasm/config.make.in",
+        "ext/wasm/demo-123-worker.html",
+        "ext/wasm/demo-123.html",
+        "ext/wasm/demo-123.js",
+        "ext/wasm/demo-jsstorage.html",
+        "ext/wasm/demo-jsstorage.js",
+        "ext/wasm/demo-worker1-promiser.c-pp.html",
+        "ext/wasm/demo-worker1-promiser.c-pp.js",
+        "ext/wasm/demo-worker1.html",
+        "ext/wasm/demo-worker1.js",
+        "ext/wasm/example_extra_init.c",
+        "ext/wasm/fiddle/fiddle-worker.js",
+        "ext/wasm/fiddle/fiddle.js",
+        "ext/wasm/fiddle/index.c-pp.html",
+        "ext/wasm/index-dist.html",
+        "ext/wasm/index.html",
+        "ext/wasm/jaccwabyt/jaccwabyt.js",
+        "ext/wasm/jaccwabyt/jaccwabyt.md",
+        "ext/wasm/libcmpp.c",
+        "ext/wasm/mkdist.sh",
+        "ext/wasm/mkwasmbuilds.c",
+        "ext/wasm/module-symbols.html",
+        "ext/wasm/scratchpad-wasmfs.html",
+        "ext/wasm/scratchpad-wasmfs.mjs",
+        "ext/wasm/speedtest1-wasmfs.html",
+        "ext/wasm/speedtest1-wasmfs.mjs",
+        "ext/wasm/speedtest1-worker.html",
+        "ext/wasm/speedtest1-worker.js",
+        "ext/wasm/speedtest1.html",
+        "ext/wasm/split-speedtest1-script.sh",
+        "ext/wasm/sql/000-mandelbrot.sql",
+        "ext/wasm/sql/001-sudoku.sql",
+        "ext/wasm/test-opfs-vfs.html",
+        "ext/wasm/test-opfs-vfs.js",
+        "ext/wasm/tester1-worker.c-pp.html",
+        "ext/wasm/tester1.c-pp.html",
+        "ext/wasm/tester1.c-pp.js",
+        "ext/wasm/tests/opfs/concurrency/index.html",
+        "ext/wasm/tests/opfs/concurrency/test.js",
+        "ext/wasm/tests/opfs/concurrency/worker.js",
+        "ext/wasm/tests/opfs/sahpool/digest-worker.js",
+        "ext/wasm/tests/opfs/sahpool/digest.html",
+        "ext/wasm/tests/opfs/sahpool/index.html",
+        "ext/wasm/tests/opfs/sahpool/sahpool-pausing.js",
+        "ext/wasm/tests/opfs/sahpool/sahpool-worker.js"
+      ]
+    }
+  ],
+  "utilities_and_build_tools": [
+    {
+      "path": "src/shell.c.in",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/GetFile.cs",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/GetTclKit.bat",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/Replace.cs",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/build-all-msvc.bat",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/build-shell.sh",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/buildtclext.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/cg_anno.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/checkSpacing.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/cktclsh.sh",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/cp.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/custom.txt",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/dbhash.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/dbtotxt.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/dbtotxt.md",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/emcc.sh.in",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/enlargedb.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/extract-sqlite3h.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/extract.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/fast_vacuum.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/fragck.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/fuzzershell.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/genfkey.README",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/genfkey.test",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/getlock.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/index_usage.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/lemon.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/lempar.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/libvers.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/loadfts.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/logest.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/max-limits.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/merge-test.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkamalzip.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkautoconfamal.sh",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkccode.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkcombo.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkctimec.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkfptab.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkkeywordhash.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkmsvcmin.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkopcodec.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkopcodeh.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkopts.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkpragmatab.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkshellc.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mksourceid.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mksqlite3c-noext.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mksqlite3c.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mksqlite3h.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mksqlite3internalh.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mksrczip.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mktoolzip.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkvsix.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/mkwinarm64ec.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/offsets.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/omittest-msvc.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/omittest.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/opcodesum.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/pagesig.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/replace.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/restore_jrnl.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/rollback-test.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/showdb.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/showjournal.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/showlocks.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/showshm.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/showstat4.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/showtmlog.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/showwal.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/soak1.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/spaceanal.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/spellsift.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/split-sqlite3c.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/sqldiff.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/sqlite3_analyzer.c.in",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/sqlite3_rsync.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/sqltclsh.c.in",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/sqltclsh.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/src-verify.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/srcck1.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/srctree-check.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/stack_usage.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/stripccomments.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/symbols-mingw.sh",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/symbols.sh",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/tclConfigShToMake.sh",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/varint.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/vdbe-compress.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/vdbe_profile.tcl",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/version-info.c",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/warnings-clang.sh",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/warnings.sh",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/win/sqlite.vsix",
+      "status": "not_started"
+    },
+    {
+      "path": "tool/winmain.c",
+      "status": "not_started"
+    }
+  ],
+  "compile_switches_requiring_review": [
+    "SQLITE_ENABLE_8_3_NAMES",
+    "SQLITE_ENABLE_API_ARMOR",
+    "SQLITE_ENABLE_ATOMIC_WRITE",
+    "SQLITE_ENABLE_BATCH_ATOMIC_WRITE",
+    "SQLITE_ENABLE_BYTECODE_VTAB",
+    "SQLITE_ENABLE_CARRAY",
+    "SQLITE_ENABLE_CEROD",
+    "SQLITE_ENABLE_COLUMN_METADATA",
+    "SQLITE_ENABLE_COLUMN_USED_MASK",
+    "SQLITE_ENABLE_CORRUPT_PGNO",
+    "SQLITE_ENABLE_COSTMULT",
+    "SQLITE_ENABLE_CURSOR_HINTS",
+    "SQLITE_ENABLE_DBPAGE_VTAB",
+    "SQLITE_ENABLE_DBSTAT_VTAB",
+    "SQLITE_ENABLE_EXPENSIVE_ASSERT",
+    "SQLITE_ENABLE_EXPLAIN_COMMENTS",
+    "SQLITE_ENABLE_FILESTAT",
+    "SQLITE_ENABLE_FTS3",
+    "SQLITE_ENABLE_FTS3_PARENTHESIS",
+    "SQLITE_ENABLE_FTS3_TOKENIZER",
+    "SQLITE_ENABLE_FTS4",
+    "SQLITE_ENABLE_FTS5",
+    "SQLITE_ENABLE_GEOPOLY",
+    "SQLITE_ENABLE_HIDDEN_COLUMNS",
+    "SQLITE_ENABLE_ICU",
+    "SQLITE_ENABLE_ICU_COLLATIONS",
+    "SQLITE_ENABLE_INTERNAL_FUNCTIONS",
+    "SQLITE_ENABLE_IOTRACE",
+    "SQLITE_ENABLE_LOAD_EXTENSION",
+    "SQLITE_ENABLE_LOCKING_STYLE",
+    "SQLITE_ENABLE_MATH_FUNCTIONS",
+    "SQLITE_ENABLE_MEMORY_MANAGEMENT",
+    "SQLITE_ENABLE_MEMSYS3",
+    "SQLITE_ENABLE_MEMSYS5",
+    "SQLITE_ENABLE_MODULE_COMMENTS",
+    "SQLITE_ENABLE_MULTIPLEX",
+    "SQLITE_ENABLE_MULTITHREADED_CHECKS",
+    "SQLITE_ENABLE_NORMALIZE",
+    "SQLITE_ENABLE_NULL_TRIM",
+    "SQLITE_ENABLE_OFFSET_SQL_FUNC",
+    "SQLITE_ENABLE_ORDERED_SET_AGGREGATES",
+    "SQLITE_ENABLE_OVERSIZE_CELL_CHECK",
+    "SQLITE_ENABLE_PERCENTILE",
+    "SQLITE_ENABLE_PREUPDATE_HOOK",
+    "SQLITE_ENABLE_QPSG",
+    "SQLITE_ENABLE_RBU",
+    "SQLITE_ENABLE_RTREE",
+    "SQLITE_ENABLE_SELECTTRACE",
+    "SQLITE_ENABLE_SESSION",
+    "SQLITE_ENABLE_SETLK_TIMEOUT",
+    "SQLITE_ENABLE_SNAPSHOT",
+    "SQLITE_ENABLE_SORTER_MMAP",
+    "SQLITE_ENABLE_SORTER_REFERENCES",
+    "SQLITE_ENABLE_SQLLOG",
+    "SQLITE_ENABLE_STAT2",
+    "SQLITE_ENABLE_STAT3",
+    "SQLITE_ENABLE_STAT4",
+    "SQLITE_ENABLE_STMTVTAB",
+    "SQLITE_ENABLE_STMT_SCANSTATUS",
+    "SQLITE_ENABLE_TREETRACE",
+    "SQLITE_ENABLE_UNKNOWN_SQL_FUNCTION",
+    "SQLITE_ENABLE_UNLOCK_NOTIFY",
+    "SQLITE_ENABLE_UPDATE_DELETE_LIMIT",
+    "SQLITE_ENABLE_URI_00_ERROR",
+    "SQLITE_ENABLE_VFSTRACE",
+    "SQLITE_ENABLE_WHERETRACE",
+    "SQLITE_ENABLE_ZIPVFS",
+    "SQLITE_OMIT_ALTERTABLE",
+    "SQLITE_OMIT_ANALYZE",
+    "SQLITE_OMIT_ATTACH",
+    "SQLITE_OMIT_AUTHORIZATION",
+    "SQLITE_OMIT_AUTOINCREMENT",
+    "SQLITE_OMIT_AUTOINIT",
+    "SQLITE_OMIT_AUTOMATIC_INDEX",
+    "SQLITE_OMIT_AUTORESET",
+    "SQLITE_OMIT_AUTOVACUUM",
+    "SQLITE_OMIT_AUXILIARY_SAFETY_CHECKS",
+    "SQLITE_OMIT_BETWEEN_OPTIMIZATION",
+    "SQLITE_OMIT_BLOB_LITERAL",
+    "SQLITE_OMIT_CASE_SENSITIVE_LIKE_PRAGMA",
+    "SQLITE_OMIT_CAST",
+    "SQLITE_OMIT_CHECK",
+    "SQLITE_OMIT_COMPILEOPTION_DIAGS",
+    "SQLITE_OMIT_COMPLETE",
+    "SQLITE_OMIT_COMPOUND_SELECT",
+    "SQLITE_OMIT_CONFLICT_CLAUSE",
+    "SQLITE_OMIT_CTE",
+    "SQLITE_OMIT_DATETIME_FUNCS",
+    "SQLITE_OMIT_DECLTYPE",
+    "SQLITE_OMIT_DEPRECATED",
+    "SQLITE_OMIT_DESERIALIZE",
+    "SQLITE_OMIT_DISKIO",
+    "SQLITE_OMIT_EXPLAIN",
+    "SQLITE_OMIT_FLAG_PRAGMAS",
+    "SQLITE_OMIT_FLOATING_POINT",
+    "SQLITE_OMIT_FOREIGN_KEY",
+    "SQLITE_OMIT_GENERATED_COLUMNS",
+    "SQLITE_OMIT_GET_TABLE",
+    "SQLITE_OMIT_HEX_INTEGER",
+    "SQLITE_OMIT_INCRBLOB",
+    "SQLITE_OMIT_INTEGRITY_CHECK",
+    "SQLITE_OMIT_INTROSPECTION_PRAGMAS",
+    "SQLITE_OMIT_JSON",
+    "SQLITE_OMIT_LIKE_OPTIMIZATION",
+    "SQLITE_OMIT_LOAD_EXTENSION",
+    "SQLITE_OMIT_LOCALTIME",
+    "SQLITE_OMIT_LOOKASIDE",
+    "SQLITE_OMIT_MEMORYDB",
+    "SQLITE_OMIT_OR_OPTIMIZATION",
+    "SQLITE_OMIT_PAGER_PRAGMAS",
+    "SQLITE_OMIT_PARSER_TRACE",
+    "SQLITE_OMIT_POPEN",
+    "SQLITE_OMIT_PRAGMA",
+    "SQLITE_OMIT_PROGRESS_CALLBACK",
+    "SQLITE_OMIT_QUICKBALANCE",
+    "SQLITE_OMIT_RANDOMNESS",
+    "SQLITE_OMIT_REINDEX",
+    "SQLITE_OMIT_SCHEMA_PRAGMAS",
+    "SQLITE_OMIT_SCHEMA_VERSION_PRAGMAS",
+    "SQLITE_OMIT_SEH",
+    "SQLITE_OMIT_SHARED_CACHE",
+    "SQLITE_OMIT_SHUTDOWN_DIRECTORIES",
+    "SQLITE_OMIT_SUBQUERY",
+    "SQLITE_OMIT_TCL_VARIABLE",
+    "SQLITE_OMIT_TEMPDB",
+    "SQLITE_OMIT_TEST_CONTROL",
+    "SQLITE_OMIT_TRACE",
+    "SQLITE_OMIT_TRIGGER",
+    "SQLITE_OMIT_TRUNCATE_OPTIMIZATION",
+    "SQLITE_OMIT_TWOSIZE_LOOKASIDE",
+    "SQLITE_OMIT_UPSERT",
+    "SQLITE_OMIT_UTF16",
+    "SQLITE_OMIT_VACUUM",
+    "SQLITE_OMIT_VIEW",
+    "SQLITE_OMIT_VIRTUALTABLE",
+    "SQLITE_OMIT_WAL",
+    "SQLITE_OMIT_WINDOWFUNC",
+    "SQLITE_OMIT_WSD",
+    "SQLITE_OMIT_XFER_OPT"
+  ],
+  "rust_compiler_targets": [
+    {
+      "target": "aarch64-apple-darwin",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-apple-ios",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-apple-ios-macabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-apple-ios-sim",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-apple-tvos",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-apple-tvos-sim",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-apple-visionos",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-apple-visionos-sim",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-apple-watchos",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-apple-watchos-sim",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-kmc-solid_asp3",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-linux-android",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-nintendo-switch-freestanding",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-pc-windows-gnullvm",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-pc-windows-msvc",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-freebsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-fuchsia",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-helenos",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-hermit",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-illumos",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-linux-gnu_ilp32",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-linux-ohos",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-managarm-mlibc",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-netbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-none",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-none-softfloat",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-nto-qnx700",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-nto-qnx710",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-nto-qnx710_iosock",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-nto-qnx800",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-nuttx",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-openbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-redox",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-teeos",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-trusty",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-unknown-uefi",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-uwp-windows-msvc",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64-wrs-vxworks",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64_be-unknown-hermit",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64_be-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64_be-unknown-linux-gnu_ilp32",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64_be-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64_be-unknown-netbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "aarch64_be-unknown-none-softfloat",
+      "status": "not_validated"
+    },
+    {
+      "target": "amdgcn-amd-amdhsa",
+      "status": "not_validated"
+    },
+    {
+      "target": "arm-linux-androideabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "arm-unknown-linux-gnueabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "arm-unknown-linux-gnueabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "arm-unknown-linux-musleabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "arm-unknown-linux-musleabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "arm64_32-apple-watchos",
+      "status": "not_validated"
+    },
+    {
+      "target": "arm64e-apple-darwin",
+      "status": "not_validated"
+    },
+    {
+      "target": "arm64e-apple-ios",
+      "status": "not_validated"
+    },
+    {
+      "target": "arm64e-apple-tvos",
+      "status": "not_validated"
+    },
+    {
+      "target": "arm64ec-pc-windows-msvc",
+      "status": "not_validated"
+    },
+    {
+      "target": "armeb-unknown-linux-gnueabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armebv7r-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armebv7r-none-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv4t-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv4t-unknown-linux-gnueabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv5te-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv5te-unknown-linux-gnueabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv5te-unknown-linux-musleabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv5te-unknown-linux-uclibceabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv6-unknown-freebsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv6-unknown-netbsd-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv6k-nintendo-3ds",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-linux-androideabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-rtems-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-sony-vita-newlibeabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-unknown-freebsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-unknown-linux-gnueabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-unknown-linux-gnueabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-unknown-linux-musleabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-unknown-linux-musleabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-unknown-linux-ohos",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-unknown-linux-uclibceabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-unknown-linux-uclibceabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-unknown-netbsd-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-unknown-trusty",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7-wrs-vxworks-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7a-kmc-solid_asp3-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7a-kmc-solid_asp3-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7a-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7a-none-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7a-nuttx-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7a-nuttx-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7a-vex-v5",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7k-apple-watchos",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7r-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7r-none-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv7s-apple-ios",
+      "status": "not_validated"
+    },
+    {
+      "target": "armv8r-none-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "avr-none",
+      "status": "not_validated"
+    },
+    {
+      "target": "bpfeb-unknown-none",
+      "status": "not_validated"
+    },
+    {
+      "target": "bpfel-unknown-none",
+      "status": "not_validated"
+    },
+    {
+      "target": "csky-unknown-linux-gnuabiv2",
+      "status": "not_validated"
+    },
+    {
+      "target": "csky-unknown-linux-gnuabiv2hf",
+      "status": "not_validated"
+    },
+    {
+      "target": "hexagon-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "hexagon-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "hexagon-unknown-qurt",
+      "status": "not_validated"
+    },
+    {
+      "target": "i386-apple-ios",
+      "status": "not_validated"
+    },
+    {
+      "target": "i586-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "i586-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "i586-unknown-netbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "i586-unknown-redox",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-apple-darwin",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-linux-android",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-pc-nto-qnx700",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-pc-windows-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-pc-windows-gnullvm",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-pc-windows-msvc",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-unknown-freebsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-unknown-haiku",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-unknown-helenos",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-unknown-hurd-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-unknown-netbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-unknown-openbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-unknown-uefi",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-uwp-windows-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-uwp-windows-msvc",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-win7-windows-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-win7-windows-msvc",
+      "status": "not_validated"
+    },
+    {
+      "target": "i686-wrs-vxworks",
+      "status": "not_validated"
+    },
+    {
+      "target": "loongarch32-unknown-none",
+      "status": "not_validated"
+    },
+    {
+      "target": "loongarch32-unknown-none-softfloat",
+      "status": "not_validated"
+    },
+    {
+      "target": "loongarch64-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "loongarch64-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "loongarch64-unknown-linux-ohos",
+      "status": "not_validated"
+    },
+    {
+      "target": "loongarch64-unknown-none",
+      "status": "not_validated"
+    },
+    {
+      "target": "loongarch64-unknown-none-softfloat",
+      "status": "not_validated"
+    },
+    {
+      "target": "m68k-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "m68k-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "mips-mti-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "mips-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "mips-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "mips-unknown-linux-uclibc",
+      "status": "not_validated"
+    },
+    {
+      "target": "mips64-openwrt-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "mips64-unknown-linux-gnuabi64",
+      "status": "not_validated"
+    },
+    {
+      "target": "mips64-unknown-linux-muslabi64",
+      "status": "not_validated"
+    },
+    {
+      "target": "mips64el-unknown-linux-gnuabi64",
+      "status": "not_validated"
+    },
+    {
+      "target": "mips64el-unknown-linux-muslabi64",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsel-mti-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsel-sony-psp",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsel-sony-psx",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsel-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsel-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsel-unknown-linux-uclibc",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsel-unknown-netbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsel-unknown-none",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsisa32r6-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsisa32r6el-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsisa64r6-unknown-linux-gnuabi64",
+      "status": "not_validated"
+    },
+    {
+      "target": "mipsisa64r6el-unknown-linux-gnuabi64",
+      "status": "not_validated"
+    },
+    {
+      "target": "msp430-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "nvptx64-nvidia-cuda",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc-unknown-freebsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc-unknown-helenos",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc-unknown-linux-gnuspe",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc-unknown-linux-muslspe",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc-unknown-netbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc-unknown-openbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc-wrs-vxworks",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc-wrs-vxworks-spe",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc64-ibm-aix",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc64-unknown-freebsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc64-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc64-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc64-unknown-openbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc64-wrs-vxworks",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc64le-unknown-freebsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc64le-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "powerpc64le-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32-wrs-vxworks",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32e-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32em-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32emc-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32gc-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32gc-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32i-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32im-risc0-zkvm-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32im-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32ima-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32imac-esp-espidf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32imac-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32imac-unknown-nuttx-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32imac-unknown-xous-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32imafc-esp-espidf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32imafc-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32imafc-unknown-nuttx-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32imc-esp-espidf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32imc-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv32imc-unknown-nuttx-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64-linux-android",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64-wrs-vxworks",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64a23-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64gc-unknown-freebsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64gc-unknown-fuchsia",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64gc-unknown-hermit",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64gc-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64gc-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64gc-unknown-managarm-mlibc",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64gc-unknown-netbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64gc-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64gc-unknown-nuttx-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64gc-unknown-openbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64gc-unknown-redox",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64imac-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "riscv64imac-unknown-nuttx-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "s390x-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "s390x-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "sparc-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "sparc-unknown-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "sparc64-unknown-helenos",
+      "status": "not_validated"
+    },
+    {
+      "target": "sparc64-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "sparc64-unknown-netbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "sparc64-unknown-openbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "sparcv9-sun-solaris",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv4t-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv5te-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv6m-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv6m-nuttx-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7a-nuttx-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7a-nuttx-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7a-pc-windows-msvc",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7a-uwp-windows-msvc",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7em-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7em-none-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7em-nuttx-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7em-nuttx-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7m-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7m-nuttx-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7neon-linux-androideabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7neon-unknown-linux-gnueabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv7neon-unknown-linux-musleabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv8m.base-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv8m.base-nuttx-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv8m.main-none-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv8m.main-none-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv8m.main-nuttx-eabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "thumbv8m.main-nuttx-eabihf",
+      "status": "not_validated"
+    },
+    {
+      "target": "wasm32-unknown-emscripten",
+      "status": "not_validated"
+    },
+    {
+      "target": "wasm32-unknown-unknown",
+      "status": "not_validated"
+    },
+    {
+      "target": "wasm32-wali-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "wasm32-wasip1",
+      "status": "not_validated"
+    },
+    {
+      "target": "wasm32-wasip1-threads",
+      "status": "not_validated"
+    },
+    {
+      "target": "wasm32-wasip2",
+      "status": "not_validated"
+    },
+    {
+      "target": "wasm32-wasip3",
+      "status": "not_validated"
+    },
+    {
+      "target": "wasm32v1-none",
+      "status": "not_validated"
+    },
+    {
+      "target": "wasm64-unknown-unknown",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-apple-ios",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-apple-ios-macabi",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-apple-tvos",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-apple-watchos-sim",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-fortanix-unknown-sgx",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-linux-android",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-lynx-lynxos178",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-pc-cygwin",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-pc-nto-qnx710",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-pc-nto-qnx710_iosock",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-pc-nto-qnx800",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-pc-solaris",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-pc-windows-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-pc-windows-gnullvm",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-pc-windows-msvc",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unikraft-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-dragonfly",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-freebsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-fuchsia",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-haiku",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-helenos",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-hermit",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-hurd-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-illumos",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-l4re-uclibc",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-linux-gnux32",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-linux-musl",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-linux-none",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-linux-ohos",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-managarm-mlibc",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-motor",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-netbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-none",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-openbsd",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-redox",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-trusty",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-unknown-uefi",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-uwp-windows-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-uwp-windows-msvc",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-win7-windows-gnu",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-win7-windows-msvc",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64-wrs-vxworks",
+      "status": "not_validated"
+    },
+    {
+      "target": "x86_64h-apple-darwin",
+      "status": "not_validated"
+    },
+    {
+      "target": "xtensa-esp32-espidf",
+      "status": "not_validated"
+    },
+    {
+      "target": "xtensa-esp32-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "xtensa-esp32s2-espidf",
+      "status": "not_validated"
+    },
+    {
+      "target": "xtensa-esp32s2-none-elf",
+      "status": "not_validated"
+    },
+    {
+      "target": "xtensa-esp32s3-espidf",
+      "status": "not_validated"
+    },
+    {
+      "target": "xtensa-esp32s3-none-elf",
+      "status": "not_validated"
+    }
+  ],
+  "source_files": [
+    {
+      "path": "src/alter.c",
+      "sha256": "23a9dd17124628c135adc203946295639cba6ba035e2b278cab96f32650fc1ae"
+    },
+    {
+      "path": "src/analyze.c",
+      "sha256": "d015f3d70cbf0701500c4f972bd845aa621b23e7be3a205878f5925cb1694f3a"
+    },
+    {
+      "path": "src/attach.c",
+      "sha256": "57af6b98f70b063ed1e15e237fa82b265f5a9f2f612d8b6c3d19a1f2044df9be"
+    },
+    {
+      "path": "src/auth.c",
+      "sha256": "16ae08101d8f3bb314b7ddc5c15b8a42270334144b757aa281b8d97048abe43d"
+    },
+    {
+      "path": "src/backup.c",
+      "sha256": "2304c4f820c977aa009ceb464d9b774942cd7b4686156a5ed28d50a3e50f861e"
+    },
+    {
+      "path": "src/bitvec.c",
+      "sha256": "a85d09ea5ff5fe897ee9c066a0a4d7a0ec9c23e629ce5afbbaf7fbac99d93516"
+    },
+    {
+      "path": "src/btmutex.c",
+      "sha256": "1933f13ee20bd0bd515b5e76e84027435720eed64bc2e6009249b47534b7eaaa"
+    },
+    {
+      "path": "src/btree.c",
+      "sha256": "c0982890bcd01b479c66066030e32d15b88a2dce2dd9fd67fa301211555f7a94"
+    },
+    {
+      "path": "src/btree.h",
+      "sha256": "0ec3e384349a75947f0cd087e3a3629f8b2628d2d0129e9973fdef47f01c9296"
+    },
+    {
+      "path": "src/btreeInt.h",
+      "sha256": "ff5fe8e9b8ff6a209ec93b2448d70de11ad1514b1dfe5c74741169f17b09e527"
+    },
+    {
+      "path": "src/build.c",
+      "sha256": "c71549801eb2f56dcba062a6ce1c347d93203e43deb05c08ba4ad71a2c08d867"
+    },
+    {
+      "path": "src/callback.c",
+      "sha256": "a9a9afd9b76c8a534f4cb4cf110b210a9b319ac8f887e4377ac3dc9aca8e2118"
+    },
+    {
+      "path": "src/carray.c",
+      "sha256": "7f351d6fc1d8f267d83d884d25aeb47d0a24eb218942d0903991d27c788fe797"
+    },
+    {
+      "path": "src/complete.c",
+      "sha256": "2125ef12d26d89bceded3295a7543bcf42410727b984ff51e85bcc59fe6e9eb3"
+    },
+    {
+      "path": "src/date.c",
+      "sha256": "a7f3aaf17c0b644491c6788b5d6e33e722e608a7d96f7b2402d49b294f728e20"
+    },
+    {
+      "path": "src/dbpage.c",
+      "sha256": "7d8dd44b5556a1238fae1bdd1a7c83d2df5c779c0025c6b7e4a68fb1fe7c1a40"
+    },
+    {
+      "path": "src/dbstat.c",
+      "sha256": "df012547023855b114955719e81f361dad63871aed0d1840bf6173f059c52f34"
+    },
+    {
+      "path": "src/delete.c",
+      "sha256": "f79ffc73a6838fe56a90f18bb20925f177036457fe5e9702f57cb226afca3de0"
+    },
+    {
+      "path": "src/expr.c",
+      "sha256": "363e581dc939eef8ff5d2d3e8cab8454d58716ba8aaab05c09f044eaacb8deff"
+    },
+    {
+      "path": "src/fault.c",
+      "sha256": "15870f52a73f0acbd1b76e9ab65e79d8a8ec5b6b4a1f746609ac1778380bf6f7"
+    },
+    {
+      "path": "src/fkey.c",
+      "sha256": "e63a0616dad4b8a387e90dd3a896acd77d590d8aadafade4c581ff3a6d74bce3"
+    },
+    {
+      "path": "src/func.c",
+      "sha256": "4e07af88e78d099bbdb942906f5bd892c5ec030fa0a500c9fb7cfff190e0e731"
+    },
+    {
+      "path": "src/global.c",
+      "sha256": "3587266a1a73e09914a4820186cbceb8bd22e0fe63d7e169fa59532adce938de"
+    },
+    {
+      "path": "src/hash.c",
+      "sha256": "f3abce4f33e53bd8436fb700beafdd9924ba2f3de01bbd7354c29200431d44a1"
+    },
+    {
+      "path": "src/hash.h",
+      "sha256": "b86508766ea7a672f24b804f2c74b2ac15b0fc085a8cd2d9a5ec0bd72a8b63cb"
+    },
+    {
+      "path": "src/hwtime.h",
+      "sha256": "bfd5078d5a6d4487bbf29a8d0e59072f95e16f5aacef485019bb9215847be491"
+    },
+    {
+      "path": "src/in-operator.md",
+      "sha256": "a9b6a62ffd3e972bdf4288c866288858a87007d937d7f80597b78cde710f9d71"
+    },
+    {
+      "path": "src/insert.c",
+      "sha256": "f63b83c88d3829441d2db2ee64b664335859c5f35ac6da1e3b77e136a132de09"
+    },
+    {
+      "path": "src/json.c",
+      "sha256": "25a742ea7382fd21bc3f10fc22f4cbfc97335122ba9593822d0d7eb93bb637d9"
+    },
+    {
+      "path": "src/legacy.c",
+      "sha256": "a9491dee918654a10468df6e09f3fa538be888e93450331782812ef277bf1c74"
+    },
+    {
+      "path": "src/loadext.c",
+      "sha256": "d6a330868fdf6d40c503a7aaf56704b9c08530fae26133b37bbc9da8971495e2"
+    },
+    {
+      "path": "src/main.c",
+      "sha256": "318f5b725d7c1403a442e59cd1565672a6fe0c6b24c4c5d06a9c74c32b17f1de"
+    },
+    {
+      "path": "src/malloc.c",
+      "sha256": "19f728f9a323aec82906a3e1c5f0e656a308a6892136e58c5cfd0c6c3832c961"
+    },
+    {
+      "path": "src/mem0.c",
+      "sha256": "22556c8e2011a7e0487f8ec88873a5deb1f7eb13b3e503f6658acd6809b2426e"
+    },
+    {
+      "path": "src/mem1.c",
+      "sha256": "62e0fc49a1bf8b6e291952995a946065732ab014b6dba3d04b8fd904d824bdb7"
+    },
+    {
+      "path": "src/mem2.c",
+      "sha256": "9e838ebbfe6e417883bf99d6ec7ea0ce18fc129ac665e3cbc99e24622b106ed2"
+    },
+    {
+      "path": "src/mem3.c",
+      "sha256": "1cecfcf846693f21fd3f47b239a45a9986ac60eb852eae76d2387126b4a5cad9"
+    },
+    {
+      "path": "src/mem5.c",
+      "sha256": "83a0ae8393cab4e14a14724452986cbf3b8ad8d1916691c19337d3ae4df5442c"
+    },
+    {
+      "path": "src/memdb.c",
+      "sha256": "dc655196df8c8b495f09d9061dd521930c03bdef50a69f28d4ca76dc8ce462b0"
+    },
+    {
+      "path": "src/memjournal.c",
+      "sha256": "abb378b0fde5ac60076dfb42b36d5951003475b89fcb5da7dd122df5a6aa8264"
+    },
+    {
+      "path": "src/msvc.h",
+      "sha256": "d2402dad40c4dc46ed0e9c9c65e51ac4036c39e7e8c5811f13990a6c30cbcc39"
+    },
+    {
+      "path": "src/mutex.c",
+      "sha256": "34f26fdcd49753d421b56c5cecff8bcca94f375f7b179b854f11d3b5654bff6b"
+    },
+    {
+      "path": "src/mutex.h",
+      "sha256": "d53a5dd29e00bb10a2ffd05eef0a2f74b7d656176e08bfb27e83e50ab47aa993"
+    },
+    {
+      "path": "src/mutex_noop.c",
+      "sha256": "9810c814f82605fa1b5ca805fdb661bc54d13ec0264fce4eab9262740abf5bd1"
+    },
+    {
+      "path": "src/mutex_unix.c",
+      "sha256": "f9a625d7e71f9d64c772409df2c2f437a40960ad43c8bc8c429fd786b8918415"
+    },
+    {
+      "path": "src/mutex_w32.c",
+      "sha256": "5f4f525da00d4193b198e3bdf53d34605daf4ef8217e63d58b684665514d502a"
+    },
+    {
+      "path": "src/notify.c",
+      "sha256": "519e8b9d1ed2f31988a5f143ceb7b9afe2a4198dc3d2594c8862227f258d9830"
+    },
+    {
+      "path": "src/os.c",
+      "sha256": "27ca8107a34b56ecba3be400af68842ce3e82b12b134c833785c0f04c2267722"
+    },
+    {
+      "path": "src/os.h",
+      "sha256": "2837c7443ac1d54e6c3d81dbbe3c24f4c1c79cd9a282cbf5bce98ad6b538a967"
+    },
+    {
+      "path": "src/os_common.h",
+      "sha256": "8d949f800e81db08edd62b43b905b9eae4a429614c761a7ba1b5d04565260de8"
+    },
+    {
+      "path": "src/os_kv.c",
+      "sha256": "7f8cead83af889379ce610264cef29999ad6add41940f046594ff1612ee8037b"
+    },
+    {
+      "path": "src/os_setup.h",
+      "sha256": "a9b1e1c29bc6efe705f9888d8e7c1aba0a2d36259cec5c345e46f17295ec0439"
+    },
+    {
+      "path": "src/os_unix.c",
+      "sha256": "bad02ce9e25e3842c116a9f9bb13128b74f965692c5987202103423c86f62475"
+    },
+    {
+      "path": "src/os_win.c",
+      "sha256": "c31b0943eac42931c3778c2491d157df44177dc4b47e081215d4237d794b57c7"
+    },
+    {
+      "path": "src/os_win.h",
+      "sha256": "b35a8abc67101200b4a711a7a67526c9fb72e37b80abbb6b3a353a27bd146912"
+    },
+    {
+      "path": "src/pager.c",
+      "sha256": "58ada0bd1f081e31c4871d4933e1aed660ae81603c215cfbac0454b5c80f8343"
+    },
+    {
+      "path": "src/pager.h",
+      "sha256": "8c3a6141e43aefdd402ae455514c225d9849d7b9813272d90a0da4c7aac4b38b"
+    },
+    {
+      "path": "src/parse.y",
+      "sha256": "19628d51a728421581e9075c7b4fd2c67218c5ad30718c7ae7ab0717c9e93185"
+    },
+    {
+      "path": "src/pcache.c",
+      "sha256": "084c50d96fcb880ff5513ec1f203ef1eaa15b29fe75c1ca4e572315f5c141ecc"
+    },
+    {
+      "path": "src/pcache.h",
+      "sha256": "aded3964a1de8005384feb34e93de46b3f7cdbc59910ef411ed4b03f06d1964a"
+    },
+    {
+      "path": "src/pcache1.c",
+      "sha256": "b5bfbbac157325f96f0023c0856533cd6ce94180bcbbd1d4069e5a60a242de3d"
+    },
+    {
+      "path": "src/pragma.c",
+      "sha256": "a809d4b15202493d5e3520ff00b3cb9c93f21f95ad6cd25ab8f80daddba505f0"
+    },
+    {
+      "path": "src/prepare.c",
+      "sha256": "bf077b16c691e81824700915c1e85a512d85b05c623b2d0ae1136937e0e3dad7"
+    },
+    {
+      "path": "src/printf.c",
+      "sha256": "797c2a4ed08867c15abd1d250f491718256dcfe80d9bfff957a533588c715697"
+    },
+    {
+      "path": "src/random.c",
+      "sha256": "d25ba0221b50349bb75ab568813e6f9f4882f883dbe093dd06859d40439bdb2a"
+    },
+    {
+      "path": "src/resolve.c",
+      "sha256": "0ab2b57900454f422de36e607c081f7eb0e64e61c0dd4e0497a65178bc663107"
+    },
+    {
+      "path": "src/rowset.c",
+      "sha256": "6b5a46d0ea3d08264dfda56dc6562421c62f43158e12f054aa9c1af4f5aab3b3"
+    },
+    {
+      "path": "src/select.c",
+      "sha256": "bdf052a30146b56afe82c5fc1affcf6a01b6417bc72ec8608139d75d910e3408"
+    },
+    {
+      "path": "src/shell.c.in",
+      "sha256": "9376229a20b68dc7bd17e01675d07dd4cda4d7aed0c8292202336a1b9eb5935b"
+    },
+    {
+      "path": "src/sqlite.h.in",
+      "sha256": "02059afeb8c10eb2b1997bd5ba92d8eeefb35d951363e24de05a1f3c014a2b2c"
+    },
+    {
+      "path": "src/sqlite3.rc",
+      "sha256": "819c501ae41478928054fb1776f82bd4ffb1d42d779f29c812452cb94b43d343"
+    },
+    {
+      "path": "src/sqlite3ext.h",
+      "sha256": "ac9645e5c9ff0cf176efdd6e75cb5e98f46295d38e02db5c4d208826a39ab4be"
+    },
+    {
+      "path": "src/sqliteInt.h",
+      "sha256": "3846e622b0a45aa4d13398556d549637a0c84d58599906a3a7c205b6d5e84cc3"
+    },
+    {
+      "path": "src/sqliteLimit.h",
+      "sha256": "6eec89d04286198f5e5f64fcb48c1283446809907f7d650caba40605080c3fe9"
+    },
+    {
+      "path": "src/status.c",
+      "sha256": "e0a82481e7b51a5e069b664d1cb7c24e8ac29b7994fd314ae3da2839fe4b2da7"
+    },
+    {
+      "path": "src/table.c",
+      "sha256": "3b4925818221c7cc42e2ad053123c5bd1d7603ac02551d0a0b9c5b1dbb2f01da"
+    },
+    {
+      "path": "src/tclsqlite.c",
+      "sha256": "036e8a6e692122a815e4b4bb0b1e18ad0aeb828d584571622611707d8225ceb6"
+    },
+    {
+      "path": "src/tclsqlite.h",
+      "sha256": "d625b0ab09178e20c3587a2e49796b0d68d66bbfd624cf90f1cff3c795a75b64"
+    },
+    {
+      "path": "src/test1.c",
+      "sha256": "8827a33633d17890b29dfc9715ea4d6b4aa59a3db3f0ba6b28a7dbe4e278bb95"
+    },
+    {
+      "path": "src/test2.c",
+      "sha256": "6e1af0947ae4026ff1067ce71c373d1b8ef803a0a9b3d8b80562a704cbc06cf0"
+    },
+    {
+      "path": "src/test3.c",
+      "sha256": "e705680d994d740f3e283d3e2b43e42764caa259038ecde7b658d85853c39168"
+    },
+    {
+      "path": "src/test4.c",
+      "sha256": "c5747cfcf1ea88b42e79b5656b04561b65caa5a499a90bdf5eac79e54c166fe1"
+    },
+    {
+      "path": "src/test5.c",
+      "sha256": "4108264a006185a542cb1d69b5b01b5585ac32aa1d654023046d500ff8d5640a"
+    },
+    {
+      "path": "src/test6.c",
+      "sha256": "7e23491ac74198e9690197e7b98e8c87923bf5e332db449cd754c009bbe72cc0"
+    },
+    {
+      "path": "src/test8.c",
+      "sha256": "4402c522ebd1f0eb4e74060ee2eed51d3f43d818c1d795a76fae5dc910c72b8c"
+    },
+    {
+      "path": "src/test9.c",
+      "sha256": "ee126e8cc45c2e26f22763d06df5f1468a323ed664b226f0bda3907c160e7527"
+    },
+    {
+      "path": "src/test_autoext.c",
+      "sha256": "d25b296fb2dcff7d533c160fd3ffa3d16078adc0c167e04e5dab8dcea523b6d0"
+    },
+    {
+      "path": "src/test_backup.c",
+      "sha256": "15777d0799feb98029c49114e71f9bc5baac177605563e4df07d062d32988f0d"
+    },
+    {
+      "path": "src/test_bestindex.c",
+      "sha256": "3a0cb368e50bc6ef6c9de008e3c531f0ac76be59e501e075665612b3d4c0c742"
+    },
+    {
+      "path": "src/test_blob.c",
+      "sha256": "9e6c5949ad1e135615b7dcad0b3ad7b2696e7f9c59491733ed193c9227309205"
+    },
+    {
+      "path": "src/test_btree.c",
+      "sha256": "645f34da41a7a1377c88c81c69abf40cc6ba2df449fb436501de7dbb4ef5d37d"
+    },
+    {
+      "path": "src/test_config.c",
+      "sha256": "b0237616903edcbb9adf444b5ca6bdd3a87cdd877d941ce7f21ec1f13305f7b6"
+    },
+    {
+      "path": "src/test_delete.c",
+      "sha256": "6fb307311f988ccb8c690b37b1e1f6d64ed53bcfbefb80ac5faa2215ffc17a9a"
+    },
+    {
+      "path": "src/test_demovfs.c",
+      "sha256": "260767f96a93e2e7c1905b14499cae4f64bfa27a2ff62378ad92c8104e365fa3"
+    },
+    {
+      "path": "src/test_devsym.c",
+      "sha256": "746a762f8f23904f2e77d1f399b2bcd3dcc784c5af6145d3d841ef253c78e608"
+    },
+    {
+      "path": "src/test_fs.c",
+      "sha256": "45aae6f1e18629640893d2882a11c6ae43f1ca944904c86a471bd9f6e271369a"
+    },
+    {
+      "path": "src/test_func.c",
+      "sha256": "e93b093804dea2f6499943d24b2d2b0f917ce78252e7da6bc2fded46febff190"
+    },
+    {
+      "path": "src/test_hexio.c",
+      "sha256": "5e30638cbe02625c1640994b66f219293aec1fa1d127feda7dfa2745543fafe2"
+    },
+    {
+      "path": "src/test_init.c",
+      "sha256": "93255c14ec38af1037a51aaf50b8c17337882d4b6c57dde168c82c72d037b711"
+    },
+    {
+      "path": "src/test_intarray.c",
+      "sha256": "25229ed899358ec0ab9df63bb57fa26cc1d61a1fbedfa0f6ff65dbb00e5add35"
+    },
+    {
+      "path": "src/test_intarray.h",
+      "sha256": "9c1568b8c69f9e93e9a27bcffe3528af33d3935f78585090d3b208bf41c1b10b"
+    },
+    {
+      "path": "src/test_journal.c",
+      "sha256": "0e19ea263625a7895e7c209847259a973c8a686ec2bd43a667a1d762d3bb518d"
+    },
+    {
+      "path": "src/test_loadext.c",
+      "sha256": "8cd75b7d3ff0f80296d8314515f9aa507e7e62ee4fb104ff817ae0f6562be708"
+    },
+    {
+      "path": "src/test_malloc.c",
+      "sha256": "a4b9702aeccf35d290d4ec2cf25934c3f9adebe55b66ad4a4d13cc3471171381"
+    },
+    {
+      "path": "src/test_md5.c",
+      "sha256": "bdf958b2ca43d0f00e8e28371d602a0b91aab6932749a7925d38ce30a9061ace"
+    },
+    {
+      "path": "src/test_multiplex.c",
+      "sha256": "b0029217a5bed4b1d80036d502f3adfad9cf01e95a8597a87c3771774516e40d"
+    },
+    {
+      "path": "src/test_multiplex.h",
+      "sha256": "d74e1ed0a4ad4fb1e794306ddef605438b9bdb4043e69b9c075f337dc8922c25"
+    },
+    {
+      "path": "src/test_mutex.c",
+      "sha256": "9af98e68ea19c7abca8c352368b4b289de5fe0f724e160e2afa02b5e44260b8f"
+    },
+    {
+      "path": "src/test_onefile.c",
+      "sha256": "78983e56f32ddd42f3bfe28124e1822244cb1e5070aafdab353d32365886c361"
+    },
+    {
+      "path": "src/test_osinst.c",
+      "sha256": "0197c79d9ae0596e5d6cde0fb71fad259410f0cf66de4abe7cac68bbc83c27be"
+    },
+    {
+      "path": "src/test_pcache.c",
+      "sha256": "b37b9ab6a65ddba9a3ff93b905663222b52d57d17c34e1d3373e558514c76b80"
+    },
+    {
+      "path": "src/test_quota.c",
+      "sha256": "1a2de76ad711d34aa3f971739e91e2c0043b4a4546776b1d8c81ba94d6e59565"
+    },
+    {
+      "path": "src/test_quota.h",
+      "sha256": "2b6aeda59a2b484802366a22a6b219e25c3286a5fe1d56a73a69c85215be3cc3"
+    },
+    {
+      "path": "src/test_rtree.c",
+      "sha256": "00ca7bbe5f0e2e44425f5685b15e270ba9c5d9b43a52f73ccf4d7a0957007589"
+    },
+    {
+      "path": "src/test_schema.c",
+      "sha256": "650db9f95dbebe6f367cca00f3a2cd81fe0613f6b1a01be0e7c8a247e233ea37"
+    },
+    {
+      "path": "src/test_sqllog.c",
+      "sha256": "9141471a4618727894fe528d63f0e080c94710f9e3588f623f016e60b2bd46eb"
+    },
+    {
+      "path": "src/test_superlock.c",
+      "sha256": "6a48edf179f0e6bb4f77de41eb9590f918721b8146e2f2d4922f60bdb0907faa"
+    },
+    {
+      "path": "src/test_syscall.c",
+      "sha256": "1d5437b12bc845edcd8a8f620789beafefc5e227fce459bd20668ca4b3b99ec9"
+    },
+    {
+      "path": "src/test_tclsh.c",
+      "sha256": "56879c83ddbb38e91c49a7b4781e9052b34d6b15ff8c9b0451f1de2403b9fee8"
+    },
+    {
+      "path": "src/test_tclvar.c",
+      "sha256": "9383ad0e0a8a4bee416dfcaf1be536b8ec59921f3f04dd17b5180629d0682629"
+    },
+    {
+      "path": "src/test_thread.c",
+      "sha256": "2f15a9de3e0c02762bcc878da10aaa56457ebecc6d77d83dd102237c10a48512"
+    },
+    {
+      "path": "src/test_vdbecov.c",
+      "sha256": "c7ecb0817cb14087425852a54a55e771444636500e644dafd9569cd0ebb23f9e"
+    },
+    {
+      "path": "src/test_vfs.c",
+      "sha256": "9f7efa627abfbc015867377d4f369cdffad2c7f8d23a798fe8ec8881283c584c"
+    },
+    {
+      "path": "src/test_window.c",
+      "sha256": "15b2f504d751c4bf54159cce40e47352d3807dfd94e7d981fd2710dadb73ae78"
+    },
+    {
+      "path": "src/test_wsd.c",
+      "sha256": "773d557d5ab208f59d5ca8369c4e04f9fa3c5aaadce04db1b1d7ea940e45b5a3"
+    },
+    {
+      "path": "src/threads.c",
+      "sha256": "c6a1571048f36490835d92b8585257050e2466761c1485027241eed3154e3967"
+    },
+    {
+      "path": "src/tokenize.c",
+      "sha256": "fc0679949c68463f8a82a3f4f78cc17d720bd94a356ee6652b2bb1f6c6bacd22"
+    },
+    {
+      "path": "src/treeview.c",
+      "sha256": "548ffb8b3475cc86c8887b2c35424b72b2355898890b03174281035b2fac8fa3"
+    },
+    {
+      "path": "src/trigger.c",
+      "sha256": "794c763cd32df72240135e52a30978153852693edaa141bfdf92ee529113a23b"
+    },
+    {
+      "path": "src/update.c",
+      "sha256": "fb0f04e788a82db27a2934a15a9ae50725c48c9e2e4539e6b221135c913c980c"
+    },
+    {
+      "path": "src/upsert.c",
+      "sha256": "4742feaca021fdbf986426bb8018eba978edcf9f51a20371f501b9f51d37f8ca"
+    },
+    {
+      "path": "src/utf.c",
+      "sha256": "04e3851f970ecbe7ce24a1d7e06b38c22c350d3fc3d4896a9038c3d1eaaa9b31"
+    },
+    {
+      "path": "src/util.c",
+      "sha256": "f3ad5a891625459352c1b57c053d3b89dcc973206644126a857c0ff82b7ce37f"
+    },
+    {
+      "path": "src/vacuum.c",
+      "sha256": "1d6a09043ac338a0dd762536286ceb3d9efe8d0c96b207baabea16c724308661"
+    },
+    {
+      "path": "src/vdbe.c",
+      "sha256": "d92cb9c4edabd099a5e6e9aa796f4e524bcd00ff9d90e51468ac96d4c6d6ca1d"
+    },
+    {
+      "path": "src/vdbe.h",
+      "sha256": "c2f07fd77827a922a77d8bde1c873536056e7269898d4bd2b4088f8222cd6259"
+    },
+    {
+      "path": "src/vdbeInt.h",
+      "sha256": "60f87bb47cae281d4a9d3aecbdecd39a77fe91f7c5266d5e9985cf8b75ea44b5"
+    },
+    {
+      "path": "src/vdbeapi.c",
+      "sha256": "233846129dc649ec3d1ae321612ee8833c937ee775766eb8e39deda07a6b19a6"
+    },
+    {
+      "path": "src/vdbeaux.c",
+      "sha256": "1d88b620f0d52107c9569285bbecf9c4b17e1b7cce139814db29a1acec9a004e"
+    },
+    {
+      "path": "src/vdbeblob.c",
+      "sha256": "edf52b0371add3b0454b4dd1a54c8e6177af86efc2af905d5e8c5cf5c635e826"
+    },
+    {
+      "path": "src/vdbemem.c",
+      "sha256": "df7532dfef62b136506d471c15e474fc2ed0303ef8886dfb7aca13f5e21ed568"
+    },
+    {
+      "path": "src/vdbesort.c",
+      "sha256": "03821b27b6c4d3ea1b6e5bd2faaefe18a2c95162d28f4c70ac12dc3a733b4a2b"
+    },
+    {
+      "path": "src/vdbetrace.c",
+      "sha256": "96c0faddbbc08021fb3ed4d01620bff649045210791513d406f4c8a4801423a2"
+    },
+    {
+      "path": "src/vdbevtab.c",
+      "sha256": "0706c2341b2f2cf6a9a48b7df9082fd71f78c5018d3881753b5b207e2588ba15"
+    },
+    {
+      "path": "src/vtab.c",
+      "sha256": "511babb71798ebebf9c3249b1388c844809349d242babaf44dee412f870508e1"
+    },
+    {
+      "path": "src/vxworks.h",
+      "sha256": "b1b1d5bceeb52cfe519df08896fb95508290167e70bacd09fe02e3659806dd8c"
+    },
+    {
+      "path": "src/wal.c",
+      "sha256": "0c0467f7c4de773512b3327b0d3973fc31d50cf74603d6aec0e3b3e1c787e217"
+    },
+    {
+      "path": "src/wal.h",
+      "sha256": "f6bfe44247d1abdebac7fef7fd1f55c307335bb8668888e1dfd0414da565e3cb"
+    },
+    {
+      "path": "src/walker.c",
+      "sha256": "036bd1eb8dd046a78a5ef25efaffcbfffa87bc6c1f3759730193a4009825234d"
+    },
+    {
+      "path": "src/where.c",
+      "sha256": "e96a8fea366c785acbdc19ef4bd31f1d4cbe5a2aa7661a1286a1f4e491ae547c"
+    },
+    {
+      "path": "src/whereInt.h",
+      "sha256": "8ff9c8922a8632d18e04e88bb54a3435f77c0fc096d3e12e04d716a903f02cf0"
+    },
+    {
+      "path": "src/wherecode.c",
+      "sha256": "496fd3fb662ef1f516c9e25abef36926d1442b2d2dcbe039f21c74d83cb6cfa2"
+    },
+    {
+      "path": "src/whereexpr.c",
+      "sha256": "a6dc7d0fe5e325f3a028882251c38be07d7e779ec6d222e58eb7d0568827d309"
+    },
+    {
+      "path": "src/window.c",
+      "sha256": "587fe02a12d9794b5467aaf38189b1bed942cc7646a910c3d692130dae7aef7b"
+    },
+    {
+      "path": "ext/README.md",
+      "sha256": "e6564864b287c1aa61b68c12b71ad22cdee6484dcbecbc2bd898cfdf5a6106c6"
+    },
+    {
+      "path": "ext/expert/README.md",
+      "sha256": "919b81f31ae60e238110b0fbd67a5104ea5fc6265840d2e519bec9146da1bdc6"
+    },
+    {
+      "path": "ext/expert/expert.c",
+      "sha256": "3926da364875b246fea400af7ea0ded14344e2ba10dc9afb44ff9e91e4c3559c"
+    },
+    {
+      "path": "ext/expert/expert1.test",
+      "sha256": "774efc297bd055eff5979f555aef25a1a32f5692f0d9d48efd06d48f89021d36"
+    },
+    {
+      "path": "ext/expert/sqlite3expert.c",
+      "sha256": "e4a43ce024798071e9b436918e9ab12c30e0fe4a691a7967ae0a78d1267b976f"
+    },
+    {
+      "path": "ext/expert/sqlite3expert.h",
+      "sha256": "9b8aa403e9c6e77ab2049434b02a5901ee687fb78b247aa6557500455294bc77"
+    },
+    {
+      "path": "ext/expert/test_expert.c",
+      "sha256": "4607a8343287cc8da017e97e4f0ed17baaf052864d9bfea1c0b7578ef3928600"
+    },
+    {
+      "path": "ext/fts3/README.content",
+      "sha256": "1ccb714d4c52ac37f948c3bd6c2be4e75e52defc5a7ea6b57434a76019664ba7"
+    },
+    {
+      "path": "ext/fts3/README.syntax",
+      "sha256": "b4a313ddaf9dbc3ef6d7371f54bab95b60b50169d6d4ce58389fc2f02dc84395"
+    },
+    {
+      "path": "ext/fts3/README.tokenizers",
+      "sha256": "c1fd7472d72fa013850c3d01fecd3d7c3c31da36601b352c793bfe66885a6129"
+    },
+    {
+      "path": "ext/fts3/README.txt",
+      "sha256": "4f6eb480595a29807c6789bad79e8aa41e270e40a5cd47a8b9c638f241009710"
+    },
+    {
+      "path": "ext/fts3/fts3.c",
+      "sha256": "05a4122efbc7cafd6bd3a1b543ddd8d23d1efcf2e06e606584a9a1ecc71a756b"
+    },
+    {
+      "path": "ext/fts3/fts3.h",
+      "sha256": "9fcb32024cb4ae9ca1f6849efa1d2b9c89ce9e552178ddc61b3cb6100b0eca30"
+    },
+    {
+      "path": "ext/fts3/fts3Int.h",
+      "sha256": "dbf657febeff0d8e63ca64e3c217c76c60de0bae3fb6c5e1e11908de347c7581"
+    },
+    {
+      "path": "ext/fts3/fts3_aux.c",
+      "sha256": "87af4cee58f8e65502e288e5fb733dd541f9517ece2cc8a95b45f4f58cfc7dcd"
+    },
+    {
+      "path": "ext/fts3/fts3_expr.c",
+      "sha256": "3a56e82b91f3c9c858edb83a90e1c338d873259ceb2cd9f9dae052cc6f39baa9"
+    },
+    {
+      "path": "ext/fts3/fts3_hash.c",
+      "sha256": "2ef0ee8c845072bd1f592649b302ea157f30a4f781e1018f0d5ed637ffb9a4bc"
+    },
+    {
+      "path": "ext/fts3/fts3_hash.h",
+      "sha256": "465582ce0fc1b4f5a0ea127f13235bca71f4765ada945a78e5dc2c44c4c3c393"
+    },
+    {
+      "path": "ext/fts3/fts3_icu.c",
+      "sha256": "c788eae1d067e98600c1f1bfc5502501d79de6f1330e39296676cfdfafa4b895"
+    },
+    {
+      "path": "ext/fts3/fts3_porter.c",
+      "sha256": "ae83527db65b451edac4ef41a9627036598db464b5a0613d0adb471db48b526f"
+    },
+    {
+      "path": "ext/fts3/fts3_snippet.c",
+      "sha256": "a945fa4ce6dbf21be28ce85de425aec6493844d0ce1e3eda038bbf4dcca5825a"
+    },
+    {
+      "path": "ext/fts3/fts3_term.c",
+      "sha256": "8554836daf90b299c7aab50e9be315ea1fa340ace2b733ec17da5d20870918f2"
+    },
+    {
+      "path": "ext/fts3/fts3_test.c",
+      "sha256": "3b1b2ada4bfa8dab87d62f56c2eba624e9503d930066dbd84b8376e5dd5ff0f5"
+    },
+    {
+      "path": "ext/fts3/fts3_tokenize_vtab.c",
+      "sha256": "e55ebcd35e3ed1469a40d5e3a559d986c4efba6671223abecb10a2175b348963"
+    },
+    {
+      "path": "ext/fts3/fts3_tokenizer.c",
+      "sha256": "9849f7749da3bd9b10c2f8cab46f9fdd270f9088dad10e1a5cd39263ecb63617"
+    },
+    {
+      "path": "ext/fts3/fts3_tokenizer.h",
+      "sha256": "ef6041a2bb8d5e9e31511cd784dadcf4d47b29f3307cf437e3414326f60308fb"
+    },
+    {
+      "path": "ext/fts3/fts3_tokenizer1.c",
+      "sha256": "bc0a0f4025fc3e207ba0f149aec587de03c81b2456ede7906ddb04140f89fd2b"
+    },
+    {
+      "path": "ext/fts3/fts3_unicode.c",
+      "sha256": "db40660a267b4332c99ff396c9f4ebeb9d8a39d508a9249e38c8b8da8726bb2c"
+    },
+    {
+      "path": "ext/fts3/fts3_unicode2.c",
+      "sha256": "9c6cb2641d9ac7c15cd9109f95692c07e720a8b988e377351cd0bb290e666c06"
+    },
+    {
+      "path": "ext/fts3/fts3_write.c",
+      "sha256": "0e0cd5ca8bd463c6019745b9f1cee1f95ed292bee761dd5340f6bab8c50c356a"
+    },
+    {
+      "path": "ext/fts3/fts3speed.tcl",
+      "sha256": "344e9dbcb67f7821864280a50c97d81a5c8a75650e7294bbb9e5b218b2f12fce"
+    },
+    {
+      "path": "ext/fts3/tool/fts3cov.sh",
+      "sha256": "9dc1057aefd87615687db83612906f828461b72d6d64a0a55c6782f2d4bb91d5"
+    },
+    {
+      "path": "ext/fts3/tool/fts3view.c",
+      "sha256": "02b503e9b2f340f6289981861022e19def808e8241fae2a037637ab081d44851"
+    },
+    {
+      "path": "ext/fts3/unicode/CaseFolding.txt",
+      "sha256": "4c0bece13821a24f469bb8d16ea33fc7da6436b7ebe64c78635673dbfaa88edc"
+    },
+    {
+      "path": "ext/fts3/unicode/UnicodeData.txt",
+      "sha256": "3066262585a3c4f407b16db787e6d3a6e033b90f27405b6c76d1babefffca6ad"
+    },
+    {
+      "path": "ext/fts3/unicode/mkunicode.tcl",
+      "sha256": "3ca203dd92a640867a8372c0268289ae6848403e9ebf0e69a597676eeb9a25e4"
+    },
+    {
+      "path": "ext/fts3/unicode/parseunicode.tcl",
+      "sha256": "cff03390afbe0fea789019816627d21b8db4126e425b115689fa5dadddf94e2e"
+    },
+    {
+      "path": "ext/fts5/extract_api_docs.tcl",
+      "sha256": "a0cd7f1505a13ca4a15b925bb416b72b8e5e4f041b2227d27126c7d0f77aa9e2"
+    },
+    {
+      "path": "ext/fts5/fts5.h",
+      "sha256": "172dee881fb9905a825d51efaeb903cf9fc247262db54ca4c4b13de580f0fad4"
+    },
+    {
+      "path": "ext/fts5/fts5Int.h",
+      "sha256": "10c8e91670cd9b64fe9cccd29b1fc5753438d46288cccfe2639160dabb4324bb"
+    },
+    {
+      "path": "ext/fts5/fts5_aux.c",
+      "sha256": "5c59db0698f5c8cc65f4cc7243ee510d48f739daf54df8824dfa47997b2ff87d"
+    },
+    {
+      "path": "ext/fts5/fts5_buffer.c",
+      "sha256": "bdfb73c0580b1fb7a3b2a4c52dad485affbdbd6f52d09c174c90a1cc6e3edb4f"
+    },
+    {
+      "path": "ext/fts5/fts5_config.c",
+      "sha256": "884a34b55f6b50caeff3464f6055d725bd4063a9e7682412a32636a876950908"
+    },
+    {
+      "path": "ext/fts5/fts5_expr.c",
+      "sha256": "ec32071d47e3e189b41e6e673f5127def07abfe4870ec5294a5919ec96521f4d"
+    },
+    {
+      "path": "ext/fts5/fts5_hash.c",
+      "sha256": "80949f44f1a89a24dd9ebbf31cd676effd938b91a05dd382fd165f52e095918a"
+    },
+    {
+      "path": "ext/fts5/fts5_index.c",
+      "sha256": "f344bce47dd5c8ef72f8f3b8354edf7ab0bfb2109364481e8f5e580c919c0842"
+    },
+    {
+      "path": "ext/fts5/fts5_main.c",
+      "sha256": "01031dbcfc4bb818abb037be9476b95f6826f6c8be0b9f93df89854c2c108df5"
+    },
+    {
+      "path": "ext/fts5/fts5_storage.c",
+      "sha256": "387a728fc6a11f76ed866463185db3025b5757ef2d46500a62dbbe0ff00f33e8"
+    },
+    {
+      "path": "ext/fts5/fts5_tcl.c",
+      "sha256": "afb26dd64df59564fbfd288ccdcee1a90b05d702cc1555d35bc10bc49cd753e8"
+    },
+    {
+      "path": "ext/fts5/fts5_test_mi.c",
+      "sha256": "1679e20cbc23bd68ef18571f5d1e81c0b31abbe0b644200062bd337c8bf823aa"
+    },
+    {
+      "path": "ext/fts5/fts5_test_tok.c",
+      "sha256": "b0d66a76b4f3bac4cef35270987452e325fe3ccea64c81ba7988e0a716cc5883"
+    },
+    {
+      "path": "ext/fts5/fts5_tokenize.c",
+      "sha256": "2757d616ef94829ca8d57c9341e81be39b843e488dac16fc09673fb59b5e90dd"
+    },
+    {
+      "path": "ext/fts5/fts5_unicode2.c",
+      "sha256": "b2defbe5df532c8fa646f8e4d3044f00cd59c1d3ffe715e6ca49ae7657a72308"
+    },
+    {
+      "path": "ext/fts5/fts5_varint.c",
+      "sha256": "43ff8e74a2a7d0d001e185e5c70dae6a6e498b7fe62002a8df977aa2184647e9"
+    },
+    {
+      "path": "ext/fts5/fts5_vocab.c",
+      "sha256": "2d82c2b705474919ad7d488c134d0662edc9cc2fbe3e416af2e3ca6f36640a48"
+    },
+    {
+      "path": "ext/fts5/fts5parse.y",
+      "sha256": "7f1ff3d5d4bd5b9495addaa0a215f954e1a6d4a3970755b91411ecbcf38df982"
+    },
+    {
+      "path": "ext/fts5/mkportersteps.tcl",
+      "sha256": "ec17a121177433b6b418c23366008e9d47b64c603a41a97c282317385481f576"
+    },
+    {
+      "path": "ext/fts5/test/fts5_common.tcl",
+      "sha256": "7726aa2d79a8b1fcaa6b7e050698487872d025e8650191d8b5163885a5db7e49"
+    },
+    {
+      "path": "ext/fts5/test/fts5aa.test",
+      "sha256": "8afafde34748b90f9a244e838ac44cf72f541fbae971c95c9603d65a8c140f7e"
+    },
+    {
+      "path": "ext/fts5/test/fts5ab.test",
+      "sha256": "1df9494be684b3745971e6600e3927ac7bacb8d29ba1205ac5245edbc0ea15d7"
+    },
+    {
+      "path": "ext/fts5/test/fts5ac.test",
+      "sha256": "b54206d401c4b699b59c6d223300b14e974746c4788f5dd75a76460696cd6822"
+    },
+    {
+      "path": "ext/fts5/test/fts5ad.test",
+      "sha256": "f3a3813e4d93558b57237b440177c4ab7a54ca577da2c5b0957f762faf6b3738"
+    },
+    {
+      "path": "ext/fts5/test/fts5ae.test",
+      "sha256": "77983d2b0cac08616fc81398177538fc6616a29d735b1452f727d1ce717d5398"
+    },
+    {
+      "path": "ext/fts5/test/fts5af.test",
+      "sha256": "68e44a6c1db3490584f858438261e60802dca3ff6809bb56f3acc3fe0c611681"
+    },
+    {
+      "path": "ext/fts5/test/fts5ag.test",
+      "sha256": "0ac51d0734a4c7b0b3c9cde0c8457f07e997cb81e0f76f7bb4ef780f58f2e14b"
+    },
+    {
+      "path": "ext/fts5/test/fts5ah.test",
+      "sha256": "da9c33fe2af3867b0472b2894091e37e0ab175566a71e1e9eaf6941aca05b437"
+    },
+    {
+      "path": "ext/fts5/test/fts5ai.test",
+      "sha256": "e7bbb83a2f7b3a3ee6cef6acebd210abb0e97f859523ceeb89884a8fdb8c99a9"
+    },
+    {
+      "path": "ext/fts5/test/fts5aj.test",
+      "sha256": "f02f59516840fd9ec73f42f5cbfc566b67e9fb8bf1e315f1b5a41e5004f32a70"
+    },
+    {
+      "path": "ext/fts5/test/fts5ak.test",
+      "sha256": "62adaae68ff1df2f52912b87a8a4f84246a724637afaffbe5ace0308a95cc027"
+    },
+    {
+      "path": "ext/fts5/test/fts5al.test",
+      "sha256": "3ce56673b3151dab84f84f9aca6437167ee3c0deea870f658249c84abb6f4fbf"
+    },
+    {
+      "path": "ext/fts5/test/fts5alter.test",
+      "sha256": "b90a8d7c3e7d1d0b41992368c4bd4870f51b1d7dfeaa60b3416e982b2a8e43b4"
+    },
+    {
+      "path": "ext/fts5/test/fts5auto.test",
+      "sha256": "e06f4e9e6f53ec89f714773a36bebfdc8de28b27f0032b88fedad1dae21527f4"
+    },
+    {
+      "path": "ext/fts5/test/fts5aux.test",
+      "sha256": "37eb72f9c3766e6cf773d7c1902c8bae65bde18b70ea0f4f2b54cee618c0202a"
+    },
+    {
+      "path": "ext/fts5/test/fts5aux2.test",
+      "sha256": "78bff48bf6a46b8732b7829703c261420369adacbbdc4fe1a50107a8f9be9f0b"
+    },
+    {
+      "path": "ext/fts5/test/fts5auxdata.test",
+      "sha256": "0dcd832338974aadcbf4d33d240915716ba26ce1dc445beb4f50a91ed492e3c0"
+    },
+    {
+      "path": "ext/fts5/test/fts5bigid.test",
+      "sha256": "407ee00aee7721b33d316a485112b2994f726b1c93b9fedfee07ebbce69a2f7b"
+    },
+    {
+      "path": "ext/fts5/test/fts5bigpl.test",
+      "sha256": "890051596aa2adaf80d9bee25e47a4b7ca4a075c40f8c49d7aa10a3a8da04162"
+    },
+    {
+      "path": "ext/fts5/test/fts5bigtok.test",
+      "sha256": "e9797781413f82f5e6182201a1d928b2a21a99106fd9be409164016883a6adf6"
+    },
+    {
+      "path": "ext/fts5/test/fts5blob.test",
+      "sha256": "31cb83d29c7441d5d66eab50c6836e49fc441295d4b129e6d3d12b632205efc6"
+    },
+    {
+      "path": "ext/fts5/test/fts5cat.test",
+      "sha256": "4401e04e16de4381efe4aebd28bcf0623aefae9cdfd6e5f731ed9ac28ba53312"
+    },
+    {
+      "path": "ext/fts5/test/fts5circref.test",
+      "sha256": "d5c50d855c24a18ccea353119dd4f86c82ee694b55ce83e53511448b86ae21a5"
+    },
+    {
+      "path": "ext/fts5/test/fts5colset.test",
+      "sha256": "877b21492ee9b64fe35c862a2235ec9e303d0aafc6398858ee11886a641ef799"
+    },
+    {
+      "path": "ext/fts5/test/fts5columnsize.test",
+      "sha256": "fbfb25151b8cf8c6f48d96c36dbf305cd7ec85feb23e59fbb79ab5e2440ef079"
+    },
+    {
+      "path": "ext/fts5/test/fts5config.test",
+      "sha256": "6f639ac1536e60f37a88bb2c1cdcf4ad01d2c289d69b0b14b0ce2759773ecf38"
+    },
+    {
+      "path": "ext/fts5/test/fts5conflict.test",
+      "sha256": "af6fd5d96569e53076cc59d218e64f48b58149ab657d4144e22315c57a025bba"
+    },
+    {
+      "path": "ext/fts5/test/fts5connect.test",
+      "sha256": "cf65bcb5bb8bd2c581b8f860c68021648207efe05c7d7e78d883641b796bad2d"
+    },
+    {
+      "path": "ext/fts5/test/fts5content.test",
+      "sha256": "d748292f425e6fbbc69a4291b3d7e5ecfcc067ac1e4600a4cefe0b6f36f626df"
+    },
+    {
+      "path": "ext/fts5/test/fts5contentless.test",
+      "sha256": "75301e5ca6f3f6266d707215a66fbae303acb66fd609fa9c23f51f632ccb25c6"
+    },
+    {
+      "path": "ext/fts5/test/fts5contentless2.test",
+      "sha256": "26d71d46ab30adef9dd13dfa8fe541a5f1673e96cf9153b825e10a91592b87dc"
+    },
+    {
+      "path": "ext/fts5/test/fts5contentless3.test",
+      "sha256": "f675be1369dd65c9c503da975aae20e1386cd3ff30647baa34f59141464e5835"
+    },
+    {
+      "path": "ext/fts5/test/fts5contentless4.test",
+      "sha256": "95ad8e57c4e8ac611fdb02e827cb85f442b9d1889e630c02bb6abd13672042b4"
+    },
+    {
+      "path": "ext/fts5/test/fts5contentless5.test",
+      "sha256": "c533ed1a24019a003dc75b0ea6100e592cb71397f85850dcce277cc89ed300a7"
+    },
+    {
+      "path": "ext/fts5/test/fts5corrupt.test",
+      "sha256": "7cca3a1765ea926767ccee38a5419c343c1afdbb01d2bd221f21721b8420c2ba"
+    },
+    {
+      "path": "ext/fts5/test/fts5corrupt2.test",
+      "sha256": "7af411c042a8c85631bba874ee8da528a40b30a17dba35a2e513bb8a8d5e9205"
+    },
+    {
+      "path": "ext/fts5/test/fts5corrupt3.test",
+      "sha256": "957e91632c32a9ec12f948991b7fe23163426e59b00f20bb15d62e404109aa0e"
+    },
+    {
+      "path": "ext/fts5/test/fts5corrupt4.test",
+      "sha256": "fe0ffd3c2f8568f10310e3d6436e285261f07fb1195dad9aef204605e233087f"
+    },
+    {
+      "path": "ext/fts5/test/fts5corrupt5.test",
+      "sha256": "2fe58965abd1b881553a4b0c17f41ef033572ddf1114257858e2cee37cfcda5c"
+    },
+    {
+      "path": "ext/fts5/test/fts5corrupt6.test",
+      "sha256": "142f50595138569b631dd52b60f8996c2bc34daa39a013c44311bb32dd768bf8"
+    },
+    {
+      "path": "ext/fts5/test/fts5corrupt7.test",
+      "sha256": "bb33c48306c1e9ab883d331d7148d4fe66799d6c595fc1e1756107acb9c8952c"
+    },
+    {
+      "path": "ext/fts5/test/fts5corrupt8.test",
+      "sha256": "171a6716f5efca8c30d4d86821dda0ab6a3fdc0e787ab0faf2b43da9311eed41"
+    },
+    {
+      "path": "ext/fts5/test/fts5corrupt9.test",
+      "sha256": "b10b770970edb87897b51e58e49ec90017b94d24a4a4391ae2753529248ddc0a"
+    },
+    {
+      "path": "ext/fts5/test/fts5corruptA.test",
+      "sha256": "b865611075f972d8d8b40b47024b0a0c3f9eef7785110b603422108a52da2ab5"
+    },
+    {
+      "path": "ext/fts5/test/fts5corruptB.test",
+      "sha256": "d0dc7dc2b5ceb857e406aee7452b7647f8ac007e0a137748af6e42e06a48e4b7"
+    },
+    {
+      "path": "ext/fts5/test/fts5corruptbig.test",
+      "sha256": "307d2e71e2cab8a481d8a9a82b0cd1cc40cda8741ac47ee2061cdc9ab03019be"
+    },
+    {
+      "path": "ext/fts5/test/fts5delete.test",
+      "sha256": "6c478b40e9a87df15ed164383978ceaa721bf25d6822214b0195b35bca3be17d"
+    },
+    {
+      "path": "ext/fts5/test/fts5detail.test",
+      "sha256": "18f8848d3310c850bd467fca8976afe509f13fd85082cc34cbc7588c79975ebc"
+    },
+    {
+      "path": "ext/fts5/test/fts5determin.test",
+      "sha256": "cd2affc78afead37ad06aa84faafdd07f89265deeb3e96e436210bef20952263"
+    },
+    {
+      "path": "ext/fts5/test/fts5dlidx.test",
+      "sha256": "8e0272eee27880507a3f7411dc723ef7ae2b5c9956a97d0d21a4092ef5adac44"
+    },
+    {
+      "path": "ext/fts5/test/fts5doclist.test",
+      "sha256": "d9f8d740fb38688f3c4b268a4d2b1ae7be64f74ecbb8b5ff4e3bc1e65052ba64"
+    },
+    {
+      "path": "ext/fts5/test/fts5ea.test",
+      "sha256": "7e3de94640a394b807c83d67955c005df8879d008c2443d2c81ceea359c91de1"
+    },
+    {
+      "path": "ext/fts5/test/fts5eb.test",
+      "sha256": "2228d3c3bcb5602a455c4e966a9c970e580d340032b690296460ffafff56ff42"
+    },
+    {
+      "path": "ext/fts5/test/fts5expr.test",
+      "sha256": "d9c278d228c2c7cfb169f24a231313bb758f24d00c096402094ceb972faec803"
+    },
+    {
+      "path": "ext/fts5/test/fts5fault1.test",
+      "sha256": "a2072f142b66220340c8bc48a41fe337821f32c45b17d20c9dcda3f5da321820"
+    },
+    {
+      "path": "ext/fts5/test/fts5fault2.test",
+      "sha256": "d4a551c06a36d8f690d7066c2cb8c27907c492840ff1d6529beceb8b3605bd73"
+    },
+    {
+      "path": "ext/fts5/test/fts5fault3.test",
+      "sha256": "6efcbaf8830c8e9d6139cb4d692469ef736d745a7dc86edda4a591ed29aedbb3"
+    },
+    {
+      "path": "ext/fts5/test/fts5fault4.test",
+      "sha256": "fd74f97c9be20ebaa65b063b9e50c10c43ff47eb31353486bf9bc4291c9f36db"
+    },
+    {
+      "path": "ext/fts5/test/fts5fault5.test",
+      "sha256": "b227d88b43281998b4f1a6361213a631f4467d112a73161061468d545cb610c3"
+    },
+    {
+      "path": "ext/fts5/test/fts5fault6.test",
+      "sha256": "ad23d345cee91640998b8626552a6e9ab24759e733a9b4e6cb495095dd0d8ca2"
+    },
+    {
+      "path": "ext/fts5/test/fts5fault7.test",
+      "sha256": "8742e9979439d06c1aa093aa254c5ce5c4eb2a5df81046b6f4b1b7502a150958"
+    },
+    {
+      "path": "ext/fts5/test/fts5fault8.test",
+      "sha256": "4e49175810c1dc4496297e3b28147dbc0f56e1ef4d8af63e27eef2da26c6e744"
+    },
+    {
+      "path": "ext/fts5/test/fts5fault9.test",
+      "sha256": "bd86ef4e52204d53474356d63988ae289e710e033f651bb1def868d3a2e293ae"
+    },
+    {
+      "path": "ext/fts5/test/fts5faultA.test",
+      "sha256": "3c237c2f46bbfd0042f44b60564c29c50b39b87b2b7e91f771a28d757fb749b0"
+    },
+    {
+      "path": "ext/fts5/test/fts5faultB.test",
+      "sha256": "c1e6055d89a0af5352a170a667571571a640e50dea20b5d618c61dce8ba3c99c"
+    },
+    {
+      "path": "ext/fts5/test/fts5faultD.test",
+      "sha256": "45c81c0f1b28c16887605583d0c249e94d7b25bb532b064ab574a80684a21a84"
+    },
+    {
+      "path": "ext/fts5/test/fts5faultE.test",
+      "sha256": "e8ea6ce3e4a1cfff91ff3fb2fbf9bae2f33709dcc2f7f126c270ad54da9552ba"
+    },
+    {
+      "path": "ext/fts5/test/fts5faultF.test",
+      "sha256": "c3aa1369d34803b7e96a58b36747dbf90620225ed7a955ff50470b5398bce1bf"
+    },
+    {
+      "path": "ext/fts5/test/fts5faultG.test",
+      "sha256": "e5c88438a32a2edda8dc527e6ac86ae384c6c3c75c92993d487c0d119c646e68"
+    },
+    {
+      "path": "ext/fts5/test/fts5faultH.test",
+      "sha256": "3aa83cb2fcb20952bcfa07a4d950967aa7551be58ae85c91c7ecc649595ea966"
+    },
+    {
+      "path": "ext/fts5/test/fts5faultI.test",
+      "sha256": "b1b2226ccc416bd32dc8a2035abc9ad9e844d7525f2651d2ca84bc1090b09959"
+    },
+    {
+      "path": "ext/fts5/test/fts5first.test",
+      "sha256": "4179968d188599f4f0d9d77cf472590ae40308b5284cefb0fb7af242e9794aab"
+    },
+    {
+      "path": "ext/fts5/test/fts5full.test",
+      "sha256": "848fb6a0ed18b170f3efd471ab7f31cc2ffd6cba04f40e9b3e5f855c575bdc65"
+    },
+    {
+      "path": "ext/fts5/test/fts5fuzz1.test",
+      "sha256": "b09519c8601fd00a88542a0c51547c38306f7ef8cd3814a7b294cad404eb8874"
+    },
+    {
+      "path": "ext/fts5/test/fts5hash.test",
+      "sha256": "9f96b67f664a30c768716012db981cf58ea7a6c371c0ffe6b68d7ee7f79af899"
+    },
+    {
+      "path": "ext/fts5/test/fts5integrity.test",
+      "sha256": "9a8aed045a94bd7cbfb40cb1e6b770723728e9ba3a1717f953d10d676d8e8c94"
+    },
+    {
+      "path": "ext/fts5/test/fts5integrity2.test",
+      "sha256": "b367183c3ddc6331a79a63b558fed6d56f2e6198709424f33e7ba4f27c82b6b5"
+    },
+    {
+      "path": "ext/fts5/test/fts5interrupt.test",
+      "sha256": "8c3dd3dfa851c684c89e43e24869646bffaa2b9e2a8e1039b98a3f75a3848708"
+    },
+    {
+      "path": "ext/fts5/test/fts5join.test",
+      "sha256": "c1c27f5eca43b030114e42a0d29a67e980e3408bf0d5075e62fea54b0b72f2a5"
+    },
+    {
+      "path": "ext/fts5/test/fts5lastrowid.test",
+      "sha256": "403ded82b2a03657f4933d785eef01a27d037b5ab28e382cc65aa408c12225e8"
+    },
+    {
+      "path": "ext/fts5/test/fts5leftjoin.test",
+      "sha256": "14e5917e40b647f2256dee0d1259c7880709883c67841c4ac7f913e9b88847ee"
+    },
+    {
+      "path": "ext/fts5/test/fts5limits.test",
+      "sha256": "57521687cf78183b502c2eea93074a63a36a26a22a5e075cab98f44a14e833b9"
+    },
+    {
+      "path": "ext/fts5/test/fts5locale.test",
+      "sha256": "6b652457347192bf102cbf33b8aa8b2dc7a4ab52abef9cd9fdb4e8f5133ed89e"
+    },
+    {
+      "path": "ext/fts5/test/fts5matchinfo.test",
+      "sha256": "98674b0c013ed149d322ccc6378d3acc68265575bfec568af5284bbc09dee5a5"
+    },
+    {
+      "path": "ext/fts5/test/fts5merge.test",
+      "sha256": "9ef7ae3ebf31470d080bdbf4c395666aa9a1f291c952d2c2caecab016b84900b"
+    },
+    {
+      "path": "ext/fts5/test/fts5merge2.test",
+      "sha256": "b9636b45983bbbd9667a4d6c7970cfb28701a0508b48f9db9755fcffa70c78fd"
+    },
+    {
+      "path": "ext/fts5/test/fts5misc.test",
+      "sha256": "d2d3c6f64c01443c0f9a4980d860fe8f2b7d9439514b448654c21dcde5d0b5a7"
+    },
+    {
+      "path": "ext/fts5/test/fts5multi.test",
+      "sha256": "4606449c3a65d647b42b01d37ca44d35f37ded93dc57761c8ef84b038b82e881"
+    },
+    {
+      "path": "ext/fts5/test/fts5multiclient.test",
+      "sha256": "be8401b3ad3e465025b78674745397a56f7030b0c3acaeef25784356dca1362b"
+    },
+    {
+      "path": "ext/fts5/test/fts5near.test",
+      "sha256": "bec4ac7368724634976869057e8037cf0b88f4e8b8c52bafde438c7ed56e0f46"
+    },
+    {
+      "path": "ext/fts5/test/fts5onepass.test",
+      "sha256": "76468ab41f7cd867e5ac11e567a07a97476651b554a37aa06e54d92bb649fb79"
+    },
+    {
+      "path": "ext/fts5/test/fts5optimize.test",
+      "sha256": "e61911031d164615d0f4bb01fcc56be57ec924104d7f47f9d9a98f5879d5a812"
+    },
+    {
+      "path": "ext/fts5/test/fts5optimize2.test",
+      "sha256": "1ae3cc8b4490ccae31c998b252bc9c1ea35b3723ce74a03aecca3c8cf7b5b585"
+    },
+    {
+      "path": "ext/fts5/test/fts5optimize3.test",
+      "sha256": "b34f0f3a81ac841dda8875c23b8e945d4bd26c3d44014c98d59e07c662995472"
+    },
+    {
+      "path": "ext/fts5/test/fts5origintext.test",
+      "sha256": "07efc5ccbce9e7bf6df216090c530e52c8ce8eb1465a12563e117efab09655f9"
+    },
+    {
+      "path": "ext/fts5/test/fts5origintext2.test",
+      "sha256": "18c2e6d8c990f720f3dd8c05c36eb164b024effd08889c677d2913308031ef5b"
+    },
+    {
+      "path": "ext/fts5/test/fts5origintext3.test",
+      "sha256": "ee37f4afea38715dbb903d38e4c8d04bd9a900b123eb95e02ffd156e7567d385"
+    },
+    {
+      "path": "ext/fts5/test/fts5origintext4.test",
+      "sha256": "bf59c897f5efd508f2f0be4a251bb79c480617adc0e17a406545a223c90aa3e3"
+    },
+    {
+      "path": "ext/fts5/test/fts5origintext5.test",
+      "sha256": "4af1c560fc5d8c127f1f10133f99577e603cf2c654d905de3971fab5d4ae56d8"
+    },
+    {
+      "path": "ext/fts5/test/fts5origintext6.test",
+      "sha256": "0c247f8d28134b0e55ddad99365bc1b583062927ed17e879961df50ca35f5d5e"
+    },
+    {
+      "path": "ext/fts5/test/fts5phrase.test",
+      "sha256": "0ffb6298e97c6e3dd956db0eb3c3b5778c362e0f21ed378261675cf5047a5271"
+    },
+    {
+      "path": "ext/fts5/test/fts5plan.test",
+      "sha256": "4ec1551cd0fe4ab55ca5c99fc552155d88d55d5302ad15356f0ea38c028c81fb"
+    },
+    {
+      "path": "ext/fts5/test/fts5porter.test",
+      "sha256": "8a882ee605503fa2363612cbf0e92a3e565bd9fb8fbccd9936bf84dc280d24e8"
+    },
+    {
+      "path": "ext/fts5/test/fts5porter2.test",
+      "sha256": "30911499f26649f8f10096bf5b3bfd21933565e4a0ea554857e3692ef520cb9c"
+    },
+    {
+      "path": "ext/fts5/test/fts5prefix.test",
+      "sha256": "af238c21be4cb31a3cec3a01ff7dfaa7b06993c047c51e4cefff8dcd50d67709"
+    },
+    {
+      "path": "ext/fts5/test/fts5prefix2.test",
+      "sha256": "b6d0690b4a3ca0d3e79e178a2c9d14c265996d3fdb8792379a2de215548c93b2"
+    },
+    {
+      "path": "ext/fts5/test/fts5query.test",
+      "sha256": "eb7cf6b39fa2261c51445e1b7246a1b39c999d47863b4b3cb52bfcae8d5217ac"
+    },
+    {
+      "path": "ext/fts5/test/fts5rank.test",
+      "sha256": "08d26d42ffa35fd8bfbe49db944789cf6f655f3fb98bdb72512f36541d6d757e"
+    },
+    {
+      "path": "ext/fts5/test/fts5rebuild.test",
+      "sha256": "2db37cd1f1697218f79258224416b08f9ba96e5b3df44dbc7c4f3b1bf780683c"
+    },
+    {
+      "path": "ext/fts5/test/fts5restart.test",
+      "sha256": "c5749e6c9c91953c3b9d0089097820642d58ceab25a77a62e730fcb689321ab5"
+    },
+    {
+      "path": "ext/fts5/test/fts5rowid.test",
+      "sha256": "ebcc37333dc5a1510b6998c1383d1ef2aebc37ca5ba58b7b534fac572ace89e6"
+    },
+    {
+      "path": "ext/fts5/test/fts5savepoint.test",
+      "sha256": "992fca54dc7b35eaa68ecb05891984c3f7607e2b86d73866dae2f10ac1703d44"
+    },
+    {
+      "path": "ext/fts5/test/fts5secure.test",
+      "sha256": "3edc4051ab9af6b0ae3dba9fed728974193f3afde593be873ae50b844b370d8f"
+    },
+    {
+      "path": "ext/fts5/test/fts5secure2.test",
+      "sha256": "ff8daf6b238ce84af987575c504e807dd646fe74547d0a1802809f2bf8fa948a"
+    },
+    {
+      "path": "ext/fts5/test/fts5secure3.test",
+      "sha256": "ef79f97bcb41af239e826fbadf1b4b8a6474342039942ee6f8f2a8dcdb15b943"
+    },
+    {
+      "path": "ext/fts5/test/fts5secure4.test",
+      "sha256": "d9ac92669d90a93f87aff04197090da84137e7082be2567a567483cf23a6494f"
+    },
+    {
+      "path": "ext/fts5/test/fts5secure5.test",
+      "sha256": "22def306a866357ee8bc04d40899dd1b1559342e4bc7310799f16127d7ba6747"
+    },
+    {
+      "path": "ext/fts5/test/fts5secure6.test",
+      "sha256": "e9ddfe8250c2a6fef96994ae4b406fb80b5c1330c7fddafe26c98105e8a8d06c"
+    },
+    {
+      "path": "ext/fts5/test/fts5secure7.test",
+      "sha256": "27ff6f8fcdc8c08fcdebcce0890feee4a093d34d2232111ecdc1de8f3e897c79"
+    },
+    {
+      "path": "ext/fts5/test/fts5secure8.test",
+      "sha256": "c01277b8d37c4514691ed04d0f9669773066dca203ad0b8505ecc4d1690fe25d"
+    },
+    {
+      "path": "ext/fts5/test/fts5securefault.test",
+      "sha256": "7c4dbc1e4a437e592303efa58ae4a74a14853152ac97e70e9426bba9fe984432"
+    },
+    {
+      "path": "ext/fts5/test/fts5simple.test",
+      "sha256": "528bf8cdcebd12380751e366ef51ed6ec5add5b829e78e3999f061cc4476b3e1"
+    },
+    {
+      "path": "ext/fts5/test/fts5simple2.test",
+      "sha256": "89fcb2c9794f8c0c3b9c9c3845474d3afd076e9397640f72d69a496df0e09258"
+    },
+    {
+      "path": "ext/fts5/test/fts5simple3.test",
+      "sha256": "bc48d2067e3d656faa67676cf69670a63e523d982b9eae0357966783e4299a8a"
+    },
+    {
+      "path": "ext/fts5/test/fts5synonym.test",
+      "sha256": "78cc4e7fce196ec905fd8b5b5cdad581f0a042111defb0582a444c2d51926894"
+    },
+    {
+      "path": "ext/fts5/test/fts5synonym2.test",
+      "sha256": "70cb24a217518d48fbc0f3a728efc5297e6dec32d5fc498be5d8c0f0c37c0878"
+    },
+    {
+      "path": "ext/fts5/test/fts5tok1.test",
+      "sha256": "61e58c2c77cbf56ebb960c86f1b994d98a1605f5f6d1de6d70d29be33e3a4881"
+    },
+    {
+      "path": "ext/fts5/test/fts5tok2.test",
+      "sha256": "b8b91b0a7fc2f3342a4015142ecf4eceafb1c07427f7580752edb8af0be05b24"
+    },
+    {
+      "path": "ext/fts5/test/fts5tokendata.test",
+      "sha256": "442c25f6f9126876c659121cfcec09c218517c634155fdd2438d0bc8fb6a24e9"
+    },
+    {
+      "path": "ext/fts5/test/fts5tokenizer.test",
+      "sha256": "28ee4aaddfd3a8e0dcad02b937beb5184482ca27b05477e93e423943bd76fc6b"
+    },
+    {
+      "path": "ext/fts5/test/fts5tokenizer2.test",
+      "sha256": "029d9d80a042efec0f651b9932b2bb9597e56125abb4d18532fbef2012967f40"
+    },
+    {
+      "path": "ext/fts5/test/fts5tokenizer3.test",
+      "sha256": "ccf0cdaa489e568d76732b52deb35e669a1731badae985909ad471dca2d79fe2"
+    },
+    {
+      "path": "ext/fts5/test/fts5trigram.test",
+      "sha256": "24024a7a5f6c77fa8c3ee536f22988bfa85ae3fc321b1da67254a06c0a97ec64"
+    },
+    {
+      "path": "ext/fts5/test/fts5trigram2.test",
+      "sha256": "868d97ee383267fc41ef57c2f7ac9bf063af3cf22f2e58dd541acd64994b5809"
+    },
+    {
+      "path": "ext/fts5/test/fts5ubsan.test",
+      "sha256": "58dea883bc382918a13513c277aa87fdea8c42e02adc9e001f3f21b134105200"
+    },
+    {
+      "path": "ext/fts5/test/fts5umlaut.test",
+      "sha256": "05f6a8ff6cc21b2d1a9efe8e5ce958e18ff7b19166ed47e89e83395f3d4daf10"
+    },
+    {
+      "path": "ext/fts5/test/fts5unicode.test",
+      "sha256": "abf9494fb523d2d66d746eedb07f560ecf1b762193f0697f7a2f29a48eaa6a7d"
+    },
+    {
+      "path": "ext/fts5/test/fts5unicode2.test",
+      "sha256": "edcc7baa30e16ba2112c1ddfcee7880c552abc0bcb83ec62bec53a1c1ef081e5"
+    },
+    {
+      "path": "ext/fts5/test/fts5unicode3.test",
+      "sha256": "be0e8563a278b25d1d7937483f7125a20ebbe577ad6ff4dc6d394284c0f5b363"
+    },
+    {
+      "path": "ext/fts5/test/fts5unicode4.test",
+      "sha256": "634ed44b380e04a1b603e69ad5408981aa493b7bfb45bf36691761e999d488a6"
+    },
+    {
+      "path": "ext/fts5/test/fts5unindexed.test",
+      "sha256": "c06513c3f368c06c718551d8a79ddac7c606878f50f7b28ef5bb2edb2eadf913"
+    },
+    {
+      "path": "ext/fts5/test/fts5unindexed2.test",
+      "sha256": "1b97ff6d90174bf383c50afa0eb0ca214f273c1b66374c569fc54489b1ed2a39"
+    },
+    {
+      "path": "ext/fts5/test/fts5update.test",
+      "sha256": "2ccf684158c03bfcc2d6d205f0b367de72a72eb7e799111f1114f73d55a16537"
+    },
+    {
+      "path": "ext/fts5/test/fts5update2.test",
+      "sha256": "1e5a329159c2a8dfee9821a84fb580e08eca0d5495930f80465e4d813bc405a9"
+    },
+    {
+      "path": "ext/fts5/test/fts5version.test",
+      "sha256": "b26fcb7651b0d7912cf3440ce9ab42706ceda597b6180850f638b46e96a3e81d"
+    },
+    {
+      "path": "ext/fts5/test/fts5vocab.test",
+      "sha256": "868460d17f9efb64db3ad328cb2920acbaa412367d741f51836fedd380fbc69f"
+    },
+    {
+      "path": "ext/fts5/test/fts5vocab2.test",
+      "sha256": "d1cfe777d2814fa1df8be4f9a78838820a242166313523587d9cb53c349e086f"
+    },
+    {
+      "path": "ext/fts5/tool/fts5cost.tcl",
+      "sha256": "bb636561a9b38fa042e6e50208af29e3edd0996e696e39dc7ec6ff59a8b46f41"
+    },
+    {
+      "path": "ext/fts5/tool/fts5speed.tcl",
+      "sha256": "5c1e7472cc9f2a881a5204838ef0f560b726248515e97176f5194584820d2d7a"
+    },
+    {
+      "path": "ext/fts5/tool/fts5txt2db.tcl",
+      "sha256": "58c11e107c0728373ce5356d713d8dba9683fc70f66c08944518521a61b310d3"
+    },
+    {
+      "path": "ext/fts5/tool/loadfts5.tcl",
+      "sha256": "8531ac802f5190e2116aaff9dff34382bf196a95d525a6834283164a45942920"
+    },
+    {
+      "path": "ext/fts5/tool/mkfts5c.tcl",
+      "sha256": "aee9ac27f3809d8e0156ea5802729a186424457a4823bf70dbe504dce14c0805"
+    },
+    {
+      "path": "ext/fts5/tool/showfts5.tcl",
+      "sha256": "86f9b37fdc452aa2b68d5c33d668776248ef223f28fbb177a161c11fa91c40ed"
+    },
+    {
+      "path": "ext/icu/README.txt",
+      "sha256": "6558fcb27b9a4fbcfbc65b2128743190e5f5cf346129ad0083c36a860879030f"
+    },
+    {
+      "path": "ext/icu/icu.c",
+      "sha256": "8325268bc246dd969d9fd5d047f8db8a88cc5002d2a3c0937d8004d263321f3d"
+    },
+    {
+      "path": "ext/icu/sqliteicu.h",
+      "sha256": "a9c76db050cfa8842b8b0d5d38541b08578c654ccdda6861a9c00e58ea7446e9"
+    },
+    {
+      "path": "ext/intck/intck1.test",
+      "sha256": "1ea462273cb1d43b7f2a602e0825740edbb36644030f95f083a1fef957df1680"
+    },
+    {
+      "path": "ext/intck/intck2.test",
+      "sha256": "9142f9c7b636cf488f89cbbb25491d21e49295fde98c484b98b10e9f9e7b04db"
+    },
+    {
+      "path": "ext/intck/intck_common.tcl",
+      "sha256": "f01fbbaa6e77a95d3e669f1c5c725a1394eb3b6fffed5af5baa09b9b67b0a686"
+    },
+    {
+      "path": "ext/intck/intckbusy.test",
+      "sha256": "33cc780b86f9e142120ab0a5af47357af205ef6823fc1bfc570b5c946ca2dde3"
+    },
+    {
+      "path": "ext/intck/intckcorrupt.test",
+      "sha256": "2375e75b7c0152aaeafc568676f7e5f1ca2835721c07614f6e6b9c2e883c4dd7"
+    },
+    {
+      "path": "ext/intck/intckfault.test",
+      "sha256": "306deda30bd3a7f7035254c50e99d44aad759c97373eb485ee5c0c3eb385e83f"
+    },
+    {
+      "path": "ext/intck/sqlite3intck.c",
+      "sha256": "0f98e394d2a8598b85aab980c15585c1917ddac3911494b35bfa99bc23d8a2eb"
+    },
+    {
+      "path": "ext/intck/sqlite3intck.h",
+      "sha256": "28364023e640f1212e194812d26e94b191c1037adf6623be15065322fc8b5887"
+    },
+    {
+      "path": "ext/intck/test_intck.c",
+      "sha256": "74ab920dd569d9565c7da86f0f32615adfdcca499d109e0132a17312e6bd93fb"
+    },
+    {
+      "path": "ext/jni/GNUmakefile",
+      "sha256": "125beec2dea5a863d3306704a2e790c37f2be959340eb7f98e48c9dd423653f1"
+    },
+    {
+      "path": "ext/jni/README.md",
+      "sha256": "87db79c40d18aaa1743084913276f30e169b36457c2d7066f286e3600f54dcbe"
+    },
+    {
+      "path": "ext/jni/jar-dist.make",
+      "sha256": "952fe57346995f4df90017ca53e8c519f361a21e0115fa449297cb4cbb043de4"
+    },
+    {
+      "path": "ext/jni/src/c/sqlite3-jni.c",
+      "sha256": "b36cfcfe09292d4ffb48e75c3c373f4e7f036c84ffc319db97fa23141a9e4cdd"
+    },
+    {
+      "path": "ext/jni/src/c/sqlite3-jni.h",
+      "sha256": "e61f8aa56961c675675123c787dfb4b2375bca9dffcbee965230ab1df421a1fa"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/annotation/Experimental.java",
+      "sha256": "6c94e0c62f113be6ca3baf8ed500f6e368bb505c658b13119eded7428b8eacd0"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/annotation/NotNull.java",
+      "sha256": "3d2bdae724cbb2be464f4ea581757e3729bccff6e7ed100e8f0ad925a6f82314"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/annotation/Nullable.java",
+      "sha256": "2f85f68404abb599a1b66e9ee294b6734255ce77edba77258694c7412089c425"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/annotation/package-info.java",
+      "sha256": "f096589f27159d17b26f18ec9df2899db739999ee8a23babe401e6b4816b0f78"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/AbstractCollationCallback.java",
+      "sha256": "e58c6004b73c0ce0e51d356c9691ae36ef485e247914b063a139842eeb43bd48"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/AggregateFunction.java",
+      "sha256": "c0a608c11db75a6fd94e4ffef3f652f1091e2994792d9712b32d1b27106b479d"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/AuthorizerCallback.java",
+      "sha256": "88d0375e3905c1807e403595139943de1d8fd8ba9dc6fd6f6188946345f459b3"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/AutoExtensionCallback.java",
+      "sha256": "d91fb31e90091865fd1e0f3f46b2753071cd5e5df49bea2ea51ee67d177f27bf"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/BusyHandlerCallback.java",
+      "sha256": "c0b6bf7b4301ac5a34808c786dd9ec9d9711e33cccbc0a539824145f4d6827d1"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/CApi.java",
+      "sha256": "0742cf5398a3fe6c233bbcdc57fe892725d9fedda9b937b9d8492699f2d50355"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/CallbackProxy.java",
+      "sha256": "4fc51d36ca1ac9a767a3964d06125f378dc85d4517e4a845037fb46fa4f676e8"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/CollationCallback.java",
+      "sha256": "a8a3c65d02d5f0b972c8f725b0de60fe500f6091ceb057c9905c15fa33289c57"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/CollationNeededCallback.java",
+      "sha256": "9eec6d5be2892ac537edb554cfcfe2f13ffe109b154da82c4162c58b7b9772ef"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/CommitHookCallback.java",
+      "sha256": "edcb98a81b7d71d0d7ba8dd8c4dfbcf8b350619e9b0499e65b161c2f6f4f62f5"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/ConfigLogCallback.java",
+      "sha256": "b2827b0706aac9aaea9c94d024a4e80c4d09ee52f3dca5fbe103968287fb0bd5"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/ConfigSqlLogCallback.java",
+      "sha256": "63925864784b3c47b7a3d38b9ee90efb85ee914eb40e7b92a7c510aa2fede82a"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/NativePointerHolder.java",
+      "sha256": "7b6ffd7e660bc31b2fcecf5f052578d8206a3dfec77a46f324074ce0fa4ba1da"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/OutputPointer.java",
+      "sha256": "c43131fdb769551b66d09578d613f43d37842d124cb862bcbd9f982b14bad8fd"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/PrepareMultiCallback.java",
+      "sha256": "7ab85845a8d18de9f520dcd34edc54f6ec2d1b9fcec2429438c0930b3e0283a0"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/PreupdateHookCallback.java",
+      "sha256": "1bb2a330082a4d2f6dbf83e310c802da65a3ff56976f13b7fd65e543e6889b93"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/ProgressHandlerCallback.java",
+      "sha256": "bbe8a255b66afc1ad1876e091feb7698d3a6d65fa6251e5ef9f6150e0c14ed58"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/ResultCode.java",
+      "sha256": "899823a49468720757abd147768e1a9a212d0da86680b4ef9e4d7c632b9b3024"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/RollbackHookCallback.java",
+      "sha256": "41e5bf6327f3a32e48059945b39215949aee34a0d550083f8670532343dd4453"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/SQLFunction.java",
+      "sha256": "aecd3957e2962bb7f0b7f01619c2c20d1a31a1625845b16358224780412cc54c"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/SQLTester.java",
+      "sha256": "0b0f052cd90e65b74298bf6d6b508fb8352b4d7f41ea077bc64d091c1a597c21"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/ScalarFunction.java",
+      "sha256": "8293d3a5cd2a23484ee19e7c914043f21b3615b0bd97f6f84707422444c1973e"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/TableColumnMetadata.java",
+      "sha256": "f4bb9fb82ea6a64eb3a0cedb805936b2c905d60374c561dca6c70a972afbaace"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/Tester1.java",
+      "sha256": "4a26ad2121f468b062233665cf91528f0bc4cc93dcf73ccb5105152facbf4857"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/TraceV2Callback.java",
+      "sha256": "eeec889cd273824a235b69162c7af7794b82e9003d08639afd7bdce03046d5eb"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/UpdateHookCallback.java",
+      "sha256": "78321a1e7413c94d86f96c957e39ecd7723155e16f3f66c7a98cef2db2cef86b"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/ValueHolder.java",
+      "sha256": "5d9ad444f8b8a723c5247c97e9092178fe6c33df22c7f7bfbdfce2e3f03d20f1"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/WindowFunction.java",
+      "sha256": "21fc331f7aacd0fee6ba1b19985f4142bc7b5368c6ddafdc0d929ffb7e682959"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/XDestroyCallback.java",
+      "sha256": "db6afde3282a485caa5e0b5106e911d0bb2c9cb784321cfc2c68a062a8d0e691"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/package-info.java",
+      "sha256": "e2855f6ee355a77165ab04b4d9b0dc1ea6abb6082ff7b927d9e60f410d41c7c2"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/sqlite3.java",
+      "sha256": "65f6f6b96e9fc35aad2dd8c9d3abbf6205050973991ef3e8a42bef7966889a22"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/sqlite3_backup.java",
+      "sha256": "2dfd44d62a13af58eb8736802c3767f1357f77c50d58d48f99e9ffdf8fb14853"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/sqlite3_blob.java",
+      "sha256": "1f4faa52ec1ec34b11880a4da731158087f129ada3385835d64bd9b802654a67"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/sqlite3_context.java",
+      "sha256": "fad09addf021ec0b7e87e26caf315ee83f7c4a8eeb6d2e2e9881b2673b9df92f"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/sqlite3_stmt.java",
+      "sha256": "ba5c4065c5399b01c252032a8b6b9916e8f86f63b761b8e60cb822f8e41f8fea"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/capi/sqlite3_value.java",
+      "sha256": "63ad6886a0e1f28fdc8cb836be6ec020046ac1ff108652b9753c9d5f7aea62a3"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/fts5/Fts5.java",
+      "sha256": "42dcc4db621701f0c438de3164a40ba0f1a19f2a066ba174ce4a5aa6cf657ef2"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/fts5/Fts5Context.java",
+      "sha256": "4b0815dc9033869a924d3d653a244461464595716261cf6ffd3319c7115f40b0"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/fts5/Fts5ExtensionApi.java",
+      "sha256": "59c4ad68b23246beb03e04de80821a21089519f032b7af535234699e8fcc82a7"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/fts5/Fts5PhraseIter.java",
+      "sha256": "a7f62f7c47d6362ee400a3e4e222dcab7e945d67a524af8510a9195c283c2c75"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/fts5/Fts5Tokenizer.java",
+      "sha256": "349af720879777951bebd81683d8bb940bd826f6733962955705f3d6b0caff4a"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/fts5/TesterFts5.java",
+      "sha256": "116d596bc11df87627d8844ad0d4210664a9f38742efb45e2374044c14e8331c"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/fts5/XTokenizeCallback.java",
+      "sha256": "64b0a7b8ba21190abf60c94cf251a4ea69e468eb0dac02edc18a6599366b82b9"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/fts5/fts5_api.java",
+      "sha256": "60f11a21c385d8a27f9beec38f98bf7bf29ce1cba7fe9698304013c2c1b930be"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/fts5/fts5_extension_function.java",
+      "sha256": "66e823df781d4a627088c55e9823040c8e16b891f0196827d7a95ff465a3700a"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/fts5/fts5_tokenizer.java",
+      "sha256": "9cfc13bb71465b47e77ed3acff8050b0911b5255b18a3345496647e81b11e1ca"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/test-script-interpreter.md",
+      "sha256": "7874d50cbe1a94151f2e9b09524dfa88a19ba8240808652c4abacbbf749874fa"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/wrapper1/AggregateFunction.java",
+      "sha256": "2999868291cb4b0990ad746f47240a0e178dafdd18542e894e81fb37f531233a"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/wrapper1/ScalarFunction.java",
+      "sha256": "147a757299e775303fee79568941b1561e9c7fe497e3b9ced7635a18d5047740"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/wrapper1/SqlFunction.java",
+      "sha256": "ac6cb01e91a157322cf4e5e4cf49676263ce86303882d7339cd3fb1bd69971a8"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/wrapper1/Sqlite.java",
+      "sha256": "fd59a587c86c42ead75ce768ec293853dead337d16f36138192aff156fdfd7e9"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/wrapper1/SqliteException.java",
+      "sha256": "409f6cde7c033001214ad5a2edc065d40fc96a81bec82f09459e2153924d43c6"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/wrapper1/Tester2.java",
+      "sha256": "01c7b958a42df6cc043a3af8d0dba0fdb9693a93f2004ba8d59de87ebf931513"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/wrapper1/ValueHolder.java",
+      "sha256": "4721e28d95451c8fa62c2e90d5a452fb290c4ceee5658002b23aeb152c5581d6"
+    },
+    {
+      "path": "ext/jni/src/org/sqlite/jni/wrapper1/WindowFunction.java",
+      "sha256": "81570631f34b5d794b91175377bfd5125e1896549e6917cbeba0e1d115a6b1d6"
+    },
+    {
+      "path": "ext/jni/src/tests/000-000-sanity.test",
+      "sha256": "58a118aad661dd08d4708f5a45c972ec3c48c05a8864b45c42844af67dee10cc"
+    },
+    {
+      "path": "ext/jni/src/tests/000-001-ignored.test",
+      "sha256": "d3ab5833241bcf83ec8645c18e36c84132f7e1a60ea0ce69fae67f1348f24512"
+    },
+    {
+      "path": "ext/jni/src/tests/900-001-fts.test",
+      "sha256": "cc57f26d204f6b122bc26265f889b9f128d661724ebecb22de9b0f1f5d854c8f"
+    },
+    {
+      "path": "ext/misc/README.md",
+      "sha256": "1409d2aaa2060ac7671869a7c05409b916182f10132c2a6a8ca484fc08e4e251"
+    },
+    {
+      "path": "ext/misc/amatch.c",
+      "sha256": "5633c7519000ebec48546dfda75e1c866ddf1a7690cd7de087f815afbbe6f741"
+    },
+    {
+      "path": "ext/misc/anycollseq.c",
+      "sha256": "b2830a264282ba361db7de8f8da797f8d5eaf38b47006f9f85b3ba887a043fd0"
+    },
+    {
+      "path": "ext/misc/appendvfs.c",
+      "sha256": "e434ade2836affa2375b62284f30795a1d36a6212aad6d9ad03a15c6cc16fd43"
+    },
+    {
+      "path": "ext/misc/base64.c",
+      "sha256": "f4253a84b92e4fb87aa42c5dbfec8fa8af4fc5505d035cf2c7e32d2a1d4bb445"
+    },
+    {
+      "path": "ext/misc/base85.c",
+      "sha256": "ed4123e73b08874258b74c45dc24fffb224f9da12111e0b946b303e9a8cbc675"
+    },
+    {
+      "path": "ext/misc/basexx.c",
+      "sha256": "6d37858a6a3ced3fbfb6fcc17441cd10ad87e6677a6cd9b0b1d8586f55d9690c"
+    },
+    {
+      "path": "ext/misc/blobio.c",
+      "sha256": "c579ac57af421047d9548a29f8600d7b7b1d334066de5b6e9302bd9f03ef6e2d"
+    },
+    {
+      "path": "ext/misc/btreeinfo.c",
+      "sha256": "14375bbf45e5973f822fd6f218eb18cb5b86341db12f9ceca08c371ce01a1ba7"
+    },
+    {
+      "path": "ext/misc/cksumvfs.c",
+      "sha256": "d1ed8e8ec31ab568cd5dcf257aed74e737deaf04e7cca860b70c2f701191360b"
+    },
+    {
+      "path": "ext/misc/closure.c",
+      "sha256": "56e5714bec8b2be9f5e576dc610274b547c4d8bf2aeea21320122f17c32e093f"
+    },
+    {
+      "path": "ext/misc/completion.c",
+      "sha256": "43723a837902bb05131e4af953decbd1b55236459b1bd13d034980d9d12aca65"
+    },
+    {
+      "path": "ext/misc/compress.c",
+      "sha256": "495d692965050a067f7e741b387e1cbd6dc031e4bd253ba8f1f4e01faa313a33"
+    },
+    {
+      "path": "ext/misc/csv.c",
+      "sha256": "ad3c6f47ebbbc8b438296ac73103d9ebe9dcf534725c060b958f7b0189ed9909"
+    },
+    {
+      "path": "ext/misc/dbdump.c",
+      "sha256": "5bcf57b8050d77c99a27dd082b5530fc41bfbd7e854c770e6dacce57f3ceb822"
+    },
+    {
+      "path": "ext/misc/decimal.c",
+      "sha256": "d4d75ad3f33212dd74bdc1550044c3524a1e7c75b1cb71ae500bda1f1421b5d0"
+    },
+    {
+      "path": "ext/misc/eval.c",
+      "sha256": "9a7435e54c93489abdd37656915e9abd76055844428e86b40e20fbdc8c92f5d6"
+    },
+    {
+      "path": "ext/misc/explain.c",
+      "sha256": "ad1555bae26138f3b6453610f92433a21191c6b5f5a8fd9e8d2fb33f6aa75230"
+    },
+    {
+      "path": "ext/misc/fileio.c",
+      "sha256": "b794876bf9d09d94be7b2b1c89c2b26f8e5ffecca0cd5af8fa00bf17ede36095"
+    },
+    {
+      "path": "ext/misc/fossildelta.c",
+      "sha256": "1e778d5d737a0560c1ed3fc89461a2e76fb63ac57304f610153e658a274046b4"
+    },
+    {
+      "path": "ext/misc/fuzzer.c",
+      "sha256": "194e26460df5a8ea8b6d12c0cb9c1d5732d4605786f02c9de190a8e9d8f0e061"
+    },
+    {
+      "path": "ext/misc/ieee754.c",
+      "sha256": "3590427a41bdf476b119c77ae85a179785b0e9c548fd543ae084422b3ff043b5"
+    },
+    {
+      "path": "ext/misc/memstat.c",
+      "sha256": "5fdaf4192ea75c002070f559e043bb3ae66f89ddf325d3f83cb157b4616dc517"
+    },
+    {
+      "path": "ext/misc/memtrace.c",
+      "sha256": "cc5d95df4c2665a6b05d797f3dcdd5da53a6547c1352832d2cd3cebdaefea11b"
+    },
+    {
+      "path": "ext/misc/mmapwarm.c",
+      "sha256": "74e187f06fba74270e7ead4233291c7df40b57ff45ad7ab705af0ad21dba82a2"
+    },
+    {
+      "path": "ext/misc/nextchar.c",
+      "sha256": "0c6346e537c771b2720297475098a4a9cc01b21d9710fc8fb0e95af5a335ad53"
+    },
+    {
+      "path": "ext/misc/noop.c",
+      "sha256": "bfb6fceae8752a93090cba48f4af4eaac14c3d1022b9826f4034a49d530fc100"
+    },
+    {
+      "path": "ext/misc/normalize.c",
+      "sha256": "ede33d6dad6a11ddb1fdd70538e34bba1e8a6c7ddd5a6366dfa9d7129884dbe4"
+    },
+    {
+      "path": "ext/misc/pcachetrace.c",
+      "sha256": "15f8cdbde26369c2ea647da1fd5892c675527171d46386d5396ccdf3467122c7"
+    },
+    {
+      "path": "ext/misc/percentile.c",
+      "sha256": "51d30636240260d5cb955bc822d25ca5626ea80a65f9fdbe99323aa7ad2a4516"
+    },
+    {
+      "path": "ext/misc/prefixes.c",
+      "sha256": "8e84694fb1de3cef2f755f4aad43490bd66d08a46844af588368d286a5e5294d"
+    },
+    {
+      "path": "ext/misc/qpvtab.c",
+      "sha256": "4c9bcc7816136d1be4e77b58c637112d1ca494fae8e05d63900a1ff3a9baf296"
+    },
+    {
+      "path": "ext/misc/randomjson.c",
+      "sha256": "3ec3b5424c3cd86a7b2fcd9454a4cbc873614e152396ff388f1f4ac8a8af94ea"
+    },
+    {
+      "path": "ext/misc/regexp.c",
+      "sha256": "3e3b176b31047ea01e5ec0653e5806a09f912ba0e9648f93ab33e34a5ec3e18e"
+    },
+    {
+      "path": "ext/misc/remember.c",
+      "sha256": "9d66bfaddb35901308c2b0a422f65016ce6f565f2835c5c866991965df0c1e9d"
+    },
+    {
+      "path": "ext/misc/rot13.c",
+      "sha256": "2502067e568c60a0d7899850981a5864dc879bb6f01d280e97954709f4d1d333"
+    },
+    {
+      "path": "ext/misc/series.c",
+      "sha256": "4bba693cfee707d060f4257b5f7e70ba4ac22054a5d42b95409cc056c67f4602"
+    },
+    {
+      "path": "ext/misc/sha1.c",
+      "sha256": "9002cc0badcf72f9ddb46647871c9d3938b45de03adc700d5110c2c5775706dd"
+    },
+    {
+      "path": "ext/misc/shathree.c",
+      "sha256": "83eaed02a85c9f5c55b072b33eb524d39e0e44d4efaf8f1ddae8c739cb4c4d6f"
+    },
+    {
+      "path": "ext/misc/showauth.c",
+      "sha256": "efeedc44aa2d54f7117ec3dc1e0b9ac9ed680212cd3c40983d6a3b8c67c89723"
+    },
+    {
+      "path": "ext/misc/spellfix.c",
+      "sha256": "f679ae6f10181608be4119c35eedb4276612ef81890ca534e41810deb3e5dea2"
+    },
+    {
+      "path": "ext/misc/sqlar.c",
+      "sha256": "af8e7e9c56981cf840e133b75b712ba5b2549f50990b48e2618a3fd1f4a0b9f4"
+    },
+    {
+      "path": "ext/misc/sqlite3_stdio.c",
+      "sha256": "f348ceeee390461f78e1f3a4a3335077cac21603014c56ae4d23acdbbb91435e"
+    },
+    {
+      "path": "ext/misc/sqlite3_stdio.h",
+      "sha256": "504556d88d6e5d065179ba183100bca27e84b2f34e58361a9bd6a342f1819a8c"
+    },
+    {
+      "path": "ext/misc/stmt.c",
+      "sha256": "b4276652507484053119a9124c901fd20861bcc0e3f2e723ac80a19eba135662"
+    },
+    {
+      "path": "ext/misc/stmtrand.c",
+      "sha256": "45dc3cfc557b6e7777271ab74dff8f010cdb36d66570c3908984d18b66e83794"
+    },
+    {
+      "path": "ext/misc/templatevtab.c",
+      "sha256": "d840fbb9ac79920c66a17772372b7a7b9dc5d0c226a3ec1beddcc26b827834eb"
+    },
+    {
+      "path": "ext/misc/tmstmpvfs.c",
+      "sha256": "48472590fa7f49ce8f14e0568df9f05dcc577ae6d5e0cfda62d174bdc81a9b1f"
+    },
+    {
+      "path": "ext/misc/totype.c",
+      "sha256": "9e192376666049b41ef850d1841eb22efcb4e6849f4247959f237d5dede55c5f"
+    },
+    {
+      "path": "ext/misc/uint.c",
+      "sha256": "f30401ca32ed58efad924d31d92bf9e163d3c3214756d60cbc09bcf6b8220c37"
+    },
+    {
+      "path": "ext/misc/unionvtab.c",
+      "sha256": "3c67d03003205cfe777487b99b43ce5a916f8be9ddf5cc5ed2e9dea160f717e9"
+    },
+    {
+      "path": "ext/misc/urifuncs.c",
+      "sha256": "67931a06c316584e83f3a1d91520f8af6597e012a644286dbb688712aa4aa9ee"
+    },
+    {
+      "path": "ext/misc/uuid.c",
+      "sha256": "8b90b44e4c3aebe75f9f9e1ab9f59b73e2590a621668636831f210690f9ae20c"
+    },
+    {
+      "path": "ext/misc/vfslog.c",
+      "sha256": "669d3ff0b8649789381cdbb589746248898afb4ebc2053952e57eb9475f5064a"
+    },
+    {
+      "path": "ext/misc/vfsstat.c",
+      "sha256": "f91d16d4c12c631762e9bd97ec70ce8aa884002f3f7d82ddd6405f35177e52bb"
+    },
+    {
+      "path": "ext/misc/vfstrace.c",
+      "sha256": "4642126b6050758f1e19c032c9c4aa0fd865571f377370a43ca59b909683a45a"
+    },
+    {
+      "path": "ext/misc/vtablog.c",
+      "sha256": "b56d51ca068ceed6d5ee88e708196aa6271c38cb15b56cb931cc77f2018a1e4b"
+    },
+    {
+      "path": "ext/misc/vtshim.c",
+      "sha256": "3b70e27b800df330eba1c9ca6cc9a0b22ca516bc6003199283adaf4da3ad4999"
+    },
+    {
+      "path": "ext/misc/wholenumber.c",
+      "sha256": "7dcc5bf8ed408fc458652c61b827326bf8caa6b12bb3955cc2a8a88ebe1005c6"
+    },
+    {
+      "path": "ext/misc/windirent.h",
+      "sha256": "7e61b433d62337d2af56ef39a7f659c54bb0cfa4a605dc3c18cf2c5397dbd501"
+    },
+    {
+      "path": "ext/misc/zipfile.c",
+      "sha256": "09a48a20f7c4fd2ff0161a45df86f9d2ec650cd01d881ce6afe967b80895cb23"
+    },
+    {
+      "path": "ext/misc/zorder.c",
+      "sha256": "2d4687cdbc6f54b6325594f11e7e41af06ff6b649801c1ba6ffa2c570380cc1d"
+    },
+    {
+      "path": "ext/qrf/README.md",
+      "sha256": "3b62c3822961dad76797339926387338ff95220c803292b17482b5066736eb50"
+    },
+    {
+      "path": "ext/qrf/dev-notes.md",
+      "sha256": "3763132cde269911546400163933baa8fb57ae99750e08d483b2343534dbc10f"
+    },
+    {
+      "path": "ext/qrf/qrf.c",
+      "sha256": "f0cdd66ffd76ba33ebcadf718d01d7783e16b0520f9a5e671fbc775c1cc084ef"
+    },
+    {
+      "path": "ext/qrf/qrf.h",
+      "sha256": "2d96f897ad38a4b045cd45c58347cbf45b47cb2bf834a594c370014deffeb7a7"
+    },
+    {
+      "path": "ext/rbu/rbu.c",
+      "sha256": "30983a232e0e6b521e2a22b2ff96bc0f4d49153803c15040daf3bcbbc0bb4c35"
+    },
+    {
+      "path": "ext/rbu/rbu1.test",
+      "sha256": "f970ef221ffeb0aa206874b856c81cdb2509bd02b408af9e323f7d339fb740d0"
+    },
+    {
+      "path": "ext/rbu/rbu10.test",
+      "sha256": "3d4e35b969b2bb94e5058c8abb084dc5e189c8fa08f8503624d95efb784d8084"
+    },
+    {
+      "path": "ext/rbu/rbu11.test",
+      "sha256": "11a4ace2037480fae8c64e74f343f10002e59e7f12e3e68567938c40bb888db9"
+    },
+    {
+      "path": "ext/rbu/rbu12.test",
+      "sha256": "09247204980e632198572c46ddf7dd6670751e9e0dbac2b0be5ffb19f835a5db"
+    },
+    {
+      "path": "ext/rbu/rbu13.test",
+      "sha256": "e084705579ea1cc8dd39b51bda193f0011f636754118e706a98745dcd049e211"
+    },
+    {
+      "path": "ext/rbu/rbu14.test",
+      "sha256": "ea22eab2ba74e187a039460cefb8ecc6b6955507ef5089469fd2209a1d5c50af"
+    },
+    {
+      "path": "ext/rbu/rbu3.test",
+      "sha256": "c1e99697e1b1dff33dd999ee797d1b6faa7d3402c54fd4c3af06043cd5a7d8df"
+    },
+    {
+      "path": "ext/rbu/rbu5.test",
+      "sha256": "99b5833a6ba3ac3512cb6ce2f82ff33d1222611ccca682d581ddfc6e9f1e5c54"
+    },
+    {
+      "path": "ext/rbu/rbu6.test",
+      "sha256": "f6f7ff8fa01d6bdcdf2b86e6d6f8e09737b4c6226086e8d5e282e4ea1a57b89c"
+    },
+    {
+      "path": "ext/rbu/rbu7.test",
+      "sha256": "477a3665ef3161aaf3975913559353061fafc0fada83cb85e31b236fb3739702"
+    },
+    {
+      "path": "ext/rbu/rbu8.test",
+      "sha256": "dd3429dec11891909845c501aa72b4fde51c449142a6684561d00053949ced35"
+    },
+    {
+      "path": "ext/rbu/rbu9.test",
+      "sha256": "75a0c455b146fe3a9f7bc4c6b947ebbb015a3a45d58ac7a58a8c6762f6b1a3d8"
+    },
+    {
+      "path": "ext/rbu/rbuA.test",
+      "sha256": "72aa31d4545007499865bd4a8b07ad47be30aa8a5ed3ba34489f1d2ec737ed76"
+    },
+    {
+      "path": "ext/rbu/rbuB.test",
+      "sha256": "5e511c1f8e800c56b6693330ef81e82b6c6ecbbf60a0dbd89c98b9f6b85da1b3"
+    },
+    {
+      "path": "ext/rbu/rbuC.test",
+      "sha256": "8097c6dea6b981b88e6a55df6dfd0942b076ccd04e30f33468a02fb83702553c"
+    },
+    {
+      "path": "ext/rbu/rbu_common.tcl",
+      "sha256": "d8ac1481ec9028f0e660a0b8bbcea93ff578edfd2370f219bf6e8548535ca0a4"
+    },
+    {
+      "path": "ext/rbu/rbubusy.test",
+      "sha256": "acce083becf3bd000ecdfff90fd373554660aca9c8a4c7b572a4cf8b0a6ddafe"
+    },
+    {
+      "path": "ext/rbu/rbucollate.test",
+      "sha256": "5859202e40692a904fe394eb2470c7f736eb862e0257991993e60c02a0d79939"
+    },
+    {
+      "path": "ext/rbu/rbucorrupt.test",
+      "sha256": "d1a1699253198c73d439859541624a35a57b8399908282dadb58aa462bde5b9a"
+    },
+    {
+      "path": "ext/rbu/rbucrash.test",
+      "sha256": "443d7a2ad13440c7b24df45b40f9213e319f1bc643d2204ab9d260b288e426f8"
+    },
+    {
+      "path": "ext/rbu/rbucrash2.test",
+      "sha256": "7ba6a3165e2c90be6068de3ddbb27ff8b2eaa6ff0d248e6aa7101e591e2f5365"
+    },
+    {
+      "path": "ext/rbu/rbudiff.test",
+      "sha256": "23af8980d4d20809717a38a40694c3884624c115a1221958723c26566711bb8e"
+    },
+    {
+      "path": "ext/rbu/rbudor.test",
+      "sha256": "6b25e5f7b65383eee099f849032c34c0aed680d7532017262b40e9624d7741b7"
+    },
+    {
+      "path": "ext/rbu/rbuexlock.test",
+      "sha256": "2dec06238b6e40489388f6f2697cb36859875c6b80a1cb07d77afc8883f485fd"
+    },
+    {
+      "path": "ext/rbu/rbuexpr.test",
+      "sha256": "0e4ad60990cd4096415f18c044b46240f67687ae2a7549cdcbc81e0c1ebe7cb9"
+    },
+    {
+      "path": "ext/rbu/rbufault.test",
+      "sha256": "5acc66aaf2c32273e7ed1ae1950a3f74fa224c0f9777a9f0d3ea9cec156f6a77"
+    },
+    {
+      "path": "ext/rbu/rbufault2.test",
+      "sha256": "9ff9b85c85cf38a8454700938e67c25daddf102c5928b5266bd4170c1189fc04"
+    },
+    {
+      "path": "ext/rbu/rbufault3.test",
+      "sha256": "22f0d8e1958958772b1e7fbd6287b23006e17c7b1e0ebcf6d7929418c8d7df9b"
+    },
+    {
+      "path": "ext/rbu/rbufault4.test",
+      "sha256": "35d21c60e76e42ff94e42857d298030fbc4c1ccb485f127ec674a5b6c0d9ca34"
+    },
+    {
+      "path": "ext/rbu/rbufts.test",
+      "sha256": "b322b36b6e7ad45ef2fa0a97ea0158057ca43098ab710cd8a8380b1e4c38957a"
+    },
+    {
+      "path": "ext/rbu/rbumisc.test",
+      "sha256": "f1e710e1a97fd37bd0fc5669b13b3a5c30fb4b5555957fa266b4abe634762f88"
+    },
+    {
+      "path": "ext/rbu/rbumulti.test",
+      "sha256": "56b62dca9de44039634153604fad441e3d4d1a80290837d358c2e5c273ab0e0c"
+    },
+    {
+      "path": "ext/rbu/rbupartial.test",
+      "sha256": "b98ff3a44d686d75419df62116aebefd272623b08a3a21173336593e09e141f4"
+    },
+    {
+      "path": "ext/rbu/rbupass.test",
+      "sha256": "17579b8f077b576516bffe6e107235f5b518b3a1857b4ebef92dee88cbe21ced"
+    },
+    {
+      "path": "ext/rbu/rbuprogress.test",
+      "sha256": "fb8e83073b879af541dfbe3717a615fc6bcc28e881ac9f3cd04efec43dad790b"
+    },
+    {
+      "path": "ext/rbu/rburename.test",
+      "sha256": "cda0106c8bb072dfef548800c9f2b8f17ab36d78932a6be5f6ee882349810aa8"
+    },
+    {
+      "path": "ext/rbu/rburesume.test",
+      "sha256": "1493c5b7dc9fe00498a8818ba5febfa799981db7e48c6f50fc0275be679211d9"
+    },
+    {
+      "path": "ext/rbu/rbusave.test",
+      "sha256": "9150fd039c79d78576c538768838d76b1f1a529dd0a86191fad2e9fd7bd73643"
+    },
+    {
+      "path": "ext/rbu/rbusplit.test",
+      "sha256": "10fec5a8c2488492256d88fd6cceac70160e6ef557d282dd05738bd615a738e9"
+    },
+    {
+      "path": "ext/rbu/rbutemplimit.test",
+      "sha256": "77f6f3dd369ab54ad20d27d080a6f66699e35c455aef6da40a8889e3c12ec5f8"
+    },
+    {
+      "path": "ext/rbu/rbuvacuum.test",
+      "sha256": "ea04265ac713fa4c496a55c8b0ee37f64b590da29d33379d1787f583e40faa3a"
+    },
+    {
+      "path": "ext/rbu/rbuvacuum2.test",
+      "sha256": "6347d68211a73dcc54925fedefb27c2aaec4b33945dc44af9f00a1d4cf7ac2e1"
+    },
+    {
+      "path": "ext/rbu/rbuvacuum3.test",
+      "sha256": "98b1f390d2f936384a0685a9a63ea4b3d5375cecaac66ce4affec3f40b04a473"
+    },
+    {
+      "path": "ext/rbu/rbuvacuum4.test",
+      "sha256": "ba0c83f0ac5193735d3db064598cd23cdf526c781c472479157c09c9748bd24c"
+    },
+    {
+      "path": "ext/rbu/sqlite3rbu.c",
+      "sha256": "07140da7df2dda705b436bf3891a6b6a46d42072b9d5f6ca93cb9c54668dc9a9"
+    },
+    {
+      "path": "ext/rbu/sqlite3rbu.h",
+      "sha256": "78d951c78b37cfc1e7b8614dcb23437e704565eaf7f358adb5ecc5bfbd40ceb8"
+    },
+    {
+      "path": "ext/rbu/test_rbu.c",
+      "sha256": "b64c43f0449da62b5ab79cb5fcb8b8c0b670828ea496141518afdd4c207e4a00"
+    },
+    {
+      "path": "ext/recover/dbdata.c",
+      "sha256": "0a57eae22b51507c28f6c647fba00ccacd39b5aaf3393dfe9435fb04810a6e0e"
+    },
+    {
+      "path": "ext/recover/recover1.test",
+      "sha256": "bf789afdb1e18b43850a28df7dc6dff7ac8fbc7b6ea505eb0db9deab22074125"
+    },
+    {
+      "path": "ext/recover/recover_common.tcl",
+      "sha256": "6b29ed0fb2989f2a6aa6de1d32dfe7a15d312c6575b579d772722fcab75eaf0c"
+    },
+    {
+      "path": "ext/recover/recoverbuild.test",
+      "sha256": "e52de9b5a6705ea7ceb5cd6247f24cb21c369fed95463ebc2e09335f96dd00cf"
+    },
+    {
+      "path": "ext/recover/recoverclobber.test",
+      "sha256": "433377a878b6d2366c774336c947458533afb7f6316294fc6783af07935d98c1"
+    },
+    {
+      "path": "ext/recover/recovercorrupt.test",
+      "sha256": "108574cb6f9bf1d4b3bf796b54e9b70605487682d63acc272eaac8334f5083ec"
+    },
+    {
+      "path": "ext/recover/recovercorrupt2.test",
+      "sha256": "15d41458697019b0e175a5469779d2fdd19aabcb3213e7e2879f0fa05e4e2b06"
+    },
+    {
+      "path": "ext/recover/recovercorrupt3.test",
+      "sha256": "2fe6668602911ec01bec8757d73a79163d51d662ceb61205f9315d0b3f796e5b"
+    },
+    {
+      "path": "ext/recover/recovercorrupt4.test",
+      "sha256": "ef992e715056ed25221bfdd65c00230f5592afeba5baa289c9a8aec2bad0b0fc"
+    },
+    {
+      "path": "ext/recover/recoverfault.test",
+      "sha256": "7add293646c87a737e23f542ac66c869da2bada5a5d5a8821ca71934ade5fefb"
+    },
+    {
+      "path": "ext/recover/recoverfault2.test",
+      "sha256": "e777b7163cb94b67627849be62ae1c17f181b75f0e2f39e83628f40160bd7615"
+    },
+    {
+      "path": "ext/recover/recoverold.test",
+      "sha256": "fbccd23bff063a22a83d8ec737621ac4b4918dfb56a5ffa2bb245415bab9f073"
+    },
+    {
+      "path": "ext/recover/recoverpgsz.test",
+      "sha256": "4462047e78a8d1419878ce130eedddf1ca00e67aa891de47c0bdd3417385651b"
+    },
+    {
+      "path": "ext/recover/recoverrowid.test",
+      "sha256": "ec2d1d912446cbc361ba3622213d01bbbffc24e0923250fbdb4df4c9b07bde5d"
+    },
+    {
+      "path": "ext/recover/recoverslowidx.test",
+      "sha256": "84ff816e4a7027d9130f57dc307b8eab24d022dcae61135a6d90ea5fa37e0750"
+    },
+    {
+      "path": "ext/recover/recoversql.test",
+      "sha256": "b9425af9cad00a4df90064aaee21d3b6133fae67fad2159aaf47fcde26e53ae4"
+    },
+    {
+      "path": "ext/recover/sqlite3recover.c",
+      "sha256": "792ba92b381921098fdc637b2f1e97dee06f505b06d29c832b48160ed58c4339"
+    },
+    {
+      "path": "ext/recover/sqlite3recover.h",
+      "sha256": "c088088d15af055304e931842f7c197024d46ff1b7077912ec42149e9fa4f9bb"
+    },
+    {
+      "path": "ext/recover/test_recover.c",
+      "sha256": "0ec2d0268c0d5a27a08f757a54687df7da9354e688da2f528d819cdbc6cf685d"
+    },
+    {
+      "path": "ext/rtree/README",
+      "sha256": "9ac10f6f7a62a5468117ddc9416ff8a6bfabb7696e95dd253dbc0d60c663e32d"
+    },
+    {
+      "path": "ext/rtree/geopoly.c",
+      "sha256": "ce4025b7fa19d83abc45aa21344dfe569eaf96703ee933fe89fd53425b22783b"
+    },
+    {
+      "path": "ext/rtree/rtree.c",
+      "sha256": "02cafb7fe9dd49365777c1aa249bfd2e303c149c4452183d5ecdced2b15b32d8"
+    },
+    {
+      "path": "ext/rtree/rtree.h",
+      "sha256": "fd9059f47767e5665bef6f71adfd0dbb74ce1fa3b9c6c2938374d4f8534b16d7"
+    },
+    {
+      "path": "ext/rtree/rtree1.test",
+      "sha256": "fb81a3bf99c74c69770b44a81fc6009030e70b998e57b535e5c5f3c076359bcc"
+    },
+    {
+      "path": "ext/rtree/rtree2.test",
+      "sha256": "5e89c70ce675521e4ebd76435f6375c8bc711fa67a9280a0c5a2cfbf1408b57f"
+    },
+    {
+      "path": "ext/rtree/rtree3.test",
+      "sha256": "69ed9e4f955526a4b357fd694f573831197cd3be8771db47ae0a57c05224bd71"
+    },
+    {
+      "path": "ext/rtree/rtree4.test",
+      "sha256": "b530c36e37f6460dc8faa73253a1fac2144771b75fe393ff9b95df2655bdb048"
+    },
+    {
+      "path": "ext/rtree/rtree5.test",
+      "sha256": "b553b3af36e8d9c9da146cfdcab8bf43d2964792ef4399cc8aaaefba4b7c792d"
+    },
+    {
+      "path": "ext/rtree/rtree6.test",
+      "sha256": "5bf9837a9acfddb9dc89ba8a20e6cc360ae670f2d5a5f4f0bbf21ab93882ec32"
+    },
+    {
+      "path": "ext/rtree/rtree7.test",
+      "sha256": "01619de116f2ed0b7ca5969805c4d466f3effc0c05113da1a3f087ca3c6f4aa7"
+    },
+    {
+      "path": "ext/rtree/rtree8.test",
+      "sha256": "e9a5c35e4b59a3ab2b95ea826c49c6349a2cabf4a20bcc38f0d5449ef18af401"
+    },
+    {
+      "path": "ext/rtree/rtree9.test",
+      "sha256": "cdd7ca8c2b3e72feef1e75240e05fe56723a39ea99917df80e9df47d8c70ec4a"
+    },
+    {
+      "path": "ext/rtree/rtreeA.test",
+      "sha256": "7887a2726e627499c6ff2277544608eb693ec2ecfc2eb95ac7b17d23b6a0c6ca"
+    },
+    {
+      "path": "ext/rtree/rtreeB.test",
+      "sha256": "7ccd92996be26ac735c3fd580bfda9db1559a4d6dc50568749d6c5e973ce84ed"
+    },
+    {
+      "path": "ext/rtree/rtreeC.test",
+      "sha256": "c9c61ebfa1dfd2ed0a89960b652924bdf3f5b4c9172668478ecd01e7e8420646"
+    },
+    {
+      "path": "ext/rtree/rtreeD.test",
+      "sha256": "5f589d31487f69937e6852a5b2fe9a9cffba4cdb913c7cecec224fbabd1f318b"
+    },
+    {
+      "path": "ext/rtree/rtreeE.test",
+      "sha256": "168b49e7d8cf43e53d711c4899734fbde5534173bac3a4f1f788c950b00554a4"
+    },
+    {
+      "path": "ext/rtree/rtreeF.test",
+      "sha256": "01627cc6396c1c399b02716a40781c2850d5a355da0b927e76c9667a9fbb74b0"
+    },
+    {
+      "path": "ext/rtree/rtreeG.test",
+      "sha256": "3ff69d6e4a779ccc0b35c17f8b3718035c8f736ce6e261cf224df3846f7c3a53"
+    },
+    {
+      "path": "ext/rtree/rtreeH.test",
+      "sha256": "c807f5754dacadb6b24d04615168fce8170b77dd16aeb93aa5fd45bfd428555c"
+    },
+    {
+      "path": "ext/rtree/rtreeI.test",
+      "sha256": "0ec23abff86b2029241f91c348e59b42d0172ebefdecdeb77a92db51e30cd767"
+    },
+    {
+      "path": "ext/rtree/rtreeJ.test",
+      "sha256": "b791be8836bd155885fc2287f0c75e11d2b04e6d3a09dc6fb3a60a66c5ede412"
+    },
+    {
+      "path": "ext/rtree/rtree_perf.tcl",
+      "sha256": "c033619345071f94ea2896064730a9c6fb7f0515e2f3f19b8c301f5a05616a71"
+    },
+    {
+      "path": "ext/rtree/rtree_util.tcl",
+      "sha256": "c489ef73ec5689040ff8d454ed48fecb2cad0aa9944ca10547b83c98d7e326fc"
+    },
+    {
+      "path": "ext/rtree/rtreecheck.test",
+      "sha256": "80b317332a133c40a4240de4db710d978c89dd6237e0a8a8cba7c4e9714185d7"
+    },
+    {
+      "path": "ext/rtree/rtreecirc.test",
+      "sha256": "5b5894dce4cde549e832302c55d30ca2efaac7516e30df8e4c3e85c017b81013"
+    },
+    {
+      "path": "ext/rtree/rtreeconnect.test",
+      "sha256": "788b741d9f29549a738806f8907f6ae2fc3acfaf76af2aa294b5d27197c8bbff"
+    },
+    {
+      "path": "ext/rtree/rtreedoc.test",
+      "sha256": "3d87de4767c634d7b690f614a24eeeb8f0c9409eb82d83f973577e3664c2acb1"
+    },
+    {
+      "path": "ext/rtree/rtreedoc2.test",
+      "sha256": "7bd2fd93377a6f38054c9ba5229f769468bb3b40adc90c6e527c22efdc6d4d58"
+    },
+    {
+      "path": "ext/rtree/rtreedoc3.test",
+      "sha256": "9ca83677ce48065da767f741136c42af427be7593b2f8308591e8d6454c081bd"
+    },
+    {
+      "path": "ext/rtree/rtreefuzz001.test",
+      "sha256": "180097ca2ac3e8f87c61eef03837c380edef05849cc4599e1c80f6ccd7b48150"
+    },
+    {
+      "path": "ext/rtree/sqlite3rtree.h",
+      "sha256": "2f905c5bb400d21458c50e6cede8c95dfcc4126e739054751af3ccf109481ed9"
+    },
+    {
+      "path": "ext/rtree/test_rtreedoc.c",
+      "sha256": "3d04cdbdbf3535f283de2e2bcfd9582509728458efa0d7100efc937698d4bb58"
+    },
+    {
+      "path": "ext/rtree/tkt3363.test",
+      "sha256": "ba80ed0a4083779b57af431eb571bfe175f4c96be7853d2ffd7543453cbee2bf"
+    },
+    {
+      "path": "ext/rtree/util/randomshape.tcl",
+      "sha256": "f43ccf1f8f5e53b5357993068ece79275e8340083fd97316bc2bf651a1d2e4dc"
+    },
+    {
+      "path": "ext/rtree/viewrtree.tcl",
+      "sha256": "44ac68829b0ad51dade33df64db050f4f00c72ee4a6cb50b6ef613349692244f"
+    },
+    {
+      "path": "ext/rtree/visual01.txt",
+      "sha256": "6b14348d0f8f731e40a24570b774943bf6eb068b4359a32542266bb15098fdd9"
+    },
+    {
+      "path": "ext/session/changeset.c",
+      "sha256": "d3e5a8bdf2958bf9ccb4500ec065443061b6a30e38ebf9ee5ac239c80ff5ee8c"
+    },
+    {
+      "path": "ext/session/changesetfuzz.c",
+      "sha256": "222c54ff6dc3f04f908b8f26c1f241130852d02f93d7a7d086b83c5231093951"
+    },
+    {
+      "path": "ext/session/changesetfuzz1.test",
+      "sha256": "c5b852c36304c33f5c3f3a1b7823f3ccd648f0be6912949ad66a3355f9d34979"
+    },
+    {
+      "path": "ext/session/session1.test",
+      "sha256": "58069b065326668f89d07139d8ce6fcec4f8fbfae5cb1a41580b45ea914017a5"
+    },
+    {
+      "path": "ext/session/session2.test",
+      "sha256": "8249f8420636cfedf92049105c489fe977ede1e7a506424d1a7e7aced6bcc946"
+    },
+    {
+      "path": "ext/session/session3.test",
+      "sha256": "f6737d77127d4bb8552a64d898ec10e782efceda27ccca5f686b8687cc24a6a8"
+    },
+    {
+      "path": "ext/session/session4.test",
+      "sha256": "da9bf9f3fcfd2860a899280cada4bfee47aeb5ea6fca951fd467a454452d12e6"
+    },
+    {
+      "path": "ext/session/session5.test",
+      "sha256": "12e6096f34d2776e482cec617b35be2c7062a78574fff9b17d25faa355ad1ba1"
+    },
+    {
+      "path": "ext/session/session6.test",
+      "sha256": "16a138b507f707d8ab11d23c4205f9a961626f95ece8f182754ef9bc0cca1b52"
+    },
+    {
+      "path": "ext/session/session8.test",
+      "sha256": "2a0d4931e1385c87390c70c8325aefac7c082f7f567319b600f973a77d718043"
+    },
+    {
+      "path": "ext/session/session9.test",
+      "sha256": "ea0641cead90163c3a090fdbd09067cd0a871d0ce47b0e311b7e8e779a551ac7"
+    },
+    {
+      "path": "ext/session/sessionA.test",
+      "sha256": "b8f150dfe04ad2d7c21d64d21e280fa7b6c5292f1a8c607842347fd5a119939b"
+    },
+    {
+      "path": "ext/session/sessionB.test",
+      "sha256": "b9dd77e60a27c718235c468511a2132c89cb51089e0458c05b2b8906529f05ef"
+    },
+    {
+      "path": "ext/session/sessionC.test",
+      "sha256": "917fa4f82c6162a536a1f9b2c03f36eefc3bbc95dce95e3913226fd05ddcdd6e"
+    },
+    {
+      "path": "ext/session/sessionD.test",
+      "sha256": "2caec0cfc691977cd5abf08c1ede320cad50f3e19523e06ee011d9bd6e74d384"
+    },
+    {
+      "path": "ext/session/sessionE.test",
+      "sha256": "319486b7e89b11e582b9d006e9fc900b79c085945c497b3f54b01d5b6e6e902b"
+    },
+    {
+      "path": "ext/session/sessionF.test",
+      "sha256": "19eb7e4597c59c886747af7e443aa130e0d5e42a2fb428e7cb4bbc10fcf3b28c"
+    },
+    {
+      "path": "ext/session/sessionG.test",
+      "sha256": "779ed7ba3ff788dc21c7df84138b669d8fb3790727b755fefb88214a54e45b67"
+    },
+    {
+      "path": "ext/session/sessionH.test",
+      "sha256": "2b04e556a75a1091ced31dba53630ae2d894f98ba43740bb1343cdf0f4625227"
+    },
+    {
+      "path": "ext/session/sessionI.test",
+      "sha256": "8afc67f94465a24f96876aa186e832bb1cb1bec300ca6f78f0f83e34df26db75"
+    },
+    {
+      "path": "ext/session/session_common.tcl",
+      "sha256": "27e7aabb5739d84efdb46fc2105fabb873964f1dc2db9d6f2ed35616ff2891ba"
+    },
+    {
+      "path": "ext/session/session_gen.test",
+      "sha256": "65456bba78983059fa913d5893bbd3fd85dc638817b2c6e51faa12799e99f49f"
+    },
+    {
+      "path": "ext/session/session_speed_test.c",
+      "sha256": "5ea553c5414efd384c18eec837b5a1b383e4d49ed49d9429b04ccc1f40ff70e8"
+    },
+    {
+      "path": "ext/session/sessionalter.test",
+      "sha256": "9c96a610bcbe1bcf299f88fed309c4c37a04e881db6938284284e0cdac45e6a7"
+    },
+    {
+      "path": "ext/session/sessionat.test",
+      "sha256": "877db5d9cffc13a2985304238492c680ce209c07b4984807830f2311a44e9097"
+    },
+    {
+      "path": "ext/session/sessionbig.test",
+      "sha256": "cbaff6ed2fc9c36d6e20d31d9809e118141bacbcc95d8aafd7aa2b39a7c4830c"
+    },
+    {
+      "path": "ext/session/sessionbig2.test",
+      "sha256": "bc582c75769a5fc424c0d53762604e45ff6fd779dd7225140ec28e53c03e2c91"
+    },
+    {
+      "path": "ext/session/sessionblob.test",
+      "sha256": "da44cff3783c7c73d87238425a09f8cd73d9d24a0c4769e6f75f1138b24ce7dd"
+    },
+    {
+      "path": "ext/session/sessionchange.test",
+      "sha256": "b92d34315af522b8ff90379194553916e4a8a920193a2dcb40521f91cbafa701"
+    },
+    {
+      "path": "ext/session/sessionchange2.test",
+      "sha256": "cd1fb2926d62dfaac8ef65cff81ea0bf8ecbb888ae1d7cefcb3afa2926a54524"
+    },
+    {
+      "path": "ext/session/sessionconflict.test",
+      "sha256": "b9b9d8d1d05c686aaa785fc0c288abe93001208b9f7ee3470c6a725b7df5b064"
+    },
+    {
+      "path": "ext/session/sessionconflict2.test",
+      "sha256": "fe995d4d9764862859d95d7d9dc221b98b08932041553d6a6e37a7d67961ca41"
+    },
+    {
+      "path": "ext/session/sessiondiff.test",
+      "sha256": "12fbe9e9d1a9b77896d22ff6eb5ceb99ee2af54ae4f302afc8a5f3180a8af9f9"
+    },
+    {
+      "path": "ext/session/sessionfault.test",
+      "sha256": "3fe18e5c0ddbafbea4fbe46075de84ccd1afbe864ea7d8525e9b17ced1e1fc0d"
+    },
+    {
+      "path": "ext/session/sessionfault2.test",
+      "sha256": "d97b191ef54a0b1572a4896c43e30865d90da26b14ca560836a66d8c621cd861"
+    },
+    {
+      "path": "ext/session/sessionfault3.test",
+      "sha256": "4472e8c5e1c837886e5a8b39e832f2996c71f62de1d1cd161c99bfd61aa6d4be"
+    },
+    {
+      "path": "ext/session/sessioninvert.test",
+      "sha256": "1c4cdeff39d5792b18ca031b22196d9ed468d732d8abf1705d824cf912767487"
+    },
+    {
+      "path": "ext/session/sessionmem.test",
+      "sha256": "696f4167d8cc8fae740091a92ed16f50bd273e0da40530520d2496a848c9600c"
+    },
+    {
+      "path": "ext/session/sessionnoact.test",
+      "sha256": "c41d409a5086b681ec5144257e5764fe7871f61e92ae56c50cfb709403118e7d"
+    },
+    {
+      "path": "ext/session/sessionnoop.test",
+      "sha256": "8710ecbdf6a0f75c40817c1ade51047a4bd83ca1db69ea230787e2f40854547d"
+    },
+    {
+      "path": "ext/session/sessionnoop2.test",
+      "sha256": "784d670a2b97695084e97eb27b5e578c3bf9b90501914d31411714f5d3b0e678"
+    },
+    {
+      "path": "ext/session/sessionrebase.test",
+      "sha256": "b5d2234cd72d51a5c651b356ef6b3280754eb230fbcdfd1698ac5b25c70af79b"
+    },
+    {
+      "path": "ext/session/sessionrebase2.test",
+      "sha256": "2e00eeedc24a6cf3e9a4b2189c2657d9ea07fc3b11030fefe8ba0a340d9ee2a6"
+    },
+    {
+      "path": "ext/session/sessionrowid.test",
+      "sha256": "42fd3fa2172c2af3ca719b69b421f0b5c5a7d22784054ff1743fc3a42322ac5e"
+    },
+    {
+      "path": "ext/session/sessionsize.test",
+      "sha256": "807d3f847cc7dcb7b2009b6406cffde607986a1ffbaf6dc51844aae015745df8"
+    },
+    {
+      "path": "ext/session/sessionstat1.test",
+      "sha256": "ffd2f006388b4caf36f20e00c2a5c5b6d54cc5f677f5453b8e2a0ba4cea2be06"
+    },
+    {
+      "path": "ext/session/sessionwor.test",
+      "sha256": "c6c7490ed47239e76ce481f4e2bee28e06fef44b05d8104ac44c51f45d5fbc2f"
+    },
+    {
+      "path": "ext/session/sqlite3session.c",
+      "sha256": "403dfc4b8ef9a73f249e74e06f09314904199bc7cab56741f0caf1f43e3f7b66"
+    },
+    {
+      "path": "ext/session/sqlite3session.h",
+      "sha256": "430048d1f339995f3f2bec291e37af670e7482a54e2f69b1535e7322d37171aa"
+    },
+    {
+      "path": "ext/session/test_session.c",
+      "sha256": "e4c7c7d0bbde7dee59f3d189883357955e5cbd8f59698cc2410a3f98b5b28357"
+    },
+    {
+      "path": "ext/wasm/GNUmakefile",
+      "sha256": "8c11a9e4f8c4e52ba88fb6d8e81e4c1d52ced380799af026cc521e0db4a467fd"
+    },
+    {
+      "path": "ext/wasm/README-dist.txt",
+      "sha256": "c2e654b60b753dcbbf4d52f30138afd8b5eef42aef42bccdd32fc94a1776674b"
+    },
+    {
+      "path": "ext/wasm/README.md",
+      "sha256": "1df1cde6e0820aec615b85a40306a9da2d6d20122d3befa6296464cb8a9af4fd"
+    },
+    {
+      "path": "ext/wasm/SQLTester/GNUmakefile",
+      "sha256": "f48792a65ebabeb2d8b2b919d5a3976c8739b9bc9dfb45cf315ff03e9a16253b"
+    },
+    {
+      "path": "ext/wasm/SQLTester/SQLTester.mjs",
+      "sha256": "20baa3ae0bd019450ce0c9cdb0959efcc7aab4940f4ed88843e42d1d445b0976"
+    },
+    {
+      "path": "ext/wasm/SQLTester/SQLTester.run.mjs",
+      "sha256": "a7f0f6b49ddb4488042961162e2c458609aab38232dc1f63c28367f1b7c57674"
+    },
+    {
+      "path": "ext/wasm/SQLTester/index.html",
+      "sha256": "071c01a70bc803e5fe543e15f44d674a1776fb09a2aa6970154689e414c072ac"
+    },
+    {
+      "path": "ext/wasm/SQLTester/touint8array.c",
+      "sha256": "b60ecd68fbc18cbe015f85098fbf719e8ece2909981848e62d8436e74a3e16df"
+    },
+    {
+      "path": "ext/wasm/api/EXPORTED_FUNCTIONS.c-pp",
+      "sha256": "41c36d602e8d5c5c90258791f76ac531e79a1d99687301fea5db7843e71c0bf3"
+    },
+    {
+      "path": "ext/wasm/api/README.md",
+      "sha256": "fab92320491cca7e2c8c5beb50fa949be8239ca393a4c961f3314d88cc110e8c"
+    },
+    {
+      "path": "ext/wasm/api/extern-post-js.c-pp.js",
+      "sha256": "00cd8a408edcf61744c52cca9c42986b9cf789c816fbabd252a1fe0234ee5b96"
+    },
+    {
+      "path": "ext/wasm/api/extern-pre-js.js",
+      "sha256": "cf9ad81df815ef7012726a675cad3323f5817b22b981a94d40d19d42205b1a15"
+    },
+    {
+      "path": "ext/wasm/api/opfs-common-inline.c-pp.js",
+      "sha256": "8f2e68c50129c7313669ae5a7b03ba2310ab5bd5f41f244fb52078707d3edf3d"
+    },
+    {
+      "path": "ext/wasm/api/opfs-common-shared.c-pp.js",
+      "sha256": "90e3c76e712210889a35c168f6fd067cfd06acb72f5dee208450b40fa62f271f"
+    },
+    {
+      "path": "ext/wasm/api/post-js-footer.js",
+      "sha256": "0434b47c49081200804c0ffe061bfff2fd457ecb9ff764e8889840aae7bcd570"
+    },
+    {
+      "path": "ext/wasm/api/post-js-header.js",
+      "sha256": "5d028dc8f35e6d912ef07e0ca105f11e1b0af05fb0dfe59ba37471528dbdf93f"
+    },
+    {
+      "path": "ext/wasm/api/pre-js.c-pp.js",
+      "sha256": "910d95d78a180deb4ac52874b3dc4c7f10dbcfb221852e861b236acb86a62f65"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-api-glue.c-pp.js",
+      "sha256": "b2d1028c017047fd0c40757cb24630e1fa8a582330c750a2dc1940e167ace299"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-api-oo1.c-pp.js",
+      "sha256": "1c5c4911e9dfad3cfb50b4b5fd9504b19d1d828c5d7679f1b0333c156f833a50"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-api-prologue.js",
+      "sha256": "d574355ca46e62d914d93c7539d935b4210084953eca907a5e66ceff891b60b3"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-api-worker1.c-pp.js",
+      "sha256": "277c0a2c777f9a7a07b5494afc9cdc1113f000f325325fc3c9403adc97c8d40a"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-license-version-header.js",
+      "sha256": "5cd1320b663c1b10e635f19c8c397488d5b48b85460177b575ac5d1b4d7ce88a"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-opfs-async-proxy.c-pp.js",
+      "sha256": "a4007f76a65023fe18d7d95d52b6c2cddaaa36e55722e8cfee05a5cf9f868103"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-vfs-helper.c-pp.js",
+      "sha256": "dc79ed159cf69e0ca0d61db52f06782a62fff896fc6a06114950552850e492ea"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-vfs-kvvfs.c-pp.js",
+      "sha256": "4385f9ea539c6c2d9d721a3c0c26bc6936a949264bdac110c778694c94a7b682"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-vfs-opfs-sahpool.c-pp.js",
+      "sha256": "0b89024b615daeebe8f6778ed0f95bb48c7dda05f93a40118b6cfe02d6c76b1b"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-vfs-opfs-wl.c-pp.js",
+      "sha256": "cd6811ff7075aa97001a15766445bc7eb77a462e4efb9ad863acb9cec82050ef"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-vfs-opfs.c-pp.js",
+      "sha256": "7e11cdca0251076aae9dd43adf7772e7c20ee2a8c50f914d4df99cbccef955d7"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-vtab-helper.c-pp.js",
+      "sha256": "97d969f1d5eb73dc018edc2289f975888a43f1fb6b0d433e3bbcb762714986f4"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-wasm.c",
+      "sha256": "b0c414fe07d818c3701024f987ed91835cbe7d2e11d1a434847473d73c6a9450"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-worker1-promiser.c-pp.js",
+      "sha256": "d532f702f0251018bcf9f0fb775c2a45668afa86531898055cc2519cc635ffa9"
+    },
+    {
+      "path": "ext/wasm/api/sqlite3-worker1.c-pp.js",
+      "sha256": "d37bf9695610f90de25d2cd52c419ae76c4cac154185cb4804216c2b8f9a9353"
+    },
+    {
+      "path": "ext/wasm/common/SqliteTestUtil.js",
+      "sha256": "608b8d97155a2b8ed8f7b081bb467988c665f76624a1cfc085dc07d73abfba09"
+    },
+    {
+      "path": "ext/wasm/common/emscripten.css",
+      "sha256": "4c73faa805ea77a3043809fe9a01ee6f3358e67c2a79ac650345b7ae492b0c7e"
+    },
+    {
+      "path": "ext/wasm/common/testing.css",
+      "sha256": "d408f233ca8a51c5bcf4db7dba791e53d794ed5262c7f96c29b75492ec029840"
+    },
+    {
+      "path": "ext/wasm/common/whwasmutil.js",
+      "sha256": "5874c1c8d7e3be1046deeece1ed8ae6ca3e8ac89d8e9c512186564bb03791a2e"
+    },
+    {
+      "path": "ext/wasm/config.make.in",
+      "sha256": "603708f78b798cb418a77e1b6b1df2dc3406e8535dcb69356e8c34262c3f387f"
+    },
+    {
+      "path": "ext/wasm/demo-123-worker.html",
+      "sha256": "564c4dd18e2d3ac9c7ed0736584a1324eb34e287fcf35267086207de4807d77c"
+    },
+    {
+      "path": "ext/wasm/demo-123.html",
+      "sha256": "14e5c8f10961ca45ffd597616339b3bf795809c9632694fd91e2767788dbb783"
+    },
+    {
+      "path": "ext/wasm/demo-123.js",
+      "sha256": "313b189ba432b70f063d84eddccb40d69221533a8c92fb1225275bc7720cd2b3"
+    },
+    {
+      "path": "ext/wasm/demo-jsstorage.html",
+      "sha256": "bc3a8052e4779958d12f68fb7a1ab1615c7ed3f0dedd390d051ffc6edd89c2d8"
+    },
+    {
+      "path": "ext/wasm/demo-jsstorage.js",
+      "sha256": "f2f5c32c310a186b259edcd6de0146c3e76ae4154655f244d1c700b1917f7c79"
+    },
+    {
+      "path": "ext/wasm/demo-worker1-promiser.c-pp.html",
+      "sha256": "2671dcc4cd5d2c65cf6060d28ea5f656d7d8e6d8232e8aacd667a291f96f2d7a"
+    },
+    {
+      "path": "ext/wasm/demo-worker1-promiser.c-pp.js",
+      "sha256": "03793e0aaada5c2c58a0f7ba1a8170112303e4709a07c8809e7504f0a394ff6d"
+    },
+    {
+      "path": "ext/wasm/demo-worker1.html",
+      "sha256": "fa89b2f3fa333fb836546a2fbb4112787bdeb861a5d4da9cbe56041af7f677d8"
+    },
+    {
+      "path": "ext/wasm/demo-worker1.js",
+      "sha256": "8c3baca055e8d0db7a00db462a0621f9c70170911ce291d88b8999ae747eded6"
+    },
+    {
+      "path": "ext/wasm/example_extra_init.c",
+      "sha256": "a5c72cc013e29e8ea24834d560d95d51f70fd8ec744f3d88904a18e87f9246bd"
+    },
+    {
+      "path": "ext/wasm/fiddle/fiddle-worker.js",
+      "sha256": "6e9027b75dd50f103a4bdf7650c3663a67517d64c4356202497ad851206c2116"
+    },
+    {
+      "path": "ext/wasm/fiddle/fiddle.js",
+      "sha256": "07f693a67cb6ddcdb5ee62ec3df65b0ddb76e70b4b485266981ae8fb7a3bef2b"
+    },
+    {
+      "path": "ext/wasm/fiddle/index.c-pp.html",
+      "sha256": "5e6f6cf7d48b2a11f963b432615f50e9d0aede8f06bd7987e618bff56b747b61"
+    },
+    {
+      "path": "ext/wasm/index-dist.html",
+      "sha256": "b60d63ccf0b8bfa8d25548f3de2e2e005527eaba206319c0a5daf7898a8de10f"
+    },
+    {
+      "path": "ext/wasm/index.html",
+      "sha256": "87ae47b956c7e852383fe393e8726b40e87cc60e717587975adb1eb15946b22d"
+    },
+    {
+      "path": "ext/wasm/jaccwabyt/jaccwabyt.js",
+      "sha256": "df890d381541e6bed4f03fe3c6019dd5d0cab5b2d212159be41424cc6a8767d2"
+    },
+    {
+      "path": "ext/wasm/jaccwabyt/jaccwabyt.md",
+      "sha256": "2ffaafb3488079ca6b66b0507657b48dbf029546d47be109c35f6cabed285a40"
+    },
+    {
+      "path": "ext/wasm/libcmpp.c",
+      "sha256": "25dc4fb5b4f1018789b64bd71ca68fa9b97a98db01078e4d4d1710fbb68c3875"
+    },
+    {
+      "path": "ext/wasm/mkdist.sh",
+      "sha256": "375175fed440eea5a7bd76cd65d0c595128b1c62eb87365b4797bb28768262df"
+    },
+    {
+      "path": "ext/wasm/mkwasmbuilds.c",
+      "sha256": "b4a689bd52fd6f4a3828039dd41a22376cab2fc3499866be970d0df5f4d6ebc1"
+    },
+    {
+      "path": "ext/wasm/module-symbols.html",
+      "sha256": "7dee503473774c1682e9d9feeaee5b26f41769b920ac2397c29161237f7e802a"
+    },
+    {
+      "path": "ext/wasm/scratchpad-wasmfs.html",
+      "sha256": "24b88b952aac527feb8e30455e5edf4ad2f4903841964d4a7be51f47cd65f007"
+    },
+    {
+      "path": "ext/wasm/scratchpad-wasmfs.mjs",
+      "sha256": "bf5ff9602adba54ac55d9d6c393ac9166df8693390fa741265acb9dc75fc0bac"
+    },
+    {
+      "path": "ext/wasm/speedtest1-wasmfs.html",
+      "sha256": "3996f11f5566129308f9b62857444862b6b466a9d97191b2a1ff8dd9e65118a3"
+    },
+    {
+      "path": "ext/wasm/speedtest1-wasmfs.mjs",
+      "sha256": "5766a396e796510eb232e7104ffc2ee3d042f594bce7b3cc9c8a5e0c1d4441ee"
+    },
+    {
+      "path": "ext/wasm/speedtest1-worker.html",
+      "sha256": "f1a7b3d0911801ff22c4596e5f375c8cf4b1efd062573a09dddf1db8f4f23ff9"
+    },
+    {
+      "path": "ext/wasm/speedtest1-worker.js",
+      "sha256": "85261677b72a0dc6fd10878a59f3b9c46865c302823fa0969eecdcfb19233d40"
+    },
+    {
+      "path": "ext/wasm/speedtest1.html",
+      "sha256": "bb080bf2509405d804c2adc0223edbeb5b6f07af820e3c8fcb52b6a1b5f7804c"
+    },
+    {
+      "path": "ext/wasm/split-speedtest1-script.sh",
+      "sha256": "3fb7977e3c30d0f4f80583a160bd5aa19940a7b154f5b5cb1c0f44c55edf79a4"
+    },
+    {
+      "path": "ext/wasm/sql/000-mandelbrot.sql",
+      "sha256": "f9e26f191dcd6d643d6f6f5bb406f5897e4604f486e3c336b42b6c811732f4a2"
+    },
+    {
+      "path": "ext/wasm/sql/001-sudoku.sql",
+      "sha256": "405548b7b8648f537011b8f59ab61b26540a3318b49a860770bce9c63944ba5c"
+    },
+    {
+      "path": "ext/wasm/test-opfs-vfs.html",
+      "sha256": "66d4a5871c0bdcb075bc3e18d03f483e318d6099e6a6a8825158c8043a20fec3"
+    },
+    {
+      "path": "ext/wasm/test-opfs-vfs.js",
+      "sha256": "25b0718530e8cd1d6b96bd0ac583016085e4e1d2d8cff9b35a31fe6d761798d2"
+    },
+    {
+      "path": "ext/wasm/tester1-worker.c-pp.html",
+      "sha256": "59448d36cfae08f2a1feaeaba1582ab4a5b61559aaf94a5e716f4139ebe4aa70"
+    },
+    {
+      "path": "ext/wasm/tester1.c-pp.html",
+      "sha256": "058c8f81aa15d1c80f9880d03443d81f138ec15f7970eb3780da827faa00198e"
+    },
+    {
+      "path": "ext/wasm/tester1.c-pp.js",
+      "sha256": "96d2e8b4f6a811e9f5506c4004f7435143a71a458143e1ae2c2576b287b5479d"
+    },
+    {
+      "path": "ext/wasm/tests/opfs/concurrency/index.html",
+      "sha256": "bf210ac3ab35af7b20d958a1f181ca3d7b7507497d19f8d9ac7b31d38843fc33"
+    },
+    {
+      "path": "ext/wasm/tests/opfs/concurrency/test.js",
+      "sha256": "a4458c24d8aa530897dd8981aa09f11441cd77dfe320ea6186e39b7cd773a71c"
+    },
+    {
+      "path": "ext/wasm/tests/opfs/concurrency/worker.js",
+      "sha256": "2cb453798d2a115bbd3bc01f19913391c0f81e60ef04b9b14f069ae01065c98f"
+    },
+    {
+      "path": "ext/wasm/tests/opfs/sahpool/digest-worker.js",
+      "sha256": "58083f681827fc0f564fab6ecd4c4bdd990bcf5b5945ee35731a80849531b403"
+    },
+    {
+      "path": "ext/wasm/tests/opfs/sahpool/digest.html",
+      "sha256": "fbeae3d28298fe23273128f64c68d56901a01f1b80ea2bbd6ea5b65b6bfe95b3"
+    },
+    {
+      "path": "ext/wasm/tests/opfs/sahpool/index.html",
+      "sha256": "1756c4e5dd770485defa3c6b5b3473edfc5fa3412906ed877ce106f5cb7cb553"
+    },
+    {
+      "path": "ext/wasm/tests/opfs/sahpool/sahpool-pausing.js",
+      "sha256": "e1d387b6810de3de021cb4556fbf93bcb0cd2c8ad6f7d9523d82d6f77a60c22c"
+    },
+    {
+      "path": "ext/wasm/tests/opfs/sahpool/sahpool-worker.js",
+      "sha256": "b16e1df5a051d4fef3088df902359e8ce1cae2131798259b0351f06bb2720901"
+    },
+    {
+      "path": "tool/GetFile.cs",
+      "sha256": "b5bce458cfd6d2320a8e57d78ab2382ed81e32650282b001d1b76a88439bd672"
+    },
+    {
+      "path": "tool/GetTclKit.bat",
+      "sha256": "7750306fe9f0afcc3493cf11e2f809a03ad72ffcae23e3893a0d6bba12198e72"
+    },
+    {
+      "path": "tool/Replace.cs",
+      "sha256": "74ba0687a84c328df2836f73d7d36368099a5f5c1c360a84211e51fa71f1dfc0"
+    },
+    {
+      "path": "tool/build-all-msvc.bat",
+      "sha256": "1e7b8b71b84cba1ed3403296c6bca733333f6d06521da859fc12cf401af94325"
+    },
+    {
+      "path": "tool/build-shell.sh",
+      "sha256": "2a76dc92267990ba5c01348d97829ea910a9801dc44dcd1fe3f10f34d524aedc"
+    },
+    {
+      "path": "tool/buildtclext.tcl",
+      "sha256": "71f07adf9f9f313b30e5d0d987a5b54cce56758a0daa8f7163e12371bdc9e39c"
+    },
+    {
+      "path": "tool/cg_anno.tcl",
+      "sha256": "a3e0d3881430b4992eeda8d8e523850128ee980052c34f0ec12c67b06d498bd2"
+    },
+    {
+      "path": "tool/checkSpacing.c",
+      "sha256": "93bd002ded799d2c815fc4f639bf3f91caf240fb483546a6404b76fb69faec06"
+    },
+    {
+      "path": "tool/cktclsh.sh",
+      "sha256": "84992205ab909fed3b7a52449e2baf8769270ed4768895a209fa4d12811ee0c3"
+    },
+    {
+      "path": "tool/cp.tcl",
+      "sha256": "e140d112de965ed61ece5d5d0391076c15b5dd1307c88f97611891636aa4ebb7"
+    },
+    {
+      "path": "tool/custom.txt",
+      "sha256": "d0f549dab817c2c0d150816a5a4bc3c15f61d0c44eeb0252b01552fb15257078"
+    },
+    {
+      "path": "tool/dbhash.c",
+      "sha256": "36cb0d3f0ebbc0477f208aa577335e8f98e8196e1f6651625a70a0eb05e570a2"
+    },
+    {
+      "path": "tool/dbtotxt.c",
+      "sha256": "6ce130c66bc0a8d9417d5fb653a740e4fb019127df73828eeef0123e11194da4"
+    },
+    {
+      "path": "tool/dbtotxt.md",
+      "sha256": "949f2b169c952b9da9b88be9edbc791a459519e5ee7a454abdccbdca785e7528"
+    },
+    {
+      "path": "tool/emcc.sh.in",
+      "sha256": "c35a4f8b630273a87dea9cb8600e40145862e3f061bb9120b5be31a0ad4124a6"
+    },
+    {
+      "path": "tool/enlargedb.c",
+      "sha256": "59015cdd6fc0743b100939f1dbd2fa0b53f6729e018d401aaaada197aa10807c"
+    },
+    {
+      "path": "tool/extract-sqlite3h.tcl",
+      "sha256": "7bfed523115d795b43fc82dbad3bc626bc558ff71ed8f0c4860e9b3c85abde42"
+    },
+    {
+      "path": "tool/extract.c",
+      "sha256": "44fa8a3f11fcddef929551aea82044a1f45c593cd492f7613325a6901e1d292a"
+    },
+    {
+      "path": "tool/fast_vacuum.c",
+      "sha256": "7fd933f4ad4a1d30986be29af4fc8bd5cfde55b26f626790b0d1c01a89336f35"
+    },
+    {
+      "path": "tool/fragck.tcl",
+      "sha256": "6cf3eb64c1c657c0c6794ffb03602029a25937a4ac39497695bdfc27c1135738"
+    },
+    {
+      "path": "tool/fuzzershell.c",
+      "sha256": "a762c3326c040a443bb57d052df6b999773481784ac946fd422fc5064c20aa3d"
+    },
+    {
+      "path": "tool/genfkey.README",
+      "sha256": "fc42f78c3b92b1d12f7b258913d7d3a15f3d9c4178a231251c077bc008ff94a9"
+    },
+    {
+      "path": "tool/genfkey.test",
+      "sha256": "b5497ee5f1b100d0d5ea2df1b903224657d0d73718e668161bb154cc95e6decc"
+    },
+    {
+      "path": "tool/getlock.c",
+      "sha256": "321b6c0f87aa5799f9863a41ce28118844957e86d638ee4679620ad7691972d5"
+    },
+    {
+      "path": "tool/index_usage.c",
+      "sha256": "acdb9f6b67427928f17396489818bf7eaa09574138d94841f967e417a4c99b1e"
+    },
+    {
+      "path": "tool/lemon.c",
+      "sha256": "4d754e12d4693a12c2ca2e02dd132dd251e6329ff2d8ae5874bf0d0fa58face6"
+    },
+    {
+      "path": "tool/lempar.c",
+      "sha256": "4d82ab5091eda68963791599ab8635ad82e5bbb2de33f1ee5217b72c9659915a"
+    },
+    {
+      "path": "tool/libvers.c",
+      "sha256": "9e0ac3648f47996c9e0f45051e52fe33f47fa4ad11f56fcf6bd65d2c5485a47d"
+    },
+    {
+      "path": "tool/loadfts.c",
+      "sha256": "4f604d0105546426c471d5df8b610d1d5cef1fdefbb302f31acda8201b783cf1"
+    },
+    {
+      "path": "tool/logest.c",
+      "sha256": "cf32dada06be251d28d834e5ad87810be984b707207e5692668bb453ca114458"
+    },
+    {
+      "path": "tool/max-limits.c",
+      "sha256": "f338955dc5c9e068e180d355fe6aae223543d03a58495115870b7fb93efe95af"
+    },
+    {
+      "path": "tool/merge-test.tcl",
+      "sha256": "f63ec6e67a382aab1872cef3b89aa768ef579ad99f1c93d8023ec6edf1ffded0"
+    },
+    {
+      "path": "tool/mkamalzip.tcl",
+      "sha256": "498ad9bac10f8787a6dca717a9f3abfa39c87b0449d8a07ec29f18744d7d8ac5"
+    },
+    {
+      "path": "tool/mkautoconfamal.sh",
+      "sha256": "c90eeff0c99e8d706c68482c4c621d293c32aff03b7e16ae097116fd3bd2d48f"
+    },
+    {
+      "path": "tool/mkccode.tcl",
+      "sha256": "8f983730e16b5159d127fbfbd5ad3b0bc777ef040a28246c7be6f1a7931b0465"
+    },
+    {
+      "path": "tool/mkcombo.tcl",
+      "sha256": "68168cbca5e0e04a42cc320b33f3fcce2b14f76a7f337ad31783af95d193d3d5"
+    },
+    {
+      "path": "tool/mkctimec.tcl",
+      "sha256": "18c35f56d46a6a3ef6f4d300565ced320d62d7f1b73dda339c9d03e9d035875d"
+    },
+    {
+      "path": "tool/mkfptab.c",
+      "sha256": "2d94531e012710e2c05be4c87e55415ee763fe342159720ab8baa905fb288c18"
+    },
+    {
+      "path": "tool/mkkeywordhash.c",
+      "sha256": "099f834d82274c1c4dd1a31fb7f2ad59cf1e71db30f5fd87772d2dfc70c35cae"
+    },
+    {
+      "path": "tool/mkmsvcmin.tcl",
+      "sha256": "463726ced94f66b5a32f113d8d874b95ab009dc10f9dd73a3af6ee0a402c26d0"
+    },
+    {
+      "path": "tool/mkopcodec.tcl",
+      "sha256": "bce0122261bee98bde3e0828a5300a31116c0126085169e3fecf45ab1b6e75ea"
+    },
+    {
+      "path": "tool/mkopcodeh.tcl",
+      "sha256": "530a86584443fdadc988199c5fbc38460b3de19d6ad1bd4a3f40b604de982d69"
+    },
+    {
+      "path": "tool/mkopts.tcl",
+      "sha256": "773a1dabe8c8ccd3b163e2f7899796dcae27ebdd78bd821dd7d617ea5c043998"
+    },
+    {
+      "path": "tool/mkpragmatab.tcl",
+      "sha256": "83f2439ecf96e1f7af7c49ee45c90eb552618c258dcb3dbe8833bd837f50873c"
+    },
+    {
+      "path": "tool/mkshellc.tcl",
+      "sha256": "81eb0792968f23a538748b400722ca0864a50ad706cded73d02f3827976e70f7"
+    },
+    {
+      "path": "tool/mksourceid.c",
+      "sha256": "113053bdb59cc9398af36c22221eb6cf861229f9fb4d04a4bbc54fd1f7db9e99"
+    },
+    {
+      "path": "tool/mksqlite3c-noext.tcl",
+      "sha256": "f4faa190b1375addc41b3a46842d84a3700a2cc9176f8e5a9bdb275bdae93bae"
+    },
+    {
+      "path": "tool/mksqlite3c.tcl",
+      "sha256": "2e4e3a1b907fee657157c48ce20e41180c46a8bed85de2e2a6580c2a8b669daa"
+    },
+    {
+      "path": "tool/mksqlite3h.tcl",
+      "sha256": "1e3ebde3e724c8b80be3a3db65266cea1e62cc09b7f97828ebbeff381660a91a"
+    },
+    {
+      "path": "tool/mksqlite3internalh.tcl",
+      "sha256": "faff6520ca9f42fe81922db36fd8f68215c55feb994a55c33533fd87c75ba23b"
+    },
+    {
+      "path": "tool/mksrczip.tcl",
+      "sha256": "53b985ab717453a669a6a7ff5546c4d5fbd1cc6e35ec3dff4517cb7f295d6b6b"
+    },
+    {
+      "path": "tool/mktoolzip.tcl",
+      "sha256": "26d7c37b29c7c2e1fce4c5798d6fa81b9c9ddf2386e9bd1567af8b3bd7dfd9b0"
+    },
+    {
+      "path": "tool/mkvsix.tcl",
+      "sha256": "4aa585a0d35d6636f3eb6a5a2051d4e84af774a83823ac7943402879103a0be0"
+    },
+    {
+      "path": "tool/mkwinarm64ec.tcl",
+      "sha256": "3f89d5fc8811a3a9d0fc49a4e334951f811e9792906f2391b0499aa79e2c9ea5"
+    },
+    {
+      "path": "tool/offsets.c",
+      "sha256": "0a4c1c7b698648cbd4e115b3a81c9e1336818dd241e94ebfcc64476cc9f2a69e"
+    },
+    {
+      "path": "tool/omittest-msvc.tcl",
+      "sha256": "42b724d4eda286cd88af538bb23a3fdd7cee40711b82efd48c64a3bfb0e2f7cd"
+    },
+    {
+      "path": "tool/omittest.tcl",
+      "sha256": "06dfb2308ea194d99f56f99b0a7ed57094ccd7da6d8d4d94dba9e3de86a15823"
+    },
+    {
+      "path": "tool/opcodesum.tcl",
+      "sha256": "730fd7c879aee3c05107b639ba87669464e4f43b5b8c8b618940cd14fe03adcc"
+    },
+    {
+      "path": "tool/pagesig.c",
+      "sha256": "8f036caa744cf17b61ba23344c975abaa0cadfabe15500054196a39b99d6c3e7"
+    },
+    {
+      "path": "tool/replace.tcl",
+      "sha256": "faa1f76bcddb49b83dabb149c3435ce8e152a6afcdc2180ff4f8b3a92dd55c5f"
+    },
+    {
+      "path": "tool/restore_jrnl.tcl",
+      "sha256": "74ad16ae78cd0ea0e014db00fbc55e3068846a94cd48c699463c4c7ba8e00670"
+    },
+    {
+      "path": "tool/rollback-test.c",
+      "sha256": "344001e781de6cd4edc93d81ed3bf23f2daf7ef5075b0add5f825344065a7aef"
+    },
+    {
+      "path": "tool/showdb.c",
+      "sha256": "46bdb0ae57dbcea6e2f6f12aa2bbbece8b7afdbd13837ccff3ce75dad29512eb"
+    },
+    {
+      "path": "tool/showjournal.c",
+      "sha256": "b5eebf6492df390c1bfc6454829c845e5ca62571ef40f193769687f7ced5736f"
+    },
+    {
+      "path": "tool/showlocks.c",
+      "sha256": "a2aaf3310108d9caba7a57609b7f1178cde6c826c044863fced2a3ef607ef1e3"
+    },
+    {
+      "path": "tool/showshm.c",
+      "sha256": "bf405365906913e108207b447900bda2ecaa7fd3dd8015086c9b428dc1f21a95"
+    },
+    {
+      "path": "tool/showstat4.c",
+      "sha256": "be108a70d269cbca0fe94832a39a95675bc292dcd1f9504c59cb7ae4e545c2ed"
+    },
+    {
+      "path": "tool/showtmlog.c",
+      "sha256": "4455c60437033cd5922039fbb6046959e8c6d14848b378a70d1025779acd9325"
+    },
+    {
+      "path": "tool/showwal.c",
+      "sha256": "1f0de073bf60cead8a5d61b762327e9a5f14abfdf93a3aa09ebaaeda60842d90"
+    },
+    {
+      "path": "tool/soak1.tcl",
+      "sha256": "4872c4592ba42665242a26211d0d186500628b248e20efc82f8c60df31f22163"
+    },
+    {
+      "path": "tool/spaceanal.tcl",
+      "sha256": "9ed4bc86099d802f6a8b3b5478d7d20f021d1c83c6675f357c53c30636f96df8"
+    },
+    {
+      "path": "tool/spellsift.tcl",
+      "sha256": "fe1da8854d5b87bbd0e99c03b43a785e55b64d39df1fab313ff048411e92f11c"
+    },
+    {
+      "path": "tool/split-sqlite3c.tcl",
+      "sha256": "dc869d4269ebdeba6c10cda9157e6a68b2ee6783ae1c3ea67e6c1c1ab35d5a8a"
+    },
+    {
+      "path": "tool/sqldiff.c",
+      "sha256": "157fb67ae245ca5a98830bfd861dd7cf61f94c5d32723d050d34abc451f80407"
+    },
+    {
+      "path": "tool/sqlite3_analyzer.c.in",
+      "sha256": "b5d20a5cfc1f127b6f2dc19e7a30d6f12ecea838b8d60e4720a7bfb89e306d06"
+    },
+    {
+      "path": "tool/sqlite3_rsync.c",
+      "sha256": "2b3e78d79539bd8d82fce1ade33bd1b1af125708a16f61648759566dd1fb57cf"
+    },
+    {
+      "path": "tool/sqltclsh.c.in",
+      "sha256": "3ace3b61f31e5c0bcdf9d2d68345fa42b5a09a95fc411ffbdf8e74ac38169994"
+    },
+    {
+      "path": "tool/sqltclsh.tcl",
+      "sha256": "3c6130b949a89836f05c579122212725ec34229870a5f842543cce5266eb8397"
+    },
+    {
+      "path": "tool/src-verify.c",
+      "sha256": "4cb663c2e586a5d37910347894b8bf35bc44eff57b808f2b0900c6a99ca02442"
+    },
+    {
+      "path": "tool/srcck1.c",
+      "sha256": "14248ec057b995b6a9433961b9693d82e201c5b139a792b77deec25e18cb0405"
+    },
+    {
+      "path": "tool/srctree-check.tcl",
+      "sha256": "7a57cf78eb17a6239731a08c0bb648cbd5e5384fc331ea499425e73f9c29faee"
+    },
+    {
+      "path": "tool/stack_usage.tcl",
+      "sha256": "3c355dbe3068d58d9df6134ba854eb01a9d635c0ff0e6ea54c0655c52b6a65d5"
+    },
+    {
+      "path": "tool/stripccomments.c",
+      "sha256": "3651f9acb62dc2f5cba28b463f6eeefeb4cdd8921bec2311dfe692cfa1feddfc"
+    },
+    {
+      "path": "tool/symbols-mingw.sh",
+      "sha256": "8fb15625028c30911551c4c7a3744d4fd87c39a7d7ebc62b3898c70d3ca7918e"
+    },
+    {
+      "path": "tool/symbols.sh",
+      "sha256": "e182f9b7f143ebf4ab93869b3fa6cd4f59542abcc1bba3d681528517da69ddca"
+    },
+    {
+      "path": "tool/tclConfigShToMake.sh",
+      "sha256": "8da5dbcb37cc553a6dff533f833f1a0cdd77638fabe0a0939827f0d238c5e80b"
+    },
+    {
+      "path": "tool/varint.c",
+      "sha256": "9a443c748d6f2b064d8ce80e4614e4c2bc2a2e57e19b133254ce126acc942bfc"
+    },
+    {
+      "path": "tool/vdbe-compress.tcl",
+      "sha256": "799679790baaa82059dc1894ddc7136c30d442387879ae7ab25149e86b92aa9f"
+    },
+    {
+      "path": "tool/vdbe_profile.tcl",
+      "sha256": "843bd68249ea97b7c70f86d37c8592a5cafee16092e9c882f11e3cd4599e8706"
+    },
+    {
+      "path": "tool/version-info.c",
+      "sha256": "4f0df8bf808d833b4bd10f06db3c36c33d6a07dc3c6dda085a1ef2ae4eac4257"
+    },
+    {
+      "path": "tool/warnings-clang.sh",
+      "sha256": "e912e17ec6b88e62604af6091e5888969dde34deb57d2d4619193b89d733998b"
+    },
+    {
+      "path": "tool/warnings.sh",
+      "sha256": "b194ea344be95653557f764ee553b7e0046076198ed6c1c05d93fd2ee2b62ce0"
+    },
+    {
+      "path": "tool/win/sqlite.vsix",
+      "sha256": "f37784b3ebf59851002e9f03fe1d2123bd9f5a6ed5a9e50f1aa68526d4215c21"
+    },
+    {
+      "path": "tool/winmain.c",
+      "sha256": "f5380f56a3e9c4f47044cfede1076b2c3b7dff0601037bc62686d7b09764f395"
+    }
+  ],
+  "note": "Inventory membership is not implemented support. Primitive algorithms are not counted as SQL extensions until registered in a functioning safe SQL engine. See STATUS.md for actual validation."
+}

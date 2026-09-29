@@ -1,0 +1,28 @@
+[package]
+name = "sqlite-safe-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+publish = false
+license = "MIT"
+description = "Memory-safe SQLite rewrite: portable storage and experimental SQL"
+
+[lib]
+name = "sqlite_safe"
+
+[[bin]]
+name = "sqlite-safe-inspect"
+path = "src/main.rs"
+required-features = ["std"]
+
+[[bin]]
+name = "sqlite-safe-sql"
+path = "src/bin/sql.rs"
+required-features = ["std"]
+
+[features]
+default = ["std"]
+std = []
+
+[lints.rust]
+unsafe_code = "forbid"
