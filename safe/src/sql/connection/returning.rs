@@ -9,6 +9,7 @@ pub(super) struct Output {
     scope: Option<Rc<query::Scope>>,
     runtime: query::Runtime,
     bytes: usize,
+    rowid: bool,
 }
 impl Output {
     pub(super) fn site(&mut self, site: usize) {
@@ -29,6 +30,7 @@ impl Output {
             scope,
             runtime: runtime.for_returning(&table.name),
             bytes: 0,
+            rowid: !table.without_rowid,
         };
         if items.is_empty() {
             return Ok(output);
@@ -98,7 +100,9 @@ impl Output {
         }
         self.runtime.inherit_materialized(runtime, context.fuel)?;
         let mut row = values.to_vec();
-        row.push(Value::Integer(id));
+        if self.rowid {
+            row.push(Value::Integer(id));
+        }
         let values = db
             .expressions(self.scope.clone(), &mut self.runtime)
             .values(self.expressions.iter(), &row, None, context)?;

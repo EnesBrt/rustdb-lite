@@ -35,12 +35,13 @@ pub struct ImageBuilder {
     max_image_bytes: usize,
     limits: Limits,
     tables: Vec<Table>,
+    primary_entries: alloc::collections::BTreeMap<String, Vec<Vec<Value>>>,
     schema_sql: alloc::collections::BTreeMap<String, String>,
     indexes: Vec<Index>,
     views: Vec<(String, String)>,
 }
 /// Records supplied by the SQL layer in SQLite index order, including the rowid
-/// suffix. Interior index keys are real records, not duplicate separators.
+/// or primary-key suffix. Interior index keys are real records, not separators.
 pub(crate) struct Index {
     pub name: String,
     pub table: String,
@@ -61,6 +62,7 @@ impl ImageBuilder {
             max_image_bytes: 256 * 1024 * 1024,
             limits: Limits::default(),
             tables: Vec::new(),
+            primary_entries: alloc::collections::BTreeMap::new(),
             schema_sql: alloc::collections::BTreeMap::new(),
             indexes: Vec::new(),
             views: Vec::new(),
@@ -172,6 +174,32 @@ impl ImageBuilder {
         self.indexes.push(index);
         Ok(())
     }
+    /// The SQL layer supplies primary-key-ordered records in storage-column
+    /// order. The table's schema entry owns this index B-tree; no separate
+    /// sqlite_schema entry is emitted for its automatic primary index.
+    pub(crate) fn add_without_rowid_table(
+        &mut self,
+        table: Table,
+        sql: String,
+        entries: Vec<Vec<Value>>,
+    ) -> Result<()> {
+        if !table.rows.is_empty() || entries.len() > self.limits.max_rows {
+            return Err(Error::InvalidInput("WITHOUT ROWID table entries"));
+        }
+        if entries
+            .iter()
+            .flatten()
+            .any(|v| matches!(v, Value::Text(t) if t.encoding != self.encoding))
+        {
+            return Err(Error::InvalidInput(
+                "table text encoding differs from database",
+            ));
+        }
+        let name = table.name.clone();
+        self.add_table_with_sql(table, sql)?;
+        self.primary_entries.insert(name, entries);
+        Ok(())
+    }
     pub(crate) fn add_view(&mut self, name: String, sql: String) -> Result<()> {
         if name.contains('\0')
             || name.to_ascii_lowercase().starts_with("sqlite_")
@@ -249,7 +277,11 @@ impl ImageBuilder {
                 i64::try_from(i + 1).map_err(|_| Error::Limit("schema entries"))?,
                 record,
             ));
-            pages.tree(root, &table.rows, self.limits, &mut payload_total)?;
+            if let Some(entries) = self.primary_entries.get(&table.name) {
+                pages.index_tree(root, entries, self.limits, &mut payload_total)?;
+            } else {
+                pages.tree(root, &table.rows, self.limits, &mut payload_total)?;
+            }
         }
         for (index, root) in self.indexes.into_iter().zip(index_roots) {
             schema.push((

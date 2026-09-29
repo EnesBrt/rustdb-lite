@@ -45,7 +45,9 @@ impl<'a> Change<'a> {
             || expr.children().iter().any(|e| self.expression(table, e))
     }
     pub fn index(self, table: &StoredTable, index: &StoredIndex) -> bool {
-        self.rowid || index.terms.iter().any(|t| self.column(table, t.column))
+        self.rowid
+            || index.terms.iter().any(|t| self.column(table, t.column))
+            || (table.without_rowid && table.primary_key.iter().any(|i| self.column(table, *i)))
     }
 }
 pub(super) fn check(

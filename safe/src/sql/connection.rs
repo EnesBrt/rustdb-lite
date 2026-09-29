@@ -19,6 +19,7 @@ mod schema;
 mod sequence;
 mod strict;
 mod upsert;
+mod without_rowid;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct QueryResult {
@@ -48,6 +49,7 @@ struct StoredTable {
     key_conflict: Conflict,
     autoincrement: bool,
     strict: bool,
+    without_rowid: bool,
 }
 #[derive(Clone)]
 struct StoredView {
@@ -87,20 +89,24 @@ impl StoredTable {
                 declared_type: c.declared_type.clone(),
             })
             .collect();
-        fields.push(Field {
-            table: alias.into(),
-            name: "rowid".into(),
-            affinity: Affinity::Integer,
-            collation: Collation::Binary,
-            hidden: true,
-            qualified_only: false,
-            declared_type: "INTEGER".into(),
-        });
+        if !self.without_rowid {
+            fields.push(Field {
+                table: alias.into(),
+                name: "rowid".into(),
+                affinity: Affinity::Integer,
+                collation: Collation::Binary,
+                hidden: true,
+                qualified_only: false,
+                declared_type: "INTEGER".into(),
+            });
+        }
         fields
     }
     fn row(&self, id: i64, values: &[Value]) -> Vec<Value> {
         let mut row = values.to_vec();
-        row.push(Value::Integer(id));
+        if !self.without_rowid {
+            row.push(Value::Integer(id));
+        }
         row
     }
     fn column_index(&self, name: &str) -> Result<usize> {
@@ -111,9 +117,10 @@ impl StoredTable {
         {
             return Ok(n);
         }
-        if ["rowid", "_rowid_", "oid"]
-            .iter()
-            .any(|n| name.eq_ignore_ascii_case(n))
+        if !self.without_rowid
+            && ["rowid", "_rowid_", "oid"]
+                .iter()
+                .any(|n| name.eq_ignore_ascii_case(n))
         {
             return Ok(self.columns.len());
         }
@@ -123,7 +130,7 @@ impl StoredTable {
         )))
     }
     fn alias(&self) -> Option<usize> {
-        self.rowid_alias
+        self.rowid_alias.filter(|_| !self.without_rowid)
     }
 }
 #[derive(Clone, Default)]
@@ -536,6 +543,7 @@ impl Connection {
                 constraints,
                 autoincrement,
                 strict,
+                without_rowid,
                 if_not_exists,
                 sql,
             } => {
@@ -586,7 +594,9 @@ impl Connection {
                         .map_or(Conflict::Default, |c| c.primary_conflict),
                     autoincrement: *autoincrement,
                     strict: *strict,
+                    without_rowid: *without_rowid,
                 };
+                let mut primary_desc = false;
                 strict::declaration(&mut table)?;
                 let fields = table.fields(name);
                 for (i, column) in columns.iter().enumerate() {
@@ -674,12 +684,14 @@ impl Connection {
                             // even when its indexed-column sort order is DESC.
                             if *primary
                                 && terms.len() == 1
+                                && table.columns[terms[0].column].single_type_token
                                 && table.columns[terms[0].column]
                                     .declared_type
                                     .eq_ignore_ascii_case("INTEGER")
                             {
                                 table.rowid_alias = Some(terms[0].column);
                                 table.key_conflict = *conflict;
+                                primary_desc = terms[0].descending;
                                 continue;
                             }
                             // SQLite coalesces automatic constraints with equal
@@ -712,6 +724,7 @@ impl Connection {
                         }
                     }
                 }
+                without_rowid::declaration(&mut table, primary_desc)?;
                 if table.autoincrement && table.alias().is_none() {
                     return Err(error("AUTOINCREMENT requires an INTEGER PRIMARY KEY"));
                 }
@@ -1016,8 +1029,10 @@ impl Connection {
                         table.rows.remove(&id);
                     }
                     table.rows.insert(id, values);
-                    self.last_rowid = id;
-                    context.last_rowid = id;
+                    if !table.without_rowid {
+                        self.last_rowid = id;
+                        context.last_rowid = id;
+                    }
                     count += 1;
                     if table.rows.len() > self.limits.max_rows {
                         return Err(Error::Limit("table rows"));
@@ -1090,21 +1105,36 @@ impl Connection {
                 self.datatype_journal =
                     strict::journal(table, change, *conflict, &checks, &[], context.fuel)?;
                 let mut selected = Vec::new();
+                let mut selected_bytes = 0;
                 self.dml_evaluating = true;
-                for (id, values) in &table.rows {
+                for id in table.scan_ids(context)? {
+                    let values = &table.rows[&id];
                     context.fuel.spend()?;
                     if self.expressions(scope.clone(), runtime).filter(
                         filter.as_ref(),
-                        &table.row(*id, values),
+                        &table.row(id, values),
                         context,
                     )? {
-                        selected.push(*id);
+                        selected.push((
+                            id,
+                            if table.without_rowid {
+                                table.primary_value(values, &mut selected_bytes, context.limits)?
+                            } else {
+                                Vec::new()
+                            },
+                        ));
                     }
                 }
                 let mut count = 0;
-                for old_id in selected {
+                for (mut old_id, key) in selected {
                     context.fuel.spend()?;
                     let table = &self.state.tables[index];
+                    if table.without_rowid {
+                        let Some(id) = table.find_primary(&key, context)? else {
+                            continue;
+                        };
+                        old_id = id;
+                    }
                     // An earlier REPLACE may have deleted a selected row or
                     // moved another row into its rowid. Read its current value.
                     let Some(old_values) = table.rows.get(&old_id).cloned() else {
@@ -1220,14 +1250,15 @@ impl Connection {
                     .transpose()?;
                 let mut deleted = Vec::new();
                 self.dml_evaluating = true;
-                for (id, values) in &table.rows {
+                for id in table.scan_ids(context)? {
+                    let values = &table.rows[&id];
                     context.fuel.spend()?;
                     if self.expressions(scope.clone(), runtime).filter(
                         filter.as_ref(),
-                        &table.row(*id, values),
+                        &table.row(id, values),
                         context,
                     )? {
-                        deleted.push(*id);
+                        deleted.push(id);
                     }
                 }
                 for id in &deleted {
@@ -1487,10 +1518,21 @@ impl Connection {
                     ])?;
                 }
             }
-        } else if let Some((t, i)) = self.named_index(argument) {
+        } else if let Some((t, i)) = self.named_index(argument).or_else(|| {
+            let t = self.index(argument).ok()?;
+            let table = &self.state.tables[t];
+            if !table.without_rowid {
+                return None;
+            }
+            Some((t, table.indexes.iter().position(|i| i.primary)?))
+        }) {
             let table = &self.state.tables[t];
             let index = &table.indexes[i];
-            for (i, term) in index.terms.iter().enumerate() {
+            let terms = table.storage_terms(index)?;
+            for (i, term) in terms.iter().enumerate() {
+                if name == "index_info" && i >= index.terms.len() {
+                    break;
+                }
                 let mut row = vec![
                     integer(i),
                     integer(term.column),
@@ -1500,12 +1542,12 @@ impl Connection {
                     row.extend([
                         integer(usize::from(term.descending)),
                         text(&term.collation_name),
-                        integer(1),
+                        integer(usize::from(i < index.terms.len())),
                     ]);
                 }
                 push(row)?;
             }
-            if name == "index_xinfo" {
+            if name == "index_xinfo" && !table.without_rowid {
                 push(vec![
                     integer(index.terms.len()),
                     Value::Integer(-1),
@@ -2005,28 +2047,49 @@ impl Connection {
             };
             let table = &mut connection.state.tables[index];
             let defaults = defaults(table)?;
+            let layout: Vec<usize> = if table.without_rowid {
+                table
+                    .storage_terms(table.primary_index()?)?
+                    .iter()
+                    .map(|t| t.column)
+                    .collect()
+            } else {
+                (0..table.columns.len()).collect()
+            };
             let mut imported_bytes = 0usize;
             db.visit_rows(entry.root_page, |row| {
-                let id = row
-                    .rowid
-                    .ok_or(Error::Unsupported("WITHOUT ROWID SQL import"))?;
-                if row.values.len() > table.columns.len() {
+                let id = match (table.without_rowid, row.rowid) {
+                    (false, Some(id)) => id,
+                    (true, None) => i64::try_from(table.rows.len() + 1)
+                        .map_err(|_| Error::Limit("internal row identity"))?,
+                    _ => return Err(Error::Corrupt("table B-tree kind does not match schema")),
+                };
+                if row.values.len() > layout.len() {
                     return Err(Error::Corrupt("record has too many columns"));
                 }
-                let mut values = row
-                    .values
-                    .into_iter()
-                    .map(normalize)
-                    .collect::<Result<Vec<_>>>()?;
-                while values.len() < table.columns.len() {
-                    let i = values.len();
-                    values.push(
-                        defaults[i]
+                let mut values = vec![Value::Null; table.columns.len()];
+                let mut present = vec![false; table.columns.len()];
+                for (value, column) in row.values.into_iter().zip(&layout) {
+                    let value = normalize(value)?;
+                    if present[*column] && values[*column] != value {
+                        return Err(Error::Corrupt("inconsistent repeated primary-key column"));
+                    }
+                    values[*column] = value;
+                    present[*column] = true;
+                }
+                for (i, value) in values.iter_mut().enumerate() {
+                    if !present[i] {
+                        *value = defaults[i]
                             .as_ref()
                             .map(|d| context.eval(d, &[], None))
                             .transpose()?
-                            .unwrap_or(Value::Null),
-                    );
+                            .unwrap_or(Value::Null);
+                    }
+                }
+                if table.without_rowid
+                    && table.primary_key.iter().any(|i| scalar::null(&values[*i]))
+                {
+                    return Err(Error::Corrupt("NULL WITHOUT ROWID primary key"));
                 }
                 if let Some(alias) = table.alias() {
                     values[alias] = Value::Integer(id);
@@ -2070,6 +2133,8 @@ impl Connection {
                     .ok_or(Error::Corrupt("unexpected automatic index"))?;
                 if connection.state.tables[t].name != entry.table_name
                     || connection.state.tables[t].indexes[i].sql.is_some()
+                    || (connection.state.tables[t].without_rowid
+                        && connection.state.tables[t].indexes[i].primary)
                 {
                     return Err(Error::Corrupt("automatic index schema mismatch"));
                 }
@@ -2077,6 +2142,9 @@ impl Connection {
         }
         for table in &connection.state.tables {
             for index in &table.indexes {
+                if table.without_rowid && index.primary {
+                    continue;
+                }
                 if !schema
                     .iter()
                     .any(|e| e.kind == "index" && e.name == index.name)
@@ -2102,7 +2170,7 @@ impl Connection {
         for source in &self.state.tables {
             let names: Vec<_> = source.columns.iter().map(|c| c.name.as_str()).collect();
             let mut table = Table::new(&source.name, &names);
-            for (id, values) in &source.rows {
+            for (id, values) in source.rows.iter().filter(|_| !source.without_rowid) {
                 let mut values = values.clone();
                 let before = values_size(&values)?;
                 transcode_values(&mut values, encoding)?;
@@ -2117,8 +2185,31 @@ impl Connection {
                 }
                 table.rows.push((*id, values));
             }
-            builder.add_table_with_sql(table, source.sql.clone())?;
+            if source.without_rowid {
+                let mut entries = index_entries(
+                    source,
+                    source.primary_index()?,
+                    self.limits,
+                    &mut fuel,
+                    encoding,
+                )?;
+                for row in &mut entries {
+                    transcode_values(row, encoding)?;
+                    exported_bytes = exported_bytes
+                        .checked_add(values_size(row)?)
+                        .ok_or(Error::Limit("exported table bytes"))?;
+                }
+                if exported_bytes > self.limits.max_database_bytes {
+                    return Err(Error::Limit("exported table bytes"));
+                }
+                builder.add_without_rowid_table(table, source.sql.clone(), entries)?;
+            } else {
+                builder.add_table_with_sql(table, source.sql.clone())?;
+            }
             for index in &source.indexes {
+                if source.without_rowid && index.primary {
+                    continue;
+                }
                 let mut entries = index_entries(source, index, self.limits, &mut fuel, encoding)?;
                 for row in &mut entries {
                     transcode_values(row, encoding)?;
@@ -2155,24 +2246,31 @@ fn index_entries(
     fuel: &mut Fuel,
     encoding: Encoding,
 ) -> Result<Vec<Vec<Value>>> {
+    let terms = table.storage_terms(index)?;
     let mut rows = Vec::new();
     let mut bytes = 0;
     for (id, values) in &table.rows {
         fuel.spend()?;
-        let mut row: Vec<Value> = index
-            .terms
-            .iter()
-            .map(|t| values[t.column].clone())
-            .collect();
-        row.push(Value::Integer(*id));
+        let mut row: Vec<Value> = terms.iter().map(|t| values[t.column].clone()).collect();
+        if !table.without_rowid {
+            row.push(Value::Integer(*id));
+        }
         push_row(&mut rows, row, &mut bytes, limits)?;
     }
     let rows = sort_by(rows, fuel, |a, b| {
-        for ((a, b), term) in a.iter().zip(b).zip(&index.terms) {
+        let order = if table.without_rowid && index.primary {
+            &index.terms
+        } else {
+            &terms
+        };
+        for ((a, b), term) in a.iter().zip(b).zip(order) {
             let cmp = scalar::compare_encoded(a, b, term.collation, encoding)?;
             if cmp != Compare::Equal {
                 return Ok(if term.descending { cmp.reverse() } else { cmp });
             }
+        }
+        if table.without_rowid {
+            return Ok(Compare::Equal);
         }
         scalar::compare(
             &a[index.terms.len()],

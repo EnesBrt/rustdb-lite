@@ -6,7 +6,7 @@ pub(super) fn declaration(table: &mut StoredTable) -> Result<()> {
         for column in &mut table.columns {
             // Native metadata dequotes the first token of a quoted type, but
             // STRICT validates the full declaration before that normalization.
-            if !column.strict_type {
+            if !column.single_type_token {
                 return Err(error(format!(
                     "invalid STRICT type for {}.{}",
                     table.name, column.name

@@ -47,6 +47,7 @@ impl Connection {
             key_conflict: Conflict::Default,
             autoincrement: false,
             strict: false,
+            without_rowid: false,
         });
         Ok(index)
     }

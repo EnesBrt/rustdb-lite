@@ -44,7 +44,8 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | --- | --- |
 | Lexing | UTF-8 SQL, comments, quoted identifiers, strings, BLOBs, decimal/hex numbers, numeric underscores, ordinary parameters |
 | Expressions | Arithmetic/bit operations, comparisons, NULL logic, IS/IS NOT, BETWEEN, IN lists, CASE, CAST, COLLATE, LIKE, scalar functions |
-| Tables | Ordinary rowid tables; declared-type affinity; column/table PRIMARY KEY, UNIQUE and CHECK constraints (including composite keys), NOT NULL, DEFAULT, collations, constraint-name syntax |
+| Tables | Rowid and WITHOUT ROWID tables; declared-type affinity; column/table PRIMARY KEY, UNIQUE and CHECK constraints (including composite keys), NOT NULL, DEFAULT, collations, constraint-name syntax |
+| Primary-key storage | WITHOUT ROWID index B-trees, composite keys and index suffixes; see [WITHOUT_ROWID.md](WITHOUT_ROWID.md) |
 | Views and table snapshots | CREATE/DROP VIEW, optional view column lists, CREATE TABLE AS SELECT/VALUES/WITH; main schema, metadata and image interchange; see [VIEWS.md](VIEWS.md) |
 | Indexes | CREATE [UNIQUE] INDEX, DROP INDEX, composite column keys, ASC/DESC, built-in collations, automatic column-constraint indexes |
 | Data changes | INSERT VALUES/DEFAULT VALUES/SELECT, UPDATE, DELETE; five conflict policies, schema ON CONFLICT and REPLACE; rowid allocation with AUTOINCREMENT |
@@ -76,8 +77,7 @@ behaviors, not complete compatibility of every expression/feature combination.
   access for the connection lifetime. Shared readers, WAL checkpoints and complete
   platform coverage remain unfinished. The CLI still uses snapshots.
 - No temporary schemas, triggers, window functions,
-  virtual tables, foreign keys, WITHOUT ROWID
-  SQL tables, ALTER TABLE, ATTACH,
+  virtual tables, foreign keys, ALTER TABLE, ATTACH,
   extension loading, or C ABI.
 - Row-value subqueries, the `value IN table_name` shorthand, and aggregates owned
   by an outer query (such as `SELECT (SELECT sum(t.x)) FROM t`) remain unsupported.

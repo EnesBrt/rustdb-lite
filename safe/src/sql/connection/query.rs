@@ -174,19 +174,20 @@ impl Data {
     }
 }
 pub(super) enum SourceData<'a> {
-    Table(&'a StoredTable),
+    Table(&'a StoredTable, Option<Vec<i64>>),
     Query(Rc<Data>),
 }
 impl SourceData<'_> {
     pub(super) fn fields(&self, alias: &str) -> Vec<Field> {
         match self {
-            Self::Table(t) => t.fields(alias),
+            Self::Table(t, _) => t.fields(alias),
             Self::Query(q) => q.source_fields(alias),
         }
     }
     pub(super) fn rows(&self) -> Box<dyn Iterator<Item = Vec<Value>> + '_> {
         match self {
-            Self::Table(t) => Box::new(t.rows.iter().map(|(id, v)| t.row(*id, v))),
+            Self::Table(t, Some(ids)) => Box::new(ids.iter().map(|id| t.row(*id, &t.rows[id]))),
+            Self::Table(t, None) => Box::new(t.rows.iter().map(|(id, v)| t.row(*id, v))),
             Self::Query(q) => Box::new(q.result.rows.iter().cloned()),
         }
     }
@@ -357,9 +358,13 @@ impl Connection {
             return Ok(SourceData::Query(runtime.own(data, context.limits)?));
         }
         runtime.tables_read.insert(source.name.to_ascii_lowercase());
-        Ok(SourceData::Table(
-            &self.state.tables[self.index(&source.name)?],
-        ))
+        let table = &self.state.tables[self.index(&source.name)?];
+        let ids = if table.without_rowid && !schema_only {
+            Some(table.scan_ids(context)?)
+        } else {
+            None
+        };
+        Ok(SourceData::Table(table, ids))
     }
 
     pub(super) fn query(

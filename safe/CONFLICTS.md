@@ -1,6 +1,6 @@
 # Constraint conflict policies
 
-The supported rowid-table SQL now implements `ROLLBACK`, `ABORT`, `FAIL`,
+The supported rowid and WITHOUT ROWID table SQL now implements `ROLLBACK`, `ABORT`, `FAIL`,
 `IGNORE`, and `REPLACE`. `INSERT OR ...` and `UPDATE OR ...` override schema
 policies; `REPLACE INTO` is the INSERT OR REPLACE alias. PRIMARY KEY, UNIQUE,
 and NOT NULL constraints can declare `ON CONFLICT` policies. Ordinary INSERT

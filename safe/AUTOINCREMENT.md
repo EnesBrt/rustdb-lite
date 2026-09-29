@@ -78,7 +78,7 @@ cases cover native readers across encodings and auto-vacuum modes.
 Ordinary-table random rowid allocation after i64::MAX remains unimplemented. This
 also limits sequence-row creation if someone explicitly assigns that rowid to
 sqlite_sequence itself. Triggers, attached/temporary schemas, foreign keys,
-WITHOUT ROWID SQL tables and C API compatibility remain unfinished.
+[WITHOUT ROWID](WITHOUT_ROWID.md) tables reject AUTOINCREMENT. C API compatibility remains unfinished.
 STRICT rowid tables and their type-error behavior are covered in [STRICT.md](STRICT.md).
 The engine still rebuilds complete images; incremental B-tree updates and native
 planner parity are separate outstanding work.

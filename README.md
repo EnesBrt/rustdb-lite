@@ -34,8 +34,10 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
   expression subqueries and conflict handling; see [RETURNING](safe/RETURNING.md).
 - AUTOINCREMENT with editable/persistent sqlite_sequence state, savepoints and
   rowid-exhaustion rollback; see [sequence behavior](safe/AUTOINCREMENT.md).
-- STRICT rowid tables with typed writes, ANY preservation and table_list catalog
+- STRICT tables with typed writes, ANY preservation and table_list catalog
   flags; see [type and transaction behavior](safe/STRICT.md).
+- WITHOUT ROWID tables with composite primary storage, secondary-key suffixes,
+  SQL mutations and native image interchange; see [primary-key storage](safe/WITHOUT_ROWID.md).
 - Explicit/composite/unique indexes and automatic constraint indexes, including
   SQLite-compatible index image writing, overflow, sorting and schema interchange.
 - Offline SQL snapshot import/export and an experimental `sqlite-safe-sql` command.
@@ -55,8 +57,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
 - An offline inspection utility with `info`, `schema`, and physical `rows` output.
 
 SQLite's own `integrity_check` accepts generated files at all eight page sizes.
-Ninety-seven core Rust integration tests include 14,000 malformed-input mutations
-and 600 simulated commit failure/crash variants. Fourteen additional adapter tests
+104 core Rust integration tests include 14,000 malformed-input mutations
+and 600 simulated commit failure/crash variants. Fifteen additional adapter tests
 exercise real files and concurrent threads.
 The separate C oracle validates 956 SQL expression/query/error/snapshot cases and
 32 storage scenarios covering file construction, existing database reads, and WAL
@@ -69,9 +71,9 @@ Another 508 comparisons cover compound column types, nested metadata, stored
 value classes and scalar/IN affinities, including integer precision boundaries.
 Another 316 scenarios compare conflict policies, errors, counters, transaction state
 and encoded images, plus 592 UPSERT, 311 RETURNING, 268 AUTOINCREMENT and 2,608
-STRICT/type/catalog scenarios.
+STRICT/type/catalog scenarios, plus 1,654 WITHOUT ROWID scenarios.
 Incremental-vacuum scheduling and free-page retention remain pending.
-The Unix adapter passes 59 interchange/locking/conflict/UPSERT/RETURNING/sequence/STRICT scenarios and 210 real interrupted
+The Unix adapter passes 68 native file interchange/locking/SQL scenarios and 210 real interrupted
 commit/partial-write recovery points. These are not hardware power-loss tests. The core
 compiles for nine targets, including 32-bit, big-endian,
 Windows, Linux, Android, iOS, WebAssembly, and embedded targets. **Only macOS ARM64

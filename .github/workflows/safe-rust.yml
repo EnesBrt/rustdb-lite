@@ -88,6 +88,8 @@ jobs:
         run: python3 safe/scripts/sequence_differential.py
       - name: Compare STRICT types, transaction errors and catalog flags
         run: python3 safe/scripts/strict_differential.py
+      - name: Compare WITHOUT ROWID keys, conflicts and file layouts
+        run: python3 safe/scripts/without_rowid_differential.py
   platform-native:
     strategy:
       fail-fast: false

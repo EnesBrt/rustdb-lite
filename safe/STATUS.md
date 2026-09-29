@@ -11,14 +11,15 @@ is a separate `legacy/` project.
 | Varints and record codecs | Implemented and tested |
 | Header/page parsing | Implemented with validation and explicit limits |
 | Table/index B-tree reads | Implemented, including overflow and index interior records |
-| New database images | Rowid tables and column-key indexes, including interior/overflow records and auto-vacuum pointer maps |
+| New database images | Rowid/WITHOUT ROWID tables and column-key indexes, including interior/overflow records and auto-vacuum pointer maps |
 | WAL | Offline checksum/salt/commit recovery only |
 | SQL tokenizer/parser, expressions, table/query execution | Partial implementation; see [SQL.md](SQL.md) |
 | In-memory transactions/savepoints and conflict policies | ABORT/FAIL/ROLLBACK/IGNORE/REPLACE, statement overrides and schema policies; [scope](CONFLICTS.md) |
 | UPSERT | Ordered rowid/unique targets, DO NOTHING/DO UPDATE, excluded values, conditional/correlated updates; [scope](UPSERT.md) |
 | RETURNING | Buffered INSERT/UPSERT/UPDATE/DELETE projections, subqueries, counters and conflict behavior; [scope](RETURNING.md) |
 | AUTOINCREMENT | Persisted/editable sqlite_sequence, conflict timing, savepoints and FULL rollback; [scope](AUTOINCREMENT.md) |
-| STRICT rowid tables | Six declared types, ANY preservation, datatype errors, catalog flags and persisted transaction prefixes; [scope](STRICT.md) |
+| STRICT tables | Six declared types, ANY preservation, datatype errors, catalog flags and persisted transaction prefixes; [scope](STRICT.md) |
+| WITHOUT ROWID tables | Primary index storage, secondary suffixes, key-based SQL mutations, metadata and encoded interchange; [scope](WITHOUT_ROWID.md) |
 | Query optimizer, complete schema/SQL semantics | Not implemented |
 | Explicit/automatic index schemas and uniqueness | Implemented for supported column/composite keys; fresh-image rebuilds |
 | Table constraints and schema inspection | Composite PRIMARY KEY/UNIQUE, table CHECK, named-constraint syntax, six inspection pragmas |
@@ -36,9 +37,9 @@ is a separate `legacy/` project.
 | C ABI and other bindings | Not implemented |
 | Production compatibility and reliability | Not established |
 
-## Verified locally, 2026-09-29
+## Verified locally, 2026-09-30
 
-- Ninety-seven core Rust integration tests pass in debug and release builds, including
+- 104 core Rust integration tests pass in debug and release builds, including
   3,000 deterministic database mutations, 3,000 mutations of valid native WAL
   seeds, 5,000 malformed-SQL mutations, and 3,000 journal mutations, with bounded
   budgets and panic detection.
@@ -71,10 +72,10 @@ is a separate `legacy/` project.
   Interrupted recovery, exclusive-lock lifetime, and journaled SQL transaction
   reopen tests also pass. These are adapter-contract simulations, not
   OS/power-loss tests.
-- Fourteen platform Rust tests pass in debug/release, covering real files, recovery,
+- Fifteen platform Rust tests pass in debug/release, covering real files, recovery,
   path/sidecar guards, lock lifetime, CTE/subquery data changes, views, CREATE TABLE
   AS SELECT and an eight-thread contention race.
-- Fifty-nine native file interchange/lock/conflict/UPSERT/RETURNING/sequence/STRICT scenarios pass on macOS ARM64. They include
+- Sixty-eight native file interchange/lock/SQL scenarios pass on macOS ARM64. They include
   persistent native connections across updates of all three text encodings and
   updates of both auto-vacuum modes. 210 real process-interruption/partial-write
   recovery points cover ordinary and pointer-map files and match native SQLite.
@@ -136,6 +137,11 @@ is a separate `legacy/` project.
   test and nine native file cases verify commit/reopen and unchanged files after
   aborted statements. Mixed invalid-view catalog metadata remains a known
   difference; see [STRICT.md](STRICT.md).
+- 1,654 WITHOUT ROWID SQL/key/conflict/counter/metadata/image scenarios pass
+  against SQLite 3.53.4, including long-key/overflow/interior records and native
+  rebalancing. Seven Rust tests include 72 encoding/page-size/vacuum combinations;
+  a Unix test and nine native file cases cover persisted key changes, FAIL prefixes,
+  rollback and failed writes. See [WITHOUT_ROWID.md](WITHOUT_ROWID.md).
 - The separate Unix adapter compiles for macOS ARM64, Linux x86-64/i686/s390x,
   Android ARM64 and iOS ARM64. Only the macOS adapter has runtime evidence here.
 - Floating-point comparisons use exact IEEE-754 bit patterns. Text comparisons
@@ -192,6 +198,7 @@ python3 safe/scripts/upsert_differential.py
 python3 safe/scripts/returning_differential.py
 python3 safe/scripts/sequence_differential.py
 python3 safe/scripts/strict_differential.py
+python3 safe/scripts/without_rowid_differential.py
 python3 safe/scripts/check_targets.py
 python3 platform/scripts/file_differential.py
 python3 platform/scripts/check_targets.py
@@ -205,15 +212,15 @@ ignored `build/safe-*.log`. The source inventory can be regenerated with
 
 ## Published CI evidence
 
-[GitHub Actions run 36630868496](https://github.com/EnesBrt/rustdb-lite/actions/runs/36630868496)
-passed all 17 jobs for commit `8d3ca2b` on 2026-09-29. That baseline includes
-89 core and 13 Unix adapter Rust integration tests, including AUTOINCREMENT.
+[GitHub Actions run 36633852483](https://github.com/EnesBrt/rustdb-lite/actions/runs/36633852483)
+passed all 17 jobs for commit `5a3fbbe` on 2026-09-29. That baseline includes
+97 core and 14 Unix adapter Rust integration tests, including STRICT.
 Core debug/release/doc tests passed on Ubuntu 24.04, macOS 14 ARM64 and Windows
 2022; Unix adapter debug/release/doc and native file comparisons passed on Ubuntu
 and macOS. The native differential, minimum-Rust and cross-compilation jobs also
-passed. The macOS job used Rust 1.98.1.
+passed.
 
 These results establish execution of the tested subset on those runners, not
 complete platform or durability support. Other target runtime tests remain
-pending. New STRICT coverage is recorded above and is included in subsequent CI
+pending. New WITHOUT ROWID coverage is recorded above and is included in subsequent CI
 runs; the linked baseline does not establish its cross-platform behavior.

@@ -1,7 +1,7 @@
 # UPSERT
 
 INSERT and REPLACE now support `ON CONFLICT ... DO NOTHING` and
-`ON CONFLICT ... DO UPDATE SET ... [WHERE ...]` on the supported rowid tables.
+`ON CONFLICT ... DO UPDATE SET ... [WHERE ...]` on the supported rowid and [WITHOUT ROWID](WITHOUT_ROWID.md) tables.
 The implementation remains safe Rust; native SQLite is used only as a test
 reference.
 
@@ -79,7 +79,7 @@ The RETURNING projection reports successful inserts and updates, with separate
 expression caches for each update clause; see [RETURNING.md](RETURNING.md).
 
 Expression/partial indexes, row-value assignment syntax, generated columns,
-WITHOUT ROWID SQL tables, triggers and foreign keys remain
+Triggers and foreign keys remain
 unfinished. INSERT SELECT materializes input; query planning, streaming and the
 evaluation/error-timing differences documented in [QUERIES.md](QUERIES.md) still
 apply. This implementation is not evidence of complete upstream SQL parity.

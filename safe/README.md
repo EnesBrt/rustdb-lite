@@ -18,7 +18,8 @@ SELECT are described in [VIEWS.md](VIEWS.md). Data-change projections and their
 cache/error behavior are described in [RETURNING.md](RETURNING.md). The lower-level physical storage API
 is shown below. Persistent automatic rowids and sqlite_sequence are documented in
 [AUTOINCREMENT.md](AUTOINCREMENT.md). STRICT types and catalog flags are described
-in [STRICT.md](STRICT.md).
+in [STRICT.md](STRICT.md). Primary-key SQL/storage support is documented in
+[WITHOUT_ROWID.md](WITHOUT_ROWID.md).
 
 ## Storage API
 
@@ -115,6 +116,7 @@ python3 safe/scripts/upsert_differential.py
 python3 safe/scripts/returning_differential.py
 python3 safe/scripts/sequence_differential.py
 python3 safe/scripts/strict_differential.py
+python3 safe/scripts/without_rowid_differential.py
 python3 safe/scripts/check_targets.py
 ```
 

@@ -57,6 +57,57 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn without_rowid_primary_updates_persist_and_failures_preserve_files() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    c.execute(
+        "CREATE TABLE t(a TEXT,b INT,v ANY,PRIMARY KEY(a,b)) WITHOUT ROWID,STRICT",
+        &[],
+    )
+    .unwrap();
+    c.execute("CREATE INDEX ix ON t(v)", &[]).unwrap();
+    c.execute("INSERT INTO t VALUES('a',1,'001'),('b',2,2)", &[])
+        .unwrap();
+    assert_eq!(c.last_insert_rowid().unwrap(), 0);
+    c.execute("UPDATE t SET b=b+10 RETURNING *", &[]).unwrap();
+    drop(c);
+    let before = fs::read(&path).unwrap();
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT b FROM t ORDER BY a", &[]).unwrap().rows,
+        vec![vec![Value::Integer(11)], vec![Value::Integer(12)]]
+    );
+    assert!(matches!(
+        c.execute("INSERT INTO t VALUES('c',3,3),('a',11,4)", &[]),
+        Err(Error::Constraint(_))
+    ));
+    assert_eq!(fs::read(&path).unwrap(), before);
+    assert!(matches!(
+        c.execute("INSERT OR FAIL INTO t VALUES('c',3,3),('a',11,4)", &[]),
+        Err(Error::Constraint(_))
+    ));
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT count(*) FROM t", &[]).unwrap().rows,
+        vec![vec![Value::Integer(3)]]
+    );
+    assert_eq!(c.last_insert_rowid().unwrap(), 0);
+    c.execute("BEGIN", &[]).unwrap();
+    c.execute("DELETE FROM t", &[]).unwrap();
+    c.execute("ROLLBACK", &[]).unwrap();
+    drop(c);
+    assert_eq!(
+        open(&path)
+            .execute("SELECT count(*) FROM t", &[])
+            .unwrap()
+            .rows,
+        vec![vec![Value::Integer(3)]]
+    );
+}
+
+#[test]
 fn strict_datatype_errors_persist_only_retained_transaction_prefixes() {
     let temp = Temp::new();
     let path = temp.db();

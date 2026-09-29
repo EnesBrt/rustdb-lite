@@ -1,7 +1,7 @@
-# STRICT rowid tables
+# STRICT tables
 
 The safe SQL engine accepts `CREATE TABLE ... (...) STRICT` for its supported
-rowid tables. Columns must declare `INT`, `INTEGER`, `REAL`, `TEXT`, `BLOB` or
+rowid and [WITHOUT ROWID](WITHOUT_ROWID.md) tables. Columns must declare `INT`, `INTEGER`, `REAL`, `TEXT`, `BLOB` or
 `ANY`. Missing and other declared types are rejected. The declaration survives
 database-image export/import; this adds no C dependency or engine fallback.
 
@@ -86,7 +86,7 @@ file scenarios verify persistence with a connection kept open across Rust writes
 
 ## Remaining limits
 
-WITHOUT ROWID SQL tables, generated columns, foreign keys, triggers, virtual
+Generated columns, foreign keys, triggers, virtual
 tables, table-valued pragmas and complete upstream SQL compatibility remain
 unfinished. SQLite integrity/quick-check pragmas are not implemented. Import
 parses declarations and stored values but is not a comprehensive validation of

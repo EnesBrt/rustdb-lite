@@ -214,6 +214,26 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'without-rowid-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(id INT,v TEXT,n INT,PRIMARY KEY(v DESC,id),UNIQUE(id)) WITHOUT ROWID,STRICT;CREATE INDEX ix ON t(n DESC);INSERT INTO t VALUES(1,'é',1),(2,'🦀',2);")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                assert connection.execute('SELECT count(*) FROM t').fetchone()==(2,)
+                run(SQL,path,'BEGIN','UPDATE t SET id=id+10','COMMIT',"INSERT INTO t VALUES(11,'é',3) ON CONFLICT(id) DO UPDATE SET v='updated',n=excluded.n RETURNING *")
+                assert connection.execute('SELECT * FROM t ORDER BY id').fetchall()==[(11,'updated',3),(12,'🦀',2)]
+                run(SQL,path,"INSERT OR FAIL INTO t VALUES(13,'new',3),(11,'updated',4)",expect=1)
+                expected=[(11,'updated',3),(12,'🦀',2),(13,'new',3)]
+                assert connection.execute('SELECT * FROM t INDEXED BY ix ORDER BY id').fetchall()==expected
+                before=path.read_bytes()
+                run(SQL,path,'BEGIN','UPDATE t SET n=n+10','ROLLBACK')
+                run(SQL,path,"INSERT OR IGNORE INTO t VALUES(14,'bad','bad')",expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,'CREATE TABLE copied AS SELECT * FROM t','CREATE TABLE u(k TEXT PRIMARY KEY) WITHOUT ROWID',"INSERT INTO u VALUES('Rust-created')")
+                assert connection.execute('SELECT * FROM copied ORDER BY id').fetchall()==expected
+                connection.close()
+                assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'

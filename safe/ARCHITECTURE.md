@@ -92,9 +92,10 @@ Each supported platform needs separate evidence for:
 4. Transaction recovery, injected I/O failures, power-loss/durability tests,
    and deployment-specific storage behavior.
 
-The CI workflow currently defines native tests on Linux, Windows, and macOS,
-plus cross compilation for additional targets. It has not been run remotely.
-Only local macOS runtime results can currently be reported. Embedded and web
+The CI workflow runs native core tests on Linux, Windows and macOS, native Unix
+adapter tests on Linux/macOS, and cross compilation for additional targets.
+Published passing runs and their exact scope are recorded in [STATUS.md](STATUS.md).
+Those results do not establish every platform or power-loss contract. Embedded and web
 targets will require explicit storage capability contracts; filesystem-dependent
 utilities cannot be silently treated as supported when that capability is absent.
 

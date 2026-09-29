@@ -122,7 +122,7 @@ impl Expr {
 }
 #[derive(Clone, Debug)]
 pub struct Column {
-    pub strict_type: bool,
+    pub single_type_token: bool,
     pub name: String,
     pub declared_type: String,
     pub affinity: Affinity,
@@ -142,7 +142,10 @@ pub struct Column {
 }
 impl Column {
     pub fn rowid_alias(&self) -> bool {
-        self.primary && !self.primary_desc && self.declared_type.eq_ignore_ascii_case("INTEGER")
+        self.primary
+            && !self.primary_desc
+            && self.single_type_token
+            && self.declared_type.eq_ignore_ascii_case("INTEGER")
     }
 }
 #[derive(Clone, Debug, PartialEq)]
@@ -310,6 +313,7 @@ pub enum Statement {
         constraints: Vec<TableConstraint>,
         autoincrement: bool,
         strict: bool,
+        without_rowid: bool,
         if_not_exists: bool,
         sql: String,
     },
@@ -866,7 +870,7 @@ impl Parser<'_> {
                     }
                 }
                 let mut column = Column {
-                    strict_type: self.at == type_start + 1,
+                    single_type_token: self.at == type_start + 1,
                     name,
                     affinity: Affinity::from_type(&declared_type),
                     declared_type,
@@ -941,10 +945,21 @@ impl Parser<'_> {
                 }
             }
             self.expect(")")?;
-            let strict = self.eat("STRICT");
-            if strict {
-                while self.eat(",") {
-                    self.expect("STRICT")?;
+            let mut strict = false;
+            let mut without_rowid = false;
+            while self.is("STRICT") || self.is("WITHOUT") {
+                if self.eat("STRICT") {
+                    strict = true;
+                } else {
+                    self.expect("WITHOUT")?;
+                    self.expect("ROWID")?;
+                    without_rowid = true;
+                }
+                if !self.eat(",") {
+                    break;
+                }
+                if !self.is("STRICT") && !self.is("WITHOUT") {
+                    return Err(self.expected("table option"));
                 }
             }
             let end = self.tokens[self.at - 1].end;
@@ -954,6 +969,7 @@ impl Parser<'_> {
                 constraints,
                 autoincrement,
                 strict,
+                without_rowid,
                 if_not_exists,
                 sql: self.schema_sql(start, end, name_start, name_end),
             });
