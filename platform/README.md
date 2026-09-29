@@ -83,13 +83,13 @@ images are compact even in that mode. See [auto-vacuum format support](../safe/A
 
 ## Validation
 
-Ten native Rust tests cover commit/rollback/reopen, recovery, corrupt-journal
+Eleven native Rust tests cover commit/rollback/reopen, recovery, corrupt-journal
 retention, bounded reads, file identity/sidecar guards, connection lifetime, and
 an eight-thread race for one inode, plus persisted CTE/subquery data changes and
 unchanged files after failed inserts, plus persisted views and CREATE TABLE AS SELECT. They pass
 locally in debug and release.
 
-The native differential script checks 23 scenarios involving all three database
+The native differential script checks 32 scenarios involving all three database
 encodings, metadata retention, already-open native connections, native read and
 write locks, failed duplicate Rust opens, updates of both auto-vacuum modes, and
 a recursive CTE insert, a correlated update and view/schema changes that native
@@ -117,3 +117,7 @@ Constraint FAIL persists its successful prefix in autocommit mode before returni
 the SQL error. Within a transaction the prefix remains private until commit;
 constraint ROLLBACK discards it. Rust and native interchange tests cover these
 paths, including reopening after errors; see [conflict policies](../safe/CONFLICTS.md).
+
+UPSERT persists through the same commit protocol. Tests cover native readers
+across updates in all encodings and auto-vacuum modes, and ensure a failed
+DO UPDATE leaves the previously committed image intact. See [UPSERT](../safe/UPSERT.md).

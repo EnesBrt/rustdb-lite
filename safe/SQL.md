@@ -48,6 +48,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Views and table snapshots | CREATE/DROP VIEW, optional view column lists, CREATE TABLE AS SELECT/VALUES/WITH; main schema, metadata and image interchange; see [VIEWS.md](VIEWS.md) |
 | Indexes | CREATE [UNIQUE] INDEX, DROP INDEX, composite column keys, ASC/DESC, built-in collations, automatic column-constraint indexes |
 | Data changes | INSERT VALUES/DEFAULT VALUES/SELECT, UPDATE, DELETE; five conflict policies, schema ON CONFLICT and REPLACE; rowid allocation without AUTOINCREMENT |
+| UPSERT | ON CONFLICT targets, multiple clauses, DO NOTHING/DO UPDATE, excluded values and conditional updates; see [UPSERT.md](UPSERT.md) |
 | Queries | Projection, stars, aliases, filtering, comma/inner/cross/left joins with ON, DISTINCT, GROUP BY, HAVING, ORDER BY, NULLS FIRST/LAST, LIMIT/OFFSET |
 | Query composition | Derived FROM tables, ordinary/recursive WITH, VALUES queries, UNION [ALL]/INTERSECT/EXCEPT; see [QUERIES.md](QUERIES.md) |
 | Expression subqueries | Scalar, EXISTS, single-column IN/NOT IN, correlated columns in queries and data changes; statement-local caching for uncorrelated results |
@@ -73,7 +74,7 @@ behaviors, not complete compatibility of every expression/feature combination.
   platform coverage remain unfinished. The CLI still uses snapshots.
 - No temporary schemas, triggers, window functions,
   virtual tables, foreign keys, STRICT/WITHOUT ROWID
-  SQL tables, AUTOINCREMENT, UPSERT, RETURNING, ALTER TABLE, ATTACH,
+  SQL tables, AUTOINCREMENT, RETURNING, ALTER TABLE, ATTACH,
   extension loading, or C ABI.
 - Row-value subqueries, the `value IN table_name` shorthand, and aggregates owned
   by an outer query (such as `SELECT (SELECT sum(t.x)) FROM t`) remain unsupported.

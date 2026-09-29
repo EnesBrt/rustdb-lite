@@ -6,6 +6,7 @@ pub(super) enum Decision {
     Write(Vec<i64>),
     Ignore,
     Error(Conflict, String),
+    Upsert { clause: usize, id: i64 },
 }
 fn violation(policy: Conflict, message: String) -> Decision {
     if policy == Conflict::Ignore {
@@ -25,6 +26,7 @@ pub(super) fn check(
     policy: Conflict,
     checks: &[Expr],
     defaults: &[Option<Expr>],
+    upserts: &[upsert::Bound],
     context: &mut Eval<'_>,
 ) -> Result<Decision> {
     // Defaults substituted by REPLACE are checked in a second pass, allowing
@@ -75,70 +77,110 @@ pub(super) fn check(
     }
     let mut replaced = BTreeSet::new();
     let rowid_policy = policy.resolve(table.key_conflict);
-    let rowid_collision = table.rows.contains_key(&row.id) && Some(row.id) != row.old;
-    if rowid_collision && rowid_policy != Conflict::Replace {
-        return Ok(violation(rowid_policy, format!("{}.rowid", table.name)));
-    }
-    // SQLite keeps REPLACE indexes after all other policies, with reverse
-    // creation order inside each group. This prevents deletion before IGNORE.
-    for replace in [false, true] {
-        for index in table.indexes.iter().rev().filter(|i| i.unique) {
-            let action = policy.resolve(index.conflict);
-            if (action == Conflict::Replace) != replace {
-                continue;
-            }
-            // Updating another column cannot introduce a duplicate of an
-            // unchanged key. Avoid rescanning (and re-encoding) every stored
-            // key, which is particularly expensive for long UTF-16 strings.
-            if row
-                .old
-                .and_then(|id| table.rows.get(&id))
-                .is_some_and(|old| {
-                    index
-                        .terms
-                        .iter()
-                        .all(|t| row.values[t.column] == old[t.column])
-                })
-            {
-                continue;
-            }
-            if index
-                .terms
-                .iter()
-                .any(|t| scalar::null(&row.values[t.column]))
-            {
-                continue;
-            }
-            for (prior_id, prior) in &table.rows {
-                context.fuel.spend()?;
-                if Some(*prior_id) == row.old || replaced.contains(prior_id) {
-                    continue;
-                }
-                let mut equal = true;
-                for term in &index.terms {
-                    context.fuel.spend()?;
-                    if scalar::compare_encoded(
-                        &row.values[term.column],
-                        &prior[term.column],
-                        term.collation,
-                        context.encoding,
-                    )? != Compare::Equal
-                    {
-                        equal = false;
-                        break;
-                    }
-                }
-                if equal {
-                    if action != Conflict::Replace {
-                        return Ok(violation(action, format!("UNIQUE: {}", index.name)));
-                    }
-                    replaced.insert(*prior_id);
-                }
+    let mut order = Vec::new();
+    let mut seen = BTreeSet::new();
+    for clause in upserts {
+        context.fuel.spend()?;
+        if let Some(key) = clause.target {
+            if seen.insert(key) {
+                order.push(key);
             }
         }
     }
-    if rowid_collision {
-        replaced.insert(row.id);
+    let mut add = |key| {
+        if seen.insert(key) {
+            order.push(key);
+        }
+    };
+    // Explicit targets run in clause order before other unique constraints.
+    // Remaining indexes follow SQLite's non-REPLACE/REPLACE schema order.
+    if rowid_policy != Conflict::Replace
+        || upsert::handler(upserts, upsert::Key::Rowid, context.fuel)?.is_some()
+    {
+        add(upsert::Key::Rowid);
+    }
+    for replace in [false, true] {
+        for (i, index) in table.indexes.iter().enumerate().rev() {
+            context.fuel.spend()?;
+            if index.unique && (index.conflict == Conflict::Replace) == replace {
+                add(upsert::Key::Index(i));
+            }
+        }
+    }
+    add(upsert::Key::Rowid);
+    for key in order {
+        context.fuel.spend()?;
+        let (action, message, collisions) = match key {
+            upsert::Key::Rowid => {
+                let collision = table.rows.contains_key(&row.id)
+                    && Some(row.id) != row.old
+                    && !replaced.contains(&row.id);
+                (
+                    rowid_policy,
+                    format!("{}.rowid", table.name),
+                    if collision { vec![row.id] } else { Vec::new() },
+                )
+            }
+            upsert::Key::Index(i) => {
+                let index = &table.indexes[i];
+                // An unchanged key cannot introduce a duplicate. Avoid repeated
+                // scans and encoding of long text when updating another column.
+                if row
+                    .old
+                    .and_then(|id| table.rows.get(&id))
+                    .is_some_and(|old| {
+                        index
+                            .terms
+                            .iter()
+                            .all(|t| row.values[t.column] == old[t.column])
+                    })
+                    || index
+                        .terms
+                        .iter()
+                        .any(|t| scalar::null(&row.values[t.column]))
+                {
+                    continue;
+                }
+                let mut collisions = Vec::new();
+                for (prior_id, prior) in &table.rows {
+                    context.fuel.spend()?;
+                    if Some(*prior_id) == row.old || replaced.contains(prior_id) {
+                        continue;
+                    }
+                    let mut equal = true;
+                    for term in &index.terms {
+                        context.fuel.spend()?;
+                        if scalar::compare_encoded(
+                            &row.values[term.column],
+                            &prior[term.column],
+                            term.collation,
+                            context.encoding,
+                        )? != Compare::Equal
+                        {
+                            equal = false;
+                            break;
+                        }
+                    }
+                    if equal {
+                        collisions.push(*prior_id);
+                    }
+                }
+                (
+                    policy.resolve(index.conflict),
+                    format!("UNIQUE: {}", index.name),
+                    collisions,
+                )
+            }
+        };
+        for id in collisions {
+            if let Some(clause) = upsert::handler(upserts, key, context.fuel)? {
+                return Ok(Decision::Upsert { clause, id });
+            }
+            if action != Conflict::Replace {
+                return Ok(violation(action, message));
+            }
+            replaced.insert(id);
+        }
     }
     Ok(Decision::Write(replaced.into_iter().collect()))
 }

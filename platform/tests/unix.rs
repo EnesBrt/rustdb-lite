@@ -57,6 +57,49 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn upserts_commit_and_failed_update_preserves_the_persisted_database() {
+    let temp = Temp::new();
+    let path = temp.db();
+    seed(&path);
+    let mut c = open(&path);
+    c.execute(
+        "INSERT INTO t VALUES(2,'old') ON CONFLICT(v) DO UPDATE SET id=excluded.id",
+        &[],
+    )
+    .unwrap();
+    c.execute("INSERT INTO t VALUES(3,'new') ON CONFLICT DO NOTHING", &[])
+        .unwrap();
+    drop(c);
+    let before = fs::read(&path).unwrap();
+    let mut c = open(&path);
+    assert!(c
+        .execute(
+            "INSERT OR IGNORE INTO t VALUES(4,'four'),(5,'old') ON CONFLICT(v) DO UPDATE SET id=3",
+            &[]
+        )
+        .is_err());
+    assert_eq!(
+        c.execute("SELECT id FROM t ORDER BY id", &[]).unwrap().rows,
+        vec![vec![Value::Integer(2)], vec![Value::Integer(3)]]
+    );
+    drop(c);
+    assert_eq!(fs::read(&path).unwrap(), before);
+    let mut c = open(&path);
+    c.execute("BEGIN", &[]).unwrap();
+    c.execute(
+        "INSERT INTO t VALUES(2,'changed') ON CONFLICT(id) DO UPDATE SET v=excluded.v",
+        &[],
+    )
+    .unwrap();
+    c.execute("COMMIT", &[]).unwrap();
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT v FROM t WHERE id=2", &[]).unwrap().rows,
+        vec![vec![Value::Text(sqlite_safe::Text::utf8("changed"))]]
+    );
+}
+#[test]
 fn conflict_policies_persist_prefixes_and_discard_rolled_back_transactions() {
     for transaction in [false, true] {
         for policy in ["ABORT", "FAIL", "ROLLBACK", "IGNORE", "REPLACE"] {

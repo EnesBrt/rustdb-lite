@@ -120,6 +120,7 @@ impl Data {
                     affinity: typ.affinity,
                     collation: typ.collation,
                     hidden: false,
+                    qualified_only: false,
                     declared_type: typ.declared_type,
                 }
             })

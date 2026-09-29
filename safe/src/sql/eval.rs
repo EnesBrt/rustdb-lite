@@ -20,6 +20,8 @@ pub struct Field {
     pub affinity: Affinity,
     pub collation: Collation,
     pub hidden: bool,
+    /// Pseudo-table fields such as UPSERT's excluded require a qualifier.
+    pub qualified_only: bool,
     pub declared_type: String,
 }
 #[derive(Clone, Debug, PartialEq)]
@@ -151,6 +153,7 @@ pub fn bind_with(
             } => {
                 let mut found = fields.iter().enumerate().filter(|(_, f)| {
                     !f.hidden
+                        && (!f.qualified_only || qualifier.is_some())
                         && f.name.eq_ignore_ascii_case(name)
                         && qualifier
                             .as_ref()
@@ -167,6 +170,7 @@ pub fn bind_with(
                 {
                     let mut hidden = fields.iter().enumerate().filter(|(_, f)| {
                         f.hidden
+                            && (!f.qualified_only || qualifier.is_some())
                             && qualifier
                                 .as_ref()
                                 .is_none_or(|q| q.eq_ignore_ascii_case(&f.table))

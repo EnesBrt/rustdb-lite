@@ -80,6 +80,8 @@ jobs:
         run: python3 safe/scripts/type_differential.py
       - name: Compare conflict policies, retained rows and transaction counters
         run: python3 safe/scripts/conflict_differential.py
+      - name: Compare UPSERT targets, updates and constraint precedence
+        run: python3 safe/scripts/upsert_differential.py
   platform-native:
     strategy:
       fail-fast: false

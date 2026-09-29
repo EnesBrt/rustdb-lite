@@ -213,6 +213,20 @@ pub enum InsertSource {
     Default,
 }
 #[derive(Clone, Debug)]
+pub struct Upsert {
+    pub target: Option<Vec<Expr>>,
+    pub target_where: Option<Expr>,
+    pub action: UpsertAction,
+}
+#[derive(Clone, Debug)]
+pub enum UpsertAction {
+    Nothing,
+    Update {
+        assignments: Vec<(String, Expr)>,
+        filter: Option<Expr>,
+    },
+}
+#[derive(Clone, Debug)]
 pub struct IndexColumn {
     pub name: String,
     pub collation: Option<Collation>,
@@ -301,9 +315,11 @@ pub enum Statement {
     },
     Insert {
         name: String,
+        alias: Option<String>,
         columns: Option<Vec<String>>,
         source: InsertSource,
         conflict: Conflict,
+        upserts: Vec<Upsert>,
     },
     Select(Box<Query>),
     Update {
@@ -523,6 +539,69 @@ impl Parser<'_> {
         } else {
             Ok(Conflict::Default)
         }
+    }
+    fn assignments(&mut self) -> Result<Vec<(String, Expr)>> {
+        let mut assignments = Vec::new();
+        loop {
+            let name = self.name()?;
+            self.expect("=")?;
+            assignments.push((name, self.expr(0)?));
+            if !self.eat(",") {
+                break;
+            }
+        }
+        Ok(assignments)
+    }
+    fn upserts(&mut self) -> Result<Vec<Upsert>> {
+        let mut upserts = Vec::new();
+        while self.eat("ON") {
+            self.expect("CONFLICT")?;
+            let target = if self.eat("(") {
+                let mut terms = Vec::new();
+                loop {
+                    terms.push(self.expr(0)?);
+                    if !self.eat("ASC") {
+                        self.eat("DESC");
+                    }
+                    if !self.eat(",") {
+                        break;
+                    }
+                }
+                self.expect(")")?;
+                Some(terms)
+            } else {
+                None
+            };
+            let target_where = if target.is_some() {
+                self.optional_where()?
+            } else {
+                None
+            };
+            self.expect("DO")?;
+            let action = if self.eat("NOTHING") {
+                UpsertAction::Nothing
+            } else {
+                self.expect("UPDATE")?;
+                self.expect("SET")?;
+                UpsertAction::Update {
+                    assignments: self.assignments()?,
+                    filter: self.optional_where()?,
+                }
+            };
+            let last = target.is_none();
+            upserts.push(Upsert {
+                target,
+                target_where,
+                action,
+            });
+            if upserts.len() > 1000 {
+                return Err(Error::Limit("UPSERT clauses"));
+            }
+            if last {
+                break;
+            }
+        }
+        Ok(upserts)
     }
     fn index_columns(&mut self) -> Result<Vec<IndexColumn>> {
         self.expect("(")?;
@@ -890,6 +969,11 @@ impl Parser<'_> {
             };
             self.expect("INTO")?;
             let name = self.table_name()?;
+            let alias = if self.eat("AS") {
+                Some(self.name()?)
+            } else {
+                None
+            };
             let columns = if self.is("(") {
                 Some(self.names()?)
             } else {
@@ -911,26 +995,25 @@ impl Parser<'_> {
             } else {
                 return Err(self.expected("VALUES or SELECT"));
             };
+            let upserts = if matches!(source, InsertSource::Default) {
+                Vec::new()
+            } else {
+                self.upserts()?
+            };
             return Ok(Statement::Insert {
                 name,
+                alias,
                 columns,
                 source,
                 conflict,
+                upserts,
             });
         }
         if self.eat("UPDATE") {
             let conflict = self.or_conflict()?;
             let name = self.table_name()?;
             self.expect("SET")?;
-            let mut assignments = Vec::new();
-            loop {
-                let name = self.name()?;
-                self.expect("=")?;
-                assignments.push((name, self.expr(0)?));
-                if !self.eat(",") {
-                    break;
-                }
-            }
+            let assignments = self.assignments()?;
             return Ok(Statement::Update {
                 name,
                 assignments,

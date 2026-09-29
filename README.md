@@ -28,6 +28,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
   creation/deletion and native database interchange; see [view support](safe/VIEWS.md).
 - All five constraint conflict policies, statement overrides, schema ON CONFLICT,
   and persistence of retained FAIL prefixes; see [conflict support](safe/CONFLICTS.md).
+- UPSERT with ordered targets, DO NOTHING/DO UPDATE, excluded values, correlated
+  expressions and persistence; see [UPSERT support](safe/UPSERT.md).
 - Explicit/composite/unique indexes and automatic constraint indexes, including
   SQLite-compatible index image writing, overflow, sorting and schema interchange.
 - Offline SQL snapshot import/export and an experimental `sqlite-safe-sql` command.
@@ -47,8 +49,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
 - An offline inspection utility with `info`, `schema`, and physical `rows` output.
 
 SQLite's own `integrity_check` accepts generated files at all eight page sizes.
-Seventy-two core Rust integration tests include 14,000 malformed-input mutations
-and 600 simulated commit failure/crash variants. Ten additional adapter tests
+Seventy-seven core Rust integration tests include 14,000 malformed-input mutations
+and 600 simulated commit failure/crash variants. Eleven additional adapter tests
 exercise real files and concurrent threads.
 The separate C oracle validates 956 SQL expression/query/error/snapshot cases and
 32 storage scenarios covering file construction, existing database reads, and WAL
@@ -60,12 +62,14 @@ SELECT/schema-interchange scenarios.
 Another 508 comparisons cover compound column types, nested metadata, stored
 value classes and scalar/IN affinities, including integer precision boundaries.
 Another 316 scenarios compare conflict policies, errors, counters, transaction state
-and encoded images. Incremental-vacuum scheduling and free-page retention remain pending.
-The Unix adapter passes 23 interchange/locking/conflict scenarios and 210 real interrupted
+and encoded images, plus 592 UPSERT scenarios. Incremental-vacuum scheduling and free-page retention remain pending.
+The Unix adapter passes 32 interchange/locking/conflict/UPSERT scenarios and 210 real interrupted
 commit/partial-write recovery points. These are not hardware power-loss tests. The core
 compiles for nine targets, including 32-bit, big-endian,
 Windows, Linux, Android, iOS, WebAssembly, and embedded targets. **Only macOS ARM64
-has been runtime-tested here.** Native WAL fixtures also cover both checksum byte
+has been runtime-tested locally.** The published CI baseline also passes core
+tests on Linux and Windows, and Unix adapter tests on Linux; see the exact
+[CI evidence](safe/STATUS.md#published-ci-evidence). Native WAL fixtures also cover both checksum byte
 orders, every byte truncation, and uncommitted/stale/corrupted tails. See
 [`safe/STATUS.md`](safe/STATUS.md).
 

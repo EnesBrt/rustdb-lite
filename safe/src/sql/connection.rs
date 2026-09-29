@@ -14,6 +14,7 @@ use core::cmp::Ordering as Compare;
 mod conflict;
 mod query;
 mod schema;
+mod upsert;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct QueryResult {
@@ -76,6 +77,7 @@ impl StoredTable {
                 affinity: c.affinity,
                 collation: c.collation,
                 hidden: false,
+                qualified_only: false,
                 declared_type: c.declared_type.clone(),
             })
             .collect();
@@ -85,6 +87,7 @@ impl StoredTable {
             affinity: Affinity::Integer,
             collation: Collation::Binary,
             hidden: true,
+            qualified_only: false,
             declared_type: "INTEGER".into(),
         });
         fields
@@ -142,6 +145,7 @@ pub struct Connection {
     total_changes: u64,
     last_rowid: i64,
     failure_action: Conflict,
+    dml_evaluating: bool,
 }
 impl Default for Connection {
     fn default() -> Self {
@@ -163,6 +167,7 @@ impl Connection {
             total_changes: 0,
             last_rowid: 0,
             failure_action: Conflict::Default,
+            dml_evaluating: false,
         }
     }
     pub fn changes(&self) -> usize {
@@ -236,6 +241,7 @@ impl Connection {
         parameters: &[Value],
     ) -> Result<QueryResult> {
         self.failure_action = Conflict::Default;
+        self.dml_evaluating = false;
         if parameters.len() > prepared.parameter_count() {
             return Err(error("too many bound parameters"));
         }
@@ -294,7 +300,7 @@ impl Connection {
             } else if let Some(backup) = backup {
                 self.state = backup;
             }
-            if prepared.statement.changes_rows() {
+            if prepared.statement.changes_rows() && self.dml_evaluating {
                 self.changes = 0;
             }
         }
@@ -691,12 +697,22 @@ impl Connection {
             }
             Statement::Insert {
                 name,
+                alias,
                 columns,
                 source,
                 conflict,
+                upserts,
             } => {
                 let index = self.index(name)?;
                 let table = &self.state.tables[index];
+                let upserts = self.bind_upserts(
+                    table,
+                    alias.as_deref().unwrap_or(name),
+                    upserts,
+                    scope.clone(),
+                    runtime,
+                    context,
+                )?;
                 let destinations = if let Some(columns) = columns {
                     columns
                         .iter()
@@ -731,14 +747,19 @@ impl Connection {
                                 .map(InputRow::Expressions)
                         })
                         .collect::<Result<_>>()?,
-                    InsertSource::Select(query) => self
-                        .query(query, context, scope.clone(), runtime, false)?
-                        .result
-                        .rows
-                        .into_iter()
-                        .map(InputRow::Values)
-                        .collect(),
+                    InsertSource::Select(query) => {
+                        self.dml_evaluating = true;
+                        self.query(query, context, scope.clone(), runtime, false)?
+                            .result
+                            .rows
+                            .into_iter()
+                            .map(InputRow::Values)
+                            .collect()
+                    }
                 };
+                // Binding/target errors leave the previous changes() count;
+                // evaluation and constraint errors have statement semantics.
+                self.dml_evaluating = true;
                 if input.len() > self.limits.max_rows {
                     return Err(Error::Limit("insert rows"));
                 }
@@ -858,6 +879,7 @@ impl Connection {
                         *conflict,
                         &checks,
                         &defaults,
+                        &upserts,
                         context,
                     )? {
                         conflict::Decision::Ignore => continue,
@@ -865,6 +887,33 @@ impl Connection {
                             return Err(self.conflict_error(policy, message, count))
                         }
                         conflict::Decision::Write(ids) => ids,
+                        conflict::Decision::Upsert { clause, id: old_id } => {
+                            if let Some((id, values)) = self.upsert_row(
+                                table,
+                                &upserts[clause],
+                                upsert::Incoming {
+                                    old_id,
+                                    id,
+                                    values: &values,
+                                },
+                                scope.clone(),
+                                runtime,
+                                context,
+                            )? {
+                                database_bytes = database_bytes
+                                    .checked_sub(values_size(&table.rows[&old_id])?)
+                                    .and_then(|n| n.checked_add(values_size(&values).ok()?))
+                                    .ok_or(Error::Limit("UPSERT database bytes"))?;
+                                if database_bytes > context.limits.max_database_bytes {
+                                    return Err(Error::Limit("database bytes"));
+                                }
+                                let table = &mut self.state.tables[index];
+                                table.rows.remove(&old_id);
+                                table.rows.insert(id, values);
+                                count += 1;
+                            }
+                            continue;
+                        }
                     };
                     for id in &replaced {
                         database_bytes = database_bytes
@@ -937,6 +986,7 @@ impl Connection {
                 let checks = checks(table)?;
                 let defaults = defaults(table)?;
                 let mut selected = Vec::new();
+                self.dml_evaluating = true;
                 for (id, values) in &table.rows {
                     context.fuel.spend()?;
                     if self.expressions(scope.clone(), runtime).filter(
@@ -992,6 +1042,7 @@ impl Connection {
                         *conflict,
                         &checks,
                         &defaults,
+                        &[],
                         context,
                     )? {
                         conflict::Decision::Ignore => continue,
@@ -999,6 +1050,9 @@ impl Connection {
                             return Err(self.conflict_error(policy, message, count))
                         }
                         conflict::Decision::Write(ids) => ids,
+                        conflict::Decision::Upsert { .. } => {
+                            return Err(Error::Corrupt("UPSERT during ordinary UPDATE"))
+                        }
                     };
                     for id in &replaced {
                         database_bytes = database_bytes
@@ -1039,6 +1093,7 @@ impl Connection {
                     })
                     .transpose()?;
                 let mut deleted = Vec::new();
+                self.dml_evaluating = true;
                 for (id, values) in &table.rows {
                     context.fuel.spend()?;
                     if self.expressions(scope.clone(), runtime).filter(

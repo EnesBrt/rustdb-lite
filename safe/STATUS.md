@@ -15,6 +15,7 @@ is a separate `legacy/` project.
 | WAL | Offline checksum/salt/commit recovery only |
 | SQL tokenizer/parser, expressions, table/query execution | Partial implementation; see [SQL.md](SQL.md) |
 | In-memory transactions/savepoints and conflict policies | ABORT/FAIL/ROLLBACK/IGNORE/REPLACE, statement overrides and schema policies; [scope](CONFLICTS.md) |
+| UPSERT | Ordered rowid/unique targets, DO NOTHING/DO UPDATE, excluded values, conditional/correlated updates; [scope](UPSERT.md) |
 | Query optimizer, complete schema/SQL semantics | Not implemented |
 | Explicit/automatic index schemas and uniqueness | Implemented for supported column/composite keys; fresh-image rebuilds |
 | Table constraints and schema inspection | Composite PRIMARY KEY/UNIQUE, table CHECK, named-constraint syntax, five inspection pragmas |
@@ -34,7 +35,7 @@ is a separate `legacy/` project.
 
 ## Verified locally, 2026-09-29
 
-- Seventy-two core Rust integration tests pass in debug and release builds, including
+- Seventy-seven core Rust integration tests pass in debug and release builds, including
   3,000 deterministic database mutations, 3,000 mutations of valid native WAL
   seeds, 5,000 malformed-SQL mutations, and 3,000 journal mutations, with bounded
   budgets and panic detection.
@@ -67,10 +68,10 @@ is a separate `legacy/` project.
   Interrupted recovery, exclusive-lock lifetime, and journaled SQL transaction
   reopen tests also pass. These are adapter-contract simulations, not
   OS/power-loss tests.
-- Ten platform Rust tests pass in debug/release, covering real files, recovery,
+- Eleven platform Rust tests pass in debug/release, covering real files, recovery,
   path/sidecar guards, lock lifetime, CTE/subquery data changes, views, CREATE TABLE
   AS SELECT and an eight-thread contention race.
-- Twenty-three native file interchange/lock/conflict scenarios pass on macOS ARM64. They include
+- Thirty-two native file interchange/lock/conflict/UPSERT scenarios pass on macOS ARM64. They include
   persistent native connections across updates of all three text encodings and
   updates of both auto-vacuum modes. 210 real process-interruption/partial-write
   recovery points cover ordinary and pointer-map files and match native SQLite.
@@ -110,7 +111,12 @@ is a separate `legacy/` project.
   3.53.4. Six Rust policy tests cover defaults, precedence, transactions, counters,
   malformed prefixes and limits. Pager and Unix tests additionally cover retained
   FAIL prefixes, transaction rollback and errors during persistence. This does not
-  implement UPSERT, triggers or foreign keys; see [CONFLICTS.md](CONFLICTS.md).
+  implement triggers or foreign keys; see [CONFLICTS.md](CONFLICTS.md).
+- 592 UPSERT target/action/error/counter/image comparisons pass against SQLite
+  3.53.4. Five Rust tests cover bindings, correlated scopes, precedence, rollback,
+  resource errors and encoded roundtrips; a platform test and nine native
+  real-file cases verify persisted updates and failed-statement isolation. See
+  [UPSERT.md](UPSERT.md) for the remaining SQL limitations.
 - The separate Unix adapter compiles for macOS ARM64, Linux x86-64/i686/s390x,
   Android ARM64 and iOS ARM64. Only the macOS adapter has runtime evidence here.
 - Floating-point comparisons use exact IEEE-754 bit patterns. Text comparisons
@@ -138,7 +144,7 @@ is a separate `legacy/` project.
 | thumbv7em-none-eabi | Passed | Not run |
 
 Machine-readable results are in [coverage/compile-checks.json](coverage/compile-checks.json).
-The GitHub Actions workflow is defined but has not been executed remotely.
+The published baseline has also passed GitHub Actions; see the evidence below.
 These compile checks do not establish SQL, filesystem, or utility support.
 
 ## Reproduce from the repository root
@@ -163,6 +169,7 @@ python3 safe/scripts/subquery_differential.py
 python3 safe/scripts/view_differential.py
 python3 safe/scripts/type_differential.py
 python3 safe/scripts/conflict_differential.py
+python3 safe/scripts/upsert_differential.py
 python3 safe/scripts/check_targets.py
 python3 platform/scripts/file_differential.py
 python3 platform/scripts/check_targets.py
@@ -173,3 +180,18 @@ The reference binaries and downloaded test sources are under ignored
 ignored `build/safe-*.log`. The source inventory can be regenerated with
 `python3 safe/scripts/inventory.py` after fetching the pinned source archive with
 `python3 legacy/scripts/fetch_test_sources.py`.
+
+## Published CI evidence
+
+[GitHub Actions run 36615259246](https://github.com/EnesBrt/rustdb-lite/actions/runs/36615259246)
+passed all 17 jobs for commit `55ba0d3` on 2026-09-29. That baseline includes
+72 core and 10 Unix adapter Rust integration tests, before UPSERT was added.
+Core debug/release/doc tests passed on Ubuntu 24.04, macOS 14 ARM64 and Windows
+2022; Unix adapter debug/release/doc and native file comparisons passed on Ubuntu
+and macOS. The native differential, minimum-Rust and cross-compilation jobs also
+passed. The macOS job used Rust 1.98.1.
+
+These results establish execution of the tested subset on those runners, not
+complete platform or durability support. Other target runtime tests remain
+pending. New UPSERT coverage is recorded above and is included in subsequent CI
+runs; the linked baseline does not establish its cross-platform behavior.

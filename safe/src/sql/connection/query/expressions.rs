@@ -163,7 +163,10 @@ struct Binding<'a, 'b, 'c, 'd> {
 impl Resolver for Binding<'_, '_, '_, '_> {
     fn column(&mut self, qualifier: Option<&str>, name: &str) -> Result<Option<Expr>> {
         for (frame_index, frame) in self.expressions.runtime.outer.iter().enumerate().rev() {
-            let matches = |f: &&Field| qualifier.is_none_or(|q| q.eq_ignore_ascii_case(&f.table));
+            let matches = |f: &&Field| {
+                (!f.qualified_only || qualifier.is_some())
+                    && qualifier.is_none_or(|q| q.eq_ignore_ascii_case(&f.table))
+            };
             let mut found: Vec<_> = frame
                 .fields
                 .iter()
