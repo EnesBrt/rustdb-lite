@@ -15,6 +15,7 @@ mod conflict;
 mod query;
 mod returning;
 mod schema;
+mod sequence;
 mod upsert;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -43,6 +44,7 @@ struct StoredTable {
     rowid_alias: Option<usize>,
     primary_key: Vec<usize>,
     key_conflict: Conflict,
+    autoincrement: bool,
 }
 #[derive(Clone)]
 struct StoredView {
@@ -282,6 +284,9 @@ impl Connection {
             None,
             &mut query::Runtime::default(),
         );
+        if matches!(result, Err(Error::Full)) {
+            self.failure_action = Conflict::Rollback;
+        }
         if result.is_ok() || self.failure_action == Conflict::Fail {
             if let Err(error) = self.check_budget() {
                 self.failure_action = Conflict::Abort;
@@ -456,6 +461,9 @@ impl Connection {
                     return Err(Error::Limit("index columns"));
                 }
                 let table_id = self.index(table)?;
+                if table.eq_ignore_ascii_case(sequence::NAME) {
+                    return Err(error("system tables may not be indexed"));
+                }
                 let table = &mut self.state.tables[table_id];
                 if table.indexes.len() >= 2000 {
                     return Err(Error::Limit("indexes per table"));
@@ -511,9 +519,13 @@ impl Connection {
                 name,
                 columns,
                 constraints,
+                autoincrement,
                 if_not_exists,
                 sql,
             } => {
+                if name.eq_ignore_ascii_case(sequence::NAME) {
+                    return Err(error("invalid or reserved table name"));
+                }
                 if self.named_index(name).is_some() {
                     return Err(error(format!("index {name} already exists")));
                 }
@@ -556,6 +568,7 @@ impl Connection {
                         .iter()
                         .find(|c| c.rowid_alias())
                         .map_or(Conflict::Default, |c| c.primary_conflict),
+                    autoincrement: *autoincrement,
                 };
                 let fields = table.fields(name);
                 for (i, column) in columns.iter().enumerate() {
@@ -681,15 +694,28 @@ impl Connection {
                         }
                     }
                 }
+                if table.autoincrement && table.alias().is_none() {
+                    return Err(error("AUTOINCREMENT requires an INTEGER PRIMARY KEY"));
+                }
                 self.state.tables.push(table);
+                if *autoincrement {
+                    self.ensure_sequence()?;
+                }
                 return Ok(QueryResult::changed(0));
             }
             Statement::Drop { name, if_exists } => {
+                if name.eq_ignore_ascii_case(sequence::NAME) && self.index(name).is_ok() {
+                    return Err(error("sqlite_sequence may not be dropped"));
+                }
                 if self.view_index(name).is_some() {
                     return Err(error(format!("use DROP VIEW for {name}")));
                 }
                 match self.index(name) {
                     Ok(i) => {
+                        if self.state.tables[i].autoincrement {
+                            let name = self.state.tables[i].name.clone();
+                            self.remove_sequence(&name, context.fuel)?;
+                        }
                         self.state.tables.remove(i);
                     }
                     Err(_) if *if_exists => {}
@@ -724,6 +750,7 @@ impl Connection {
                     runtime,
                     context,
                 )?;
+                let mut autoincrement = self.start_sequence(index, context.fuel)?;
                 let destinations = if let Some(columns) = columns {
                     columns
                         .iter()
@@ -858,19 +885,22 @@ impl Connection {
                         }
                     }
                     let id = if scalar::null(&id) {
-                        table
-                            .rows
-                            .last_key_value()
-                            .map(|(n, _)| {
+                        let largest = table.rows.last_key_value().map(|(n, _)| *n);
+                        if let Some(sequence) = &autoincrement {
+                            sequence.allocate(largest)?
+                        } else {
+                            largest.map_or(Ok(1), |n| {
                                 n.checked_add(1).ok_or(Error::Unsupported(
                                     "random rowid allocation after i64::MAX",
                                 ))
-                            })
-                            .transpose()?
-                            .unwrap_or(1)
+                            })?
+                        }
                     } else {
                         rowid(id)?
                     };
+                    if let Some(sequence) = &mut autoincrement {
+                        sequence.step(id);
+                    }
                     if let Some(alias) = table.alias() {
                         values[alias] = Value::Integer(id);
                     }
@@ -970,6 +1000,9 @@ impl Connection {
                         runtime,
                         context,
                     )?;
+                }
+                if let Some(sequence) = autoincrement {
+                    self.finish_sequence(sequence)?;
                 }
                 returned = output.finish(count);
                 count
@@ -1869,6 +1902,13 @@ impl Connection {
             },
         )?;
         let schema = db.schema()?;
+        let sequence_count = schema
+            .iter()
+            .filter(|e| e.kind == "table" && e.name == sequence::NAME)
+            .count();
+        if sequence_count > 1 {
+            return Err(Error::Corrupt("duplicate sqlite_sequence schema"));
+        }
         let mut connection = Self::new();
         for entry in &schema {
             if entry.kind == "index" {
@@ -1906,7 +1946,14 @@ impl Connection {
             {
                 return Err(Error::Corrupt("table schema does not match CREATE SQL"));
             }
-            connection.execute_prepared(&prepared, &[])?;
+            if entry.name == sequence::NAME {
+                if sql != sequence::SQL {
+                    return Err(Error::Corrupt("sqlite_sequence declaration"));
+                }
+                connection.ensure_sequence()?;
+            } else {
+                connection.execute_prepared(&prepared, &[])?;
+            }
             let index = connection.index(&entry.name)?;
             let mut fuel = Fuel::new(connection.limits.max_steps);
             let mut context = Eval {
@@ -1965,6 +2012,9 @@ impl Connection {
                 Ok(())
             })?;
             connection.check_budget()?;
+        }
+        if connection.state.tables.iter().any(|t| t.autoincrement) && sequence_count == 0 {
+            return Err(Error::Corrupt("missing sqlite_sequence schema"));
         }
         for entry in schema.iter().filter(|e| e.kind == "index") {
             if let Some(sql) = &entry.sql {

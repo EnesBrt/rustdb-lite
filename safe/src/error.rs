@@ -13,6 +13,7 @@ pub enum Error {
     Constraint(alloc::string::String),
     Storage(alloc::string::String),
     Busy(&'static str),
+    Full,
 }
 pub type Result<T> = core::result::Result<T, Error>;
 impl fmt::Display for Error {
@@ -29,6 +30,7 @@ impl fmt::Display for Error {
             Self::Constraint(s) => write!(f, "constraint failed: {s}"),
             Self::Storage(s) => write!(f, "storage error: {s}"),
             Self::Busy(s) => write!(f, "database busy: {s}"),
+            Self::Full => f.write_str("database or disk is full"),
         }
     }
 }

@@ -47,7 +47,8 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Tables | Ordinary rowid tables; declared-type affinity; column/table PRIMARY KEY, UNIQUE and CHECK constraints (including composite keys), NOT NULL, DEFAULT, collations, constraint-name syntax |
 | Views and table snapshots | CREATE/DROP VIEW, optional view column lists, CREATE TABLE AS SELECT/VALUES/WITH; main schema, metadata and image interchange; see [VIEWS.md](VIEWS.md) |
 | Indexes | CREATE [UNIQUE] INDEX, DROP INDEX, composite column keys, ASC/DESC, built-in collations, automatic column-constraint indexes |
-| Data changes | INSERT VALUES/DEFAULT VALUES/SELECT, UPDATE, DELETE; five conflict policies, schema ON CONFLICT and REPLACE; rowid allocation without AUTOINCREMENT |
+| Data changes | INSERT VALUES/DEFAULT VALUES/SELECT, UPDATE, DELETE; five conflict policies, schema ON CONFLICT and REPLACE; rowid allocation with AUTOINCREMENT |
+| Sequences | Editable sqlite_sequence, persisted high-water values, savepoints and exhausted-rowid rollback; see [AUTOINCREMENT.md](AUTOINCREMENT.md) |
 | UPSERT | ON CONFLICT targets, multiple clauses, DO NOTHING/DO UPDATE, excluded values and conditional updates; see [UPSERT.md](UPSERT.md) |
 | RETURNING | Buffered row projections on INSERT/UPSERT, UPDATE and DELETE, expression subqueries, aliases and counters; see [RETURNING.md](RETURNING.md) |
 | Queries | Projection, stars, aliases, filtering, comma/inner/cross/left joins with ON, DISTINCT, GROUP BY, HAVING, ORDER BY, NULLS FIRST/LAST, LIMIT/OFFSET |
@@ -75,7 +76,7 @@ behaviors, not complete compatibility of every expression/feature combination.
   platform coverage remain unfinished. The CLI still uses snapshots.
 - No temporary schemas, triggers, window functions,
   virtual tables, foreign keys, STRICT/WITHOUT ROWID
-  SQL tables, AUTOINCREMENT, ALTER TABLE, ATTACH,
+  SQL tables, ALTER TABLE, ATTACH,
   extension loading, or C ABI.
 - Row-value subqueries, the `value IN table_name` shorthand, and aggregates owned
   by an outer query (such as `SELECT (SELECT sum(t.x)) FROM t`) remain unsupported.
@@ -104,6 +105,8 @@ behaviors, not complete compatibility of every expression/feature combination.
   of direction. Constraint names survive in CREATE SQL, but violation diagnostics
   currently report generic constraint types, not exact native messages/names.
 - Unique constraints and explicit unique indexes are enforced by scans in memory.
+  Ordinary-table random rowid allocation after i64::MAX is pending, including
+  manually setting that rowid on sqlite_sequence before it needs a new entry.
   Exports rebuild table/index trees; there is no incremental index mutation or
   index-based query access. Expression and partial indexes are not supported.
   Import rejects triggers, unsupported index definitions, and other schemas

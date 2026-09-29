@@ -84,6 +84,8 @@ jobs:
         run: python3 safe/scripts/upsert_differential.py
       - name: Compare RETURNING rows, caches, errors and counters
         run: python3 safe/scripts/returning_differential.py
+      - name: Compare AUTOINCREMENT sequences and exhausted rowids
+        run: python3 safe/scripts/sequence_differential.py
   platform-native:
     strategy:
       fail-fast: false

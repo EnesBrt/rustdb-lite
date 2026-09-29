@@ -87,7 +87,12 @@ impl ImageBuilder {
         self
     }
     pub fn add_table(&mut self, table: Table) -> Result<()> {
-        if table.name.contains('\0') || table.name.to_ascii_lowercase().starts_with("sqlite_") {
+        self.add_table_internal(table, false)
+    }
+    fn add_table_internal(&mut self, table: Table, sequence: bool) -> Result<()> {
+        if table.name.contains('\0')
+            || !sequence && table.name.to_ascii_lowercase().starts_with("sqlite_")
+        {
             return Err(Error::InvalidInput("invalid or reserved table name"));
         }
         if self
@@ -139,7 +144,10 @@ impl ImageBuilder {
 
     pub(crate) fn add_table_with_sql(&mut self, table: Table, sql: String) -> Result<()> {
         let name = table.name.clone();
-        self.add_table(table)?;
+        let sequence = name == "sqlite_sequence"
+            && table.columns == ["name", "seq"]
+            && sql == "CREATE TABLE sqlite_sequence(name,seq)";
+        self.add_table_internal(table, sequence)?;
         self.schema_sql.insert(name, sql);
         Ok(())
     }

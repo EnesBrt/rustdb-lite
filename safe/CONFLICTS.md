@@ -67,7 +67,9 @@ native error messages/codes are not covered by this comparison.
 
 UPSERT (`ON CONFLICT ... DO UPDATE/NOTHING`) is described in [UPSERT.md](UPSERT.md).
 Buffered RETURNING rows and error behavior are described in [RETURNING.md](RETURNING.md).
-This does not implement AUTOINCREMENT, foreign keys, triggers, virtual tables, or the C API. Index access
+AUTOINCREMENT tracks ignored attempts and keeps distinct FAIL/FULL semantics;
+see [AUTOINCREMENT.md](AUTOINCREMENT.md). Foreign keys, triggers, virtual tables,
+and the C API remain unimplemented. Index access
 paths and streaming INSERT SELECT execution remain pending. Query materialization
 can change evaluation/error timing, and the lack of a planner can change which
 rows precede a FAIL when native SQLite chooses a different scan order. Arbitrary

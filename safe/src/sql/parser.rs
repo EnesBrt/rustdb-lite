@@ -307,6 +307,7 @@ pub enum Statement {
         name: String,
         columns: Vec<Column>,
         constraints: Vec<TableConstraint>,
+        autoincrement: bool,
         if_not_exists: bool,
         sql: String,
     },
@@ -610,6 +611,9 @@ impl Parser<'_> {
         Ok(upserts)
     }
     fn index_columns(&mut self) -> Result<Vec<IndexColumn>> {
+        self.key_columns(false).map(|(columns, _)| columns)
+    }
+    fn key_columns(&mut self, primary: bool) -> Result<(Vec<IndexColumn>, bool)> {
         self.expect("(")?;
         let mut columns = Vec::new();
         loop {
@@ -640,8 +644,9 @@ impl Parser<'_> {
                 break;
             }
         }
+        let autoincrement = primary && self.eat("AUTOINCREMENT");
         self.expect(")")?;
-        Ok(columns)
+        Ok((columns, autoincrement))
     }
     fn statement(&mut self) -> Result<Statement> {
         let start = self.tokens[self.at].start;
@@ -751,6 +756,7 @@ impl Parser<'_> {
             self.expect("(")?;
             let mut columns = Vec::new();
             let mut constraints = Vec::new();
+            let mut autoincrement = false;
             let mut table_constraints = false;
             loop {
                 if ["PRIMARY", "UNIQUE", "CHECK", "FOREIGN", "CONSTRAINT"]
@@ -767,8 +773,10 @@ impl Parser<'_> {
                         self.name()?;
                     } else if self.eat("PRIMARY") {
                         self.expect("KEY")?;
+                        let (keys, automatic) = self.key_columns(true)?;
+                        autoincrement |= automatic;
                         constraints.push(TableConstraint::Key {
-                            columns: self.index_columns()?,
+                            columns: keys,
                             primary: true,
                             conflict: self.on_conflict()?,
                         });
@@ -814,6 +822,7 @@ impl Parser<'_> {
                         "CONSTRAINT",
                         "GENERATED",
                         "AS",
+                        "AUTOINCREMENT",
                     ]
                     .iter()
                     .any(|s| self.is(s))
@@ -888,6 +897,7 @@ impl Parser<'_> {
                             column.index_desc = column.primary_desc;
                         }
                         column.primary_conflict = self.on_conflict()?;
+                        autoincrement |= self.eat("AUTOINCREMENT");
                     } else if self.eat("NOT") {
                         self.expect("NULL")?;
                         column.not_null = true;
@@ -932,6 +942,7 @@ impl Parser<'_> {
                 name,
                 columns,
                 constraints,
+                autoincrement,
                 if_not_exists,
                 sql: self.schema_sql(start, end, name_start, name_end),
             });

@@ -57,6 +57,72 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn autoincrement_persists_high_water_and_rolls_back_full_transactions() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    c.execute(
+        "CREATE TABLE t(id INTEGER PRIMARY KEY AUTOINCREMENT,x UNIQUE)",
+        &[],
+    )
+    .unwrap();
+    c.execute("INSERT INTO t VALUES(100,1)", &[]).unwrap();
+    c.execute("DELETE FROM t", &[]).unwrap();
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("INSERT INTO t(x) VALUES(1) RETURNING id", &[])
+            .unwrap()
+            .rows,
+        vec![vec![Value::Integer(101)]]
+    );
+    assert!(matches!(
+        c.execute("INSERT OR FAIL INTO t(x) VALUES(2),(1)", &[]),
+        Err(Error::Constraint(_))
+    ));
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT seq FROM sqlite_sequence", &[])
+            .unwrap()
+            .rows,
+        vec![vec![Value::Integer(101)]]
+    );
+    assert_eq!(
+        c.execute("INSERT INTO t(x) VALUES(3) RETURNING id", &[])
+            .unwrap()
+            .rows,
+        vec![vec![Value::Integer(103)]]
+    );
+    drop(c);
+    let before = fs::read(&path).unwrap();
+    let mut c = open(&path);
+    c.execute("BEGIN", &[]).unwrap();
+    c.execute("INSERT INTO t VALUES(9223372036854775807,9)", &[])
+        .unwrap();
+    assert_eq!(
+        c.execute("INSERT INTO t(x) VALUES(10)", &[]),
+        Err(Error::Full)
+    );
+    assert!(c.is_autocommit().unwrap());
+    drop(c);
+    assert_eq!(fs::read(&path).unwrap(), before);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("INSERT INTO t(x) VALUES(4) RETURNING id", &[])
+            .unwrap()
+            .rows,
+        vec![vec![Value::Integer(104)]]
+    );
+    c.execute("DROP TABLE t", &[]).unwrap();
+    drop(c);
+    assert!(open(&path)
+        .execute("SELECT * FROM sqlite_sequence", &[])
+        .unwrap()
+        .rows
+        .is_empty());
+}
+#[test]
 fn returning_persists_changes_and_keeps_fail_prefix_without_partial_results() {
     let temp = Temp::new();
     let path = temp.db();

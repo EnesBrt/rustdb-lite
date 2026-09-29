@@ -10,6 +10,9 @@ impl Connection {
             .position(|v| v.name.eq_ignore_ascii_case(name))
     }
     pub(super) fn new_relation(&self, name: &str, if_not_exists: bool) -> Result<bool> {
+        if name.to_ascii_lowercase().starts_with("sqlite_") {
+            return Err(error("reserved schema name"));
+        }
         if self.named_index(name).is_some() {
             return Err(error(format!("index {name} already exists")));
         }
@@ -18,9 +21,6 @@ impl Connection {
                 return Ok(false);
             }
             return Err(error(format!("table or view {name} already exists")));
-        }
-        if name.to_ascii_lowercase().starts_with("sqlite_") {
-            return Err(error("reserved schema name"));
         }
         Ok(true)
     }
@@ -72,6 +72,7 @@ impl Connection {
             rowid_alias: None,
             primary_key: Vec::new(),
             key_conflict: Conflict::Default,
+            autoincrement: false,
         });
         Ok(())
     }

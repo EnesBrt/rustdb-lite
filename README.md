@@ -32,6 +32,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
   expressions and persistence; see [UPSERT support](safe/UPSERT.md).
 - Buffered RETURNING rows for INSERT/UPSERT, UPDATE and DELETE, including
   expression subqueries and conflict handling; see [RETURNING](safe/RETURNING.md).
+- AUTOINCREMENT with editable/persistent sqlite_sequence state, savepoints and
+  rowid-exhaustion rollback; see [sequence behavior](safe/AUTOINCREMENT.md).
 - Explicit/composite/unique indexes and automatic constraint indexes, including
   SQLite-compatible index image writing, overflow, sorting and schema interchange.
 - Offline SQL snapshot import/export and an experimental `sqlite-safe-sql` command.
@@ -51,8 +53,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
 - An offline inspection utility with `info`, `schema`, and physical `rows` output.
 
 SQLite's own `integrity_check` accepts generated files at all eight page sizes.
-Eighty-three core Rust integration tests include 14,000 malformed-input mutations
-and 600 simulated commit failure/crash variants. Twelve additional adapter tests
+Eighty-nine core Rust integration tests include 14,000 malformed-input mutations
+and 600 simulated commit failure/crash variants. Thirteen additional adapter tests
 exercise real files and concurrent threads.
 The separate C oracle validates 956 SQL expression/query/error/snapshot cases and
 32 storage scenarios covering file construction, existing database reads, and WAL
@@ -64,9 +66,9 @@ SELECT/schema-interchange scenarios.
 Another 508 comparisons cover compound column types, nested metadata, stored
 value classes and scalar/IN affinities, including integer precision boundaries.
 Another 316 scenarios compare conflict policies, errors, counters, transaction state
-and encoded images, plus 592 UPSERT and 311 RETURNING scenarios.
+and encoded images, plus 592 UPSERT, 311 RETURNING and 268 AUTOINCREMENT scenarios.
 Incremental-vacuum scheduling and free-page retention remain pending.
-The Unix adapter passes 41 interchange/locking/conflict/UPSERT/RETURNING scenarios and 210 real interrupted
+The Unix adapter passes 50 interchange/locking/conflict/UPSERT/RETURNING/sequence scenarios and 210 real interrupted
 commit/partial-write recovery points. These are not hardware power-loss tests. The core
 compiles for nine targets, including 32-bit, big-endian,
 Windows, Linux, Android, iOS, WebAssembly, and embedded targets. **Only macOS ARM64
