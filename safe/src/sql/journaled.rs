@@ -11,6 +11,8 @@ use crate::{
 /// flush the whole image. BEGIN/savepoints operate in private memory until then.
 /// A constraint FAIL also flushes retained autocommit changes before returning
 /// its error; a constraint ROLLBACK discards the pending transaction.
+/// Retained transaction prefixes after datatype errors are also persisted by
+/// a later COMMIT/outer RELEASE, even when changes() reports zero.
 ///
 /// Any export or persistence failure requires closing and reopening: the failed
 /// call may have committed, so inspect the reopened database before retrying.

@@ -83,13 +83,13 @@ images are compact even in that mode. See [auto-vacuum format support](../safe/A
 
 ## Validation
 
-Thirteen native Rust tests cover commit/rollback/reopen, recovery, corrupt-journal
+Fourteen native Rust tests cover commit/rollback/reopen, recovery, corrupt-journal
 retention, bounded reads, file identity/sidecar guards, connection lifetime, and
 an eight-thread race for one inode, plus persisted CTE/subquery data changes and
 unchanged files after failed inserts, plus persisted views and CREATE TABLE AS SELECT. They pass
 locally in debug and release.
 
-The native differential script checks 50 scenarios involving all three database
+The native differential script checks 59 scenarios involving all three database
 encodings, metadata retention, already-open native connections, native read and
 write locks, failed duplicate Rust opens, updates of both auto-vacuum modes, and
 a recursive CTE insert, a correlated update and view/schema changes that native
@@ -132,3 +132,8 @@ AUTOINCREMENT and sqlite_sequence persist in the same image commit. Tests cover
 reopening after deleting rows, retained FAIL prefixes, native readers and FULL
 rollback without altering the prior committed file. See
 [AUTOINCREMENT](../safe/AUTOINCREMENT.md).
+
+STRICT datatype errors may retain a transaction prefix without counting changes.
+The adapter persists that prefix on COMMIT/outer RELEASE and discards it on
+rollback. A Rust test and nine native file scenarios cover this behavior in the
+three text encodings and three auto-vacuum modes; see [STRICT](../safe/STRICT.md).

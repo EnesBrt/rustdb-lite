@@ -49,6 +49,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Indexes | CREATE [UNIQUE] INDEX, DROP INDEX, composite column keys, ASC/DESC, built-in collations, automatic column-constraint indexes |
 | Data changes | INSERT VALUES/DEFAULT VALUES/SELECT, UPDATE, DELETE; five conflict policies, schema ON CONFLICT and REPLACE; rowid allocation with AUTOINCREMENT |
 | Sequences | Editable sqlite_sequence, persisted high-water values, savepoints and exhausted-rowid rollback; see [AUTOINCREMENT.md](AUTOINCREMENT.md) |
+| STRICT tables | Six declared types, ANY preservation, primary-key nullability, type errors and transaction behavior; see [STRICT.md](STRICT.md) |
 | UPSERT | ON CONFLICT targets, multiple clauses, DO NOTHING/DO UPDATE, excluded values and conditional updates; see [UPSERT.md](UPSERT.md) |
 | RETURNING | Buffered row projections on INSERT/UPSERT, UPDATE and DELETE, expression subqueries, aliases and counters; see [RETURNING.md](RETURNING.md) |
 | Queries | Projection, stars, aliases, filtering, comma/inner/cross/left joins with ON, DISTINCT, GROUP BY, HAVING, ORDER BY, NULLS FIRST/LAST, LIMIT/OFFSET |
@@ -58,7 +59,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Scalar functions | typeof, length, octet_length, hex, unhex, lower, upper, abs, unicode, char, ifnull, nullif, coalesce, iif/if, instr, replace, trim/ltrim/rtrim, substr/substring, min/max, like, changes, total_changes, last_insert_rowid |
 | Collations | BINARY, ASCII NOCASE, RTRIM |
 | Transactions | BEGIN/COMMIT/ROLLBACK and nested savepoints over private owned memory |
-| Metadata | table_info/table_xinfo, index_list/index_info/index_xinfo pragmas; user_version, application_id, and read-only auto_vacuum |
+| Metadata | table_list/table_info/table_xinfo, index_list/index_info/index_xinfo pragmas; user_version, application_id, and read-only auto_vacuum |
 | Images | Offline import/export with table and index B-trees, stored views, preserved CREATE SQL, INTEGER PRIMARY KEY slots, text encoding, auto-vacuum mode, application_id and user_version |
 | Journaled API | `JournaledConnection<S>` persists autocommit/COMMIT/outer RELEASE through a caller-supplied storage adapter; see [PAGER.md](PAGER.md) |
 
@@ -75,7 +76,7 @@ behaviors, not complete compatibility of every expression/feature combination.
   access for the connection lifetime. Shared readers, WAL checkpoints and complete
   platform coverage remain unfinished. The CLI still uses snapshots.
 - No temporary schemas, triggers, window functions,
-  virtual tables, foreign keys, STRICT/WITHOUT ROWID
+  virtual tables, foreign keys, WITHOUT ROWID
   SQL tables, ALTER TABLE, ATTACH,
   extension loading, or C ABI.
 - Row-value subqueries, the `value IN table_name` shorthand, and aggregates owned
@@ -95,7 +96,9 @@ behaviors, not complete compatibility of every expression/feature combination.
   Tcl parameter suffixes and SQLite's double-quoted-string fallback are pending.
 - Schema-inspection pragmas support the table/view/index subset above, both argument
   syntaxes, primary-key positions, default SQL, index origin, collation names,
-  directions, and auxiliary rowid entries. Read-only results respect query limits.
+  directions, and auxiliary rowid entries. table_list adds strict flags and an empty
+  temp-schema catalog; invalid-view metadata timing limits are in [STRICT.md](STRICT.md).
+  Read-only results respect query limits.
   Table-valued pragma functions, SQL access to `sqlite_schema`, and the remaining
   pragmas are pending. Unknown pragmas currently return an unsupported error.
 - Composite ordinary-table keys permit distinct NULL entries, matching SQLite's

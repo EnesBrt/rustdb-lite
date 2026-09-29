@@ -230,6 +230,9 @@ fn prefix(bytes: &[u8]) -> (usize, usize, bool) {
     (start, at, floating)
 }
 fn parse_numeric(bytes: &[u8], full: bool, integerize: bool) -> Option<Value> {
+    // Native numeric conversion treats the first NUL as the end of the text,
+    // including when applying lossless column affinity to a sized SQL string.
+    let bytes = bytes.split(|b| *b == 0).next().unwrap_or(bytes);
     let (start, end, floating) = prefix(bytes);
     if end == start {
         return None;

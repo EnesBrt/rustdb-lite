@@ -11,11 +11,13 @@ use super::{
 use crate::{Database, Encoding, Error, ImageBuilder, Result, Table, Text, Value};
 use alloc::{collections::BTreeMap, format, string::String, vec, vec::Vec};
 use core::cmp::Ordering as Compare;
+mod catalog;
 mod conflict;
 mod query;
 mod returning;
 mod schema;
 mod sequence;
+mod strict;
 mod upsert;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -45,6 +47,7 @@ struct StoredTable {
     primary_key: Vec<usize>,
     key_conflict: Conflict,
     autoincrement: bool,
+    strict: bool,
 }
 #[derive(Clone)]
 struct StoredView {
@@ -148,6 +151,8 @@ pub struct Connection {
     total_changes: u64,
     last_rowid: i64,
     failure_action: Conflict,
+    datatype_journal: bool,
+    retained_datatype: bool,
     dml_evaluating: bool,
 }
 impl Default for Connection {
@@ -170,6 +175,8 @@ impl Connection {
             total_changes: 0,
             last_rowid: 0,
             failure_action: Conflict::Default,
+            datatype_journal: true,
+            retained_datatype: false,
             dml_evaluating: false,
         }
     }
@@ -186,7 +193,7 @@ impl Connection {
         self.transaction.is_none()
     }
     pub(super) fn retained_failure_changes(&self) -> bool {
-        self.failure_action == Conflict::Fail && self.changes != 0
+        (self.failure_action == Conflict::Fail && self.changes != 0) || self.retained_datatype
     }
     fn conflict_error(&mut self, policy: Conflict, message: String, count: usize) -> Error {
         self.failure_action = policy;
@@ -209,7 +216,9 @@ impl Connection {
     }
     /// Parse a script before running its statements in order. Runtime errors
     /// abort the statement unless a constraint selects FAIL (retain its prefix)
-    /// or ROLLBACK (undo the transaction). Execution stops at the first error.
+    /// or ROLLBACK (undo the transaction). A datatype error in a transaction
+    /// can retain a prefix without counting changes when no statement journal
+    /// was required by the constraints. Execution stops at the first error.
     /// A syntax error anywhere prevents execution of the entire script.
     pub fn execute_batch(&mut self, sql: &str) -> Result<Vec<QueryResult>> {
         let parsed = parser::parse(sql, self.limits)?;
@@ -244,6 +253,8 @@ impl Connection {
         parameters: &[Value],
     ) -> Result<QueryResult> {
         self.failure_action = Conflict::Default;
+        self.datatype_journal = true;
+        self.retained_datatype = false;
         self.dml_evaluating = false;
         if parameters.len() > prepared.parameter_count() {
             return Err(error("too many bound parameters"));
@@ -287,9 +298,13 @@ impl Connection {
         if matches!(result, Err(Error::Full)) {
             self.failure_action = Conflict::Rollback;
         }
-        if result.is_ok() || self.failure_action == Conflict::Fail {
+        self.retained_datatype = matches!(result, Err(Error::Datatype(_)))
+            && !self.datatype_journal
+            && !self.is_autocommit();
+        if result.is_ok() || self.failure_action == Conflict::Fail || self.retained_datatype {
             if let Err(error) = self.check_budget() {
                 self.failure_action = Conflict::Abort;
+                self.retained_datatype = false;
                 result = Err(error);
             }
         }
@@ -303,7 +318,7 @@ impl Connection {
                     .unwrap_or_else(|| self.state.clone());
                 self.savepoints.clear();
                 self.savepoint_transaction = false;
-            } else if let Some(backup) = backup {
+            } else if let Some(backup) = backup.filter(|_| !self.retained_datatype) {
                 self.state = backup;
             }
             if prepared.statement.changes_rows() && self.dml_evaluating {
@@ -520,6 +535,7 @@ impl Connection {
                 columns,
                 constraints,
                 autoincrement,
+                strict,
                 if_not_exists,
                 sql,
             } => {
@@ -569,7 +585,9 @@ impl Connection {
                         .find(|c| c.rowid_alias())
                         .map_or(Conflict::Default, |c| c.primary_conflict),
                     autoincrement: *autoincrement,
+                    strict: *strict,
                 };
+                strict::declaration(&mut table)?;
                 let fields = table.fields(name);
                 for (i, column) in columns.iter().enumerate() {
                     if columns[..i]
@@ -697,6 +715,7 @@ impl Connection {
                 if table.autoincrement && table.alias().is_none() {
                     return Err(error("AUTOINCREMENT requires an INTEGER PRIMARY KEY"));
                 }
+                strict::primary_key(&mut table);
                 self.state.tables.push(table);
                 if *autoincrement {
                     self.ensure_sequence()?;
@@ -837,6 +856,15 @@ impl Connection {
                 let table = &self.state.tables[index];
                 let defaults = defaults(table)?;
                 let checks = checks(table)?;
+                let change = conflict::Change {
+                    columns: None,
+                    rowid: !matches!(source, InsertSource::Default)
+                        && destinations
+                            .iter()
+                            .any(|i| *i == table.columns.len() || Some(*i) == table.alias()),
+                };
+                self.datatype_journal =
+                    strict::journal(table, change, *conflict, &checks, &upserts, context.fuel)?;
                 let mut count = 0;
                 for input in input {
                     context.fuel.spend()?;
@@ -916,6 +944,7 @@ impl Connection {
                             id,
                             values: &mut values,
                             old: None,
+                            change,
                         },
                         *conflict,
                         &checks,
@@ -1056,6 +1085,10 @@ impl Connection {
                     .transpose()?;
                 let checks = checks(table)?;
                 let defaults = defaults(table)?;
+                let columns: Vec<_> = assignments.iter().map(|(i, _)| *i).collect();
+                let change = conflict::Change::update(table, &columns);
+                self.datatype_journal =
+                    strict::journal(table, change, *conflict, &checks, &[], context.fuel)?;
                 let mut selected = Vec::new();
                 self.dml_evaluating = true;
                 for (id, values) in &table.rows {
@@ -1109,6 +1142,7 @@ impl Connection {
                             id,
                             values: &mut values,
                             old: Some(old_id),
+                            change,
                         },
                         *conflict,
                         &checks,
@@ -1269,10 +1303,14 @@ impl Connection {
                 return Ok(QueryResult::changed(0));
             }
             Statement::Pragma {
+                schema,
                 name,
                 value,
                 argument,
             } => {
+                if name.eq_ignore_ascii_case("table_list") {
+                    return self.table_list(schema.as_deref(), argument.as_deref(), context);
+                }
                 if value.is_none() {
                     if let Some(result) = self.metadata(name, argument.as_deref(), context)? {
                         return Ok(result);
@@ -2185,7 +2223,7 @@ fn normalize(value: Value) -> Result<Value> {
 fn rowid(value: Value) -> Result<i64> {
     match scalar::affinity(value, Affinity::Integer)? {
         Value::Integer(n) => Ok(n),
-        _ => Err(error("datatype mismatch for rowid")),
+        _ => Err(Error::Datatype("rowid requires an integer".into())),
     }
 }
 fn defaults(table: &StoredTable) -> Result<Vec<Option<Expr>>> {

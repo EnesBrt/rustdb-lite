@@ -46,6 +46,7 @@ impl Connection {
             primary_key: Vec::new(),
             key_conflict: Conflict::Default,
             autoincrement: false,
+            strict: false,
         });
         Ok(index)
     }

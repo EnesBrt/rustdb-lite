@@ -122,6 +122,7 @@ impl Expr {
 }
 #[derive(Clone, Debug)]
 pub struct Column {
+    pub strict_type: bool,
     pub name: String,
     pub declared_type: String,
     pub affinity: Affinity,
@@ -308,6 +309,7 @@ pub enum Statement {
         columns: Vec<Column>,
         constraints: Vec<TableConstraint>,
         autoincrement: bool,
+        strict: bool,
         if_not_exists: bool,
         sql: String,
     },
@@ -345,6 +347,7 @@ pub enum Statement {
     Savepoint(String),
     Release(String),
     Pragma {
+        schema: Option<String>,
         name: String,
         value: Option<i64>,
         argument: Option<String>,
@@ -863,6 +866,7 @@ impl Parser<'_> {
                     }
                 }
                 let mut column = Column {
+                    strict_type: self.at == type_start + 1,
                     name,
                     affinity: Affinity::from_type(&declared_type),
                     declared_type,
@@ -937,12 +941,19 @@ impl Parser<'_> {
                 }
             }
             self.expect(")")?;
+            let strict = self.eat("STRICT");
+            if strict {
+                while self.eat(",") {
+                    self.expect("STRICT")?;
+                }
+            }
             let end = self.tokens[self.at - 1].end;
             return Ok(Statement::Create {
                 name,
                 columns,
                 constraints,
                 autoincrement,
+                strict,
                 if_not_exists,
                 sql: self.schema_sql(start, end, name_start, name_end),
             });
@@ -1090,8 +1101,20 @@ impl Parser<'_> {
             return Ok(Statement::Release(self.name()?));
         }
         if self.eat("PRAGMA") {
-            let name = self.table_name()?;
+            let first = self.name()?;
+            let (schema, name) = if self.eat(".") {
+                (Some(first), self.name()?)
+            } else {
+                (None, first)
+            };
+            if schema.as_ref().is_some_and(|s| {
+                !(s.eq_ignore_ascii_case("main")
+                    || s.eq_ignore_ascii_case("temp") && name.eq_ignore_ascii_case("table_list"))
+            }) {
+                return Err(Error::Unsupported("attached or temporary schemas"));
+            }
             if [
+                "table_list",
                 "table_info",
                 "table_xinfo",
                 "index_list",
@@ -1135,6 +1158,7 @@ impl Parser<'_> {
                     None
                 };
                 return Ok(Statement::Pragma {
+                    schema,
                     name,
                     value: None,
                     argument,
@@ -1163,6 +1187,7 @@ impl Parser<'_> {
                 None
             };
             return Ok(Statement::Pragma {
+                schema,
                 name,
                 value,
                 argument,

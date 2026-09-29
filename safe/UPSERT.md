@@ -79,7 +79,7 @@ The RETURNING projection reports successful inserts and updates, with separate
 expression caches for each update clause; see [RETURNING.md](RETURNING.md).
 
 Expression/partial indexes, row-value assignment syntax, generated columns,
-STRICT/WITHOUT ROWID SQL tables, triggers and foreign keys remain
+WITHOUT ROWID SQL tables, triggers and foreign keys remain
 unfinished. INSERT SELECT materializes input; query planning, streaming and the
 evaluation/error-timing differences documented in [QUERIES.md](QUERIES.md) still
 apply. This implementation is not evidence of complete upstream SQL parity.

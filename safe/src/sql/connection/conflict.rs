@@ -19,6 +19,34 @@ pub(super) struct Row<'a> {
     pub id: i64,
     pub values: &'a mut [Value],
     pub old: Option<i64>,
+    pub change: Change<'a>,
+}
+#[derive(Clone, Copy)]
+pub(super) struct Change<'a> {
+    pub columns: Option<&'a [usize]>,
+    pub rowid: bool,
+}
+impl<'a> Change<'a> {
+    pub fn update(table: &StoredTable, columns: &'a [usize]) -> Self {
+        Self {
+            columns: Some(columns),
+            rowid: columns
+                .iter()
+                .any(|i| *i == table.columns.len() || Some(*i) == table.alias()),
+        }
+    }
+    pub fn column(self, table: &StoredTable, i: usize) -> bool {
+        self.columns.is_none_or(|columns| columns.contains(&i))
+            || (self.rowid && (Some(i) == table.alias() || i == table.columns.len()))
+    }
+    pub fn expression(self, table: &StoredTable, expr: &Expr) -> bool {
+        self.columns.is_none()
+            || matches!(expr.kind, ExprKind::Slot(i, _, _) if self.column(table, i))
+            || expr.children().iter().any(|e| self.expression(table, e))
+    }
+    pub fn index(self, table: &StoredTable, index: &StoredIndex) -> bool {
+        self.rowid || index.terms.iter().any(|t| self.column(table, t.column))
+    }
 }
 pub(super) fn check(
     table: &StoredTable,
@@ -33,7 +61,11 @@ pub(super) fn check(
     // another first-pass NOT NULL IGNORE/FAIL rule to determine the outcome.
     for pass in 0..2 {
         for (i, column) in table.columns.iter().enumerate() {
-            if !column.not_null || !scalar::null(&row.values[i]) {
+            if !column.not_null
+                || Some(i) == table.alias()
+                || !row.change.column(table, i)
+                || !scalar::null(&row.values[i])
+            {
                 continue;
             }
             let mut action = policy.resolve(column.not_null_conflict);
@@ -62,7 +94,15 @@ pub(super) fn check(
         }
     }
     let values = table.row(row.id, row.values);
+    let mut type_checked = false;
     for check in checks {
+        if !row.change.expression(table, check) {
+            continue;
+        }
+        if !type_checked {
+            strict::values(table, row.values)?;
+            type_checked = true;
+        }
         if scalar::truth(&context.eval(check, &values, None)?)? == Some(false) {
             let action = policy.resolve(Conflict::Abort);
             return Ok(violation(
@@ -95,6 +135,7 @@ pub(super) fn check(
     // Explicit targets run in clause order before other unique constraints.
     // Remaining indexes follow SQLite's non-REPLACE/REPLACE schema order.
     if rowid_policy != Conflict::Replace
+        || policy == Conflict::Replace
         || upsert::handler(upserts, upsert::Key::Rowid, context.fuel)?.is_some()
     {
         add(upsert::Key::Rowid);
@@ -102,7 +143,7 @@ pub(super) fn check(
     for replace in [false, true] {
         for (i, index) in table.indexes.iter().enumerate().rev() {
             context.fuel.spend()?;
-            if index.unique && (index.conflict == Conflict::Replace) == replace {
+            if (index.conflict == Conflict::Replace) == replace {
                 add(upsert::Key::Index(i));
             }
         }
@@ -112,6 +153,9 @@ pub(super) fn check(
         context.fuel.spend()?;
         let (action, message, collisions) = match key {
             upsert::Key::Rowid => {
+                if !row.change.rowid {
+                    continue;
+                }
                 let collision = table.rows.contains_key(&row.id)
                     && Some(row.id) != row.old
                     && !replaced.contains(&row.id);
@@ -123,6 +167,16 @@ pub(super) fn check(
             }
             upsert::Key::Index(i) => {
                 let index = &table.indexes[i];
+                if !row.change.index(table, index) {
+                    continue;
+                }
+                if !type_checked {
+                    strict::values(table, row.values)?;
+                    type_checked = true;
+                }
+                if !index.unique {
+                    continue;
+                }
                 // An unchanged key cannot introduce a duplicate. Avoid repeated
                 // scans and encoding of long text when updating another column.
                 if row
@@ -181,6 +235,9 @@ pub(super) fn check(
             }
             replaced.insert(id);
         }
+    }
+    if !type_checked {
+        strict::values(table, row.values)?;
     }
     Ok(Decision::Write(replaced.into_iter().collect()))
 }

@@ -11,6 +11,8 @@ pub enum Error {
     InvalidText,
     Sql(alloc::string::String),
     Constraint(alloc::string::String),
+    /// An incompatible value for a STRICT column or rowid.
+    Datatype(alloc::string::String),
     Storage(alloc::string::String),
     Busy(&'static str),
     Full,
@@ -28,6 +30,7 @@ impl fmt::Display for Error {
             Self::InvalidText => f.write_str("invalid text encoding"),
             Self::Sql(s) => write!(f, "SQL error: {s}"),
             Self::Constraint(s) => write!(f, "constraint failed: {s}"),
+            Self::Datatype(s) => write!(f, "datatype error: {s}"),
             Self::Storage(s) => write!(f, "storage error: {s}"),
             Self::Busy(s) => write!(f, "database busy: {s}"),
             Self::Full => f.write_str("database or disk is full"),

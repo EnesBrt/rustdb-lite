@@ -34,6 +34,10 @@ Rolling back does not subtract earlier successful statements from total_changes.
 insert is later undone by ABORT or ROLLBACK. Resource and evaluation errors abort
 the statement regardless of its constraint policy.
 
+STRICT-column and rowid datatype errors have separate journal/counter behavior:
+some transaction prefixes survive with zero changes counted. See
+[STRICT.md](STRICT.md) for the pinned reference's rules and the API contract.
+
 ## Persistence and API behavior
 
 `Connection::execute` returns an error for FAIL even when rows were retained.

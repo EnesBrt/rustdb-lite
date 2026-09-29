@@ -57,6 +57,51 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn strict_datatype_errors_persist_only_retained_transaction_prefixes() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    c.execute("CREATE TABLE t(x INT,a ANY) STRICT", &[])
+        .unwrap();
+    let before = fs::read(&path).unwrap();
+    assert!(matches!(
+        c.execute("INSERT INTO t VALUES(1,'001'),('bad',2)", &[]),
+        Err(Error::Datatype(_))
+    ));
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("BEGIN", &[]).unwrap();
+    assert!(matches!(
+        c.execute("INSERT INTO t VALUES(1,'001'),('bad',2)", &[]),
+        Err(Error::Datatype(_))
+    ));
+    assert_eq!(c.changes().unwrap(), 0);
+    assert_eq!(c.total_changes().unwrap(), 0);
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("COMMIT", &[]).unwrap();
+    drop(c);
+    let mut c = open(&path);
+    let rows = c.execute("SELECT * FROM t", &[]).unwrap().rows;
+    assert_eq!(
+        rows,
+        vec![vec![
+            Value::Integer(1),
+            Value::Text(sqlite_safe::Text::utf8("001"))
+        ]]
+    );
+    c.execute("BEGIN", &[]).unwrap();
+    assert!(matches!(
+        c.execute("INSERT INTO t VALUES(2,2),('bad',3)", &[]),
+        Err(Error::Datatype(_))
+    ));
+    c.execute("ROLLBACK", &[]).unwrap();
+    drop(c);
+    assert_eq!(
+        open(&path).execute("SELECT * FROM t", &[]).unwrap().rows,
+        rows
+    );
+}
+
+#[test]
 fn autoincrement_persists_high_water_and_rolls_back_full_transactions() {
     let temp = Temp::new();
     let path = temp.db();

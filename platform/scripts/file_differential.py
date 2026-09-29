@@ -192,6 +192,28 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'strict-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(x INT,a ANY,r REAL) STRICT;")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                assert connection.execute('SELECT * FROM t').fetchall()==[]
+                run(SQL,path,"INSERT INTO t VALUES(1,'001',1),(2,2,2.5)")
+                assert connection.execute('SELECT x,a,r FROM t ORDER BY x').fetchall()==[(1,'001',1.0),(2,2,2.5)]
+                before=path.read_bytes()
+                run(SQL,path,"INSERT INTO t VALUES(3,'03',3),('bad',4,4)",expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,'--continue','BEGIN',"INSERT INTO t VALUES(3,'03',3),('bad',4,4)",'COMMIT',expect=1)
+                assert connection.execute('SELECT x,a,r FROM t ORDER BY x').fetchall()==[(1,'001',1.0),(2,2,2.5),(3,'03',3.0)]
+                # Preserve a valid index after a type error on a colliding rowid.
+                # The pinned native engine can lose index entries in this case;
+                # that physical-error divergence is documented in STRICT.md.
+                run(SQL,path,'CREATE INDEX strict_x ON t(x)')
+                run(SQL,path,'--continue','BEGIN',"INSERT OR REPLACE INTO t(rowid,x) VALUES(1,'bad')",'COMMIT',expect=1)
+                assert connection.execute('SELECT a FROM t INDEXED BY strict_x WHERE x=1').fetchall()==[('001',)]
+                connection.close()
+                assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'

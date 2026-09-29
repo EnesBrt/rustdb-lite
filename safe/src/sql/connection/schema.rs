@@ -32,6 +32,7 @@ impl Connection {
             .map(|field| {
                 let typ = eval::affinity_type(field.affinity);
                 Column {
+                    strict_type: !typ.is_empty(),
                     name: field.name,
                     declared_type: typ.into(),
                     affinity: Affinity::from_type(typ),
@@ -73,6 +74,7 @@ impl Connection {
             primary_key: Vec::new(),
             key_conflict: Conflict::Default,
             autoincrement: false,
+            strict: false,
         });
         Ok(())
     }

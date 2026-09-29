@@ -10,9 +10,9 @@ pub(super) enum Key {
 }
 pub(super) struct Bound {
     pub target: Option<Key>,
-    action: Action,
+    pub action: Action,
 }
-enum Action {
+pub(super) enum Action {
     Nothing,
     Update {
         assignments: Vec<(usize, Expr)>,
@@ -224,12 +224,14 @@ impl Connection {
         for (value, column) in values.iter_mut().zip(&table.columns) {
             *value = scalar::affinity(core::mem::replace(value, Value::Null), column.affinity)?;
         }
+        let columns: Vec<_> = assignments.iter().map(|(i, _)| *i).collect();
         match conflict::check(
             table,
             conflict::Row {
                 id,
                 values: &mut values,
                 old: Some(incoming.old_id),
+                change: conflict::Change::update(table, &columns),
             },
             Conflict::Abort,
             &checks(table)?,

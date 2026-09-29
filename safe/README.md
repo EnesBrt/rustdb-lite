@@ -17,7 +17,8 @@ execution details in [QUERIES.md](QUERIES.md). Stored views and CREATE TABLE AS
 SELECT are described in [VIEWS.md](VIEWS.md). Data-change projections and their
 cache/error behavior are described in [RETURNING.md](RETURNING.md). The lower-level physical storage API
 is shown below. Persistent automatic rowids and sqlite_sequence are documented in
-[AUTOINCREMENT.md](AUTOINCREMENT.md).
+[AUTOINCREMENT.md](AUTOINCREMENT.md). STRICT types and catalog flags are described
+in [STRICT.md](STRICT.md).
 
 ## Storage API
 
@@ -113,6 +114,7 @@ python3 safe/scripts/conflict_differential.py
 python3 safe/scripts/upsert_differential.py
 python3 safe/scripts/returning_differential.py
 python3 safe/scripts/sequence_differential.py
+python3 safe/scripts/strict_differential.py
 python3 safe/scripts/check_targets.py
 ```
 
