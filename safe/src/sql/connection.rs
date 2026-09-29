@@ -13,6 +13,7 @@ use alloc::{collections::BTreeMap, format, string::String, vec, vec::Vec};
 use core::cmp::Ordering as Compare;
 mod catalog;
 mod conflict;
+mod generated;
 mod query;
 mod returning;
 mod schema;
@@ -38,6 +39,7 @@ impl QueryResult {
 }
 #[derive(Clone)]
 struct StoredTable {
+    generated: Option<alloc::rc::Rc<eval::generated::Schema>>,
     name: String,
     columns: Vec<Column>,
     sql: String,
@@ -76,21 +78,31 @@ struct StoredIndex {
 }
 impl StoredTable {
     fn fields(&self, alias: &str) -> Vec<Field> {
-        let mut fields: Vec<_> = self
-            .columns
-            .iter()
-            .map(|c| Field {
-                table: alias.into(),
-                name: c.name.clone(),
-                affinity: c.affinity,
-                collation: c.collation,
-                hidden: false,
-                qualified_only: false,
-                declared_type: c.declared_type.clone(),
-            })
-            .collect();
+        let mut fields: Vec<_> =
+            self.columns
+                .iter()
+                .enumerate()
+                .map(|(i, c)| Field {
+                    generated: self.generated.as_ref().filter(|_| c.virtual_column()).map(
+                        |schema| eval::generated::Reference {
+                            schema: schema.clone(),
+                            column: i,
+                            offset: 0,
+                            outer: None,
+                        },
+                    ),
+                    table: alias.into(),
+                    name: c.name.clone(),
+                    affinity: c.affinity,
+                    collation: c.collation,
+                    hidden: false,
+                    qualified_only: false,
+                    declared_type: c.declared_type.clone(),
+                })
+                .collect();
         if !self.without_rowid {
             fields.push(Field {
+                generated: None,
                 table: alias.into(),
                 name: "rowid".into(),
                 affinity: Affinity::Integer,
@@ -575,6 +587,7 @@ impl Connection {
                     return Err(Error::Limit("table columns"));
                 }
                 let mut table = StoredTable {
+                    generated: None,
                     name: name.clone(),
                     columns: columns.clone(),
                     sql: sql.clone(),
@@ -729,6 +742,7 @@ impl Connection {
                     return Err(error("AUTOINCREMENT requires an INTEGER PRIMARY KEY"));
                 }
                 strict::primary_key(&mut table);
+                generated::declaration(&mut table, context.fuel)?;
                 self.state.tables.push(table);
                 if *autoincrement {
                     self.ensure_sequence()?;
@@ -782,14 +796,21 @@ impl Connection {
                     runtime,
                     context,
                 )?;
+                table.generated_plan()?;
                 let mut autoincrement = self.start_sequence(index, context.fuel)?;
                 let destinations = if let Some(columns) = columns {
                     columns
                         .iter()
-                        .map(|c| table.column_index(c))
+                        .map(|c| table.write_column(c))
                         .collect::<Result<Vec<_>>>()?
                 } else {
-                    (0..table.columns.len()).collect()
+                    table
+                        .columns
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, c)| c.generated.is_none())
+                        .map(|(i, _)| i)
+                        .collect()
                 };
                 if destinations
                     .iter()
@@ -951,6 +972,7 @@ impl Connection {
                             column.affinity,
                         )?;
                     }
+                    table.compute_generated(&mut values, context)?;
                     let replaced = match conflict::check(
                         table,
                         conflict::Row {
@@ -1070,12 +1092,13 @@ impl Connection {
                     runtime,
                     context,
                 )?;
+                table.generated_plan()?;
                 let fields = table.fields(alias.as_deref().unwrap_or(name));
                 let assignments = assignments
                     .iter()
                     .map(|(name, expr)| {
                         Ok((
-                            table.column_index(name)?,
+                            table.write_column(name)?,
                             self.expressions(scope.clone(), runtime).bind(
                                 expr,
                                 &fields,
@@ -1100,7 +1123,8 @@ impl Connection {
                     .transpose()?;
                 let checks = checks(table)?;
                 let defaults = defaults(table)?;
-                let columns: Vec<_> = assignments.iter().map(|(i, _)| *i).collect();
+                let columns = table
+                    .changed_columns(assignments.iter().map(|(i, _)| *i).collect(), context.fuel)?;
                 let change = conflict::Change::update(table, &columns);
                 self.datatype_journal =
                     strict::journal(table, change, *conflict, &checks, &[], context.fuel)?;
@@ -1166,6 +1190,7 @@ impl Connection {
                             column.affinity,
                         )?;
                     }
+                    table.compute_generated(&mut values, context)?;
                     let replaced = match conflict::check(
                         table,
                         conflict::Row {
@@ -1475,14 +1500,20 @@ impl Connection {
                 }
             } else if let Ok(id) = self.index(argument) {
                 let table = &self.state.tables[id];
-                for (i, column) in table.columns.iter().enumerate() {
+                for (cid, (i, column)) in table
+                    .columns
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, c)| name == "table_xinfo" || c.generated.is_none())
+                    .enumerate()
+                {
                     let pk = table
                         .primary_key
                         .iter()
                         .position(|&c| c == i)
                         .map_or(0, |p| p + 1);
                     let mut row = vec![
-                        integer(i),
+                        integer(cid),
                         text(&column.name),
                         text(&column.declared_type),
                         integer(usize::from(column.not_null)),
@@ -1494,7 +1525,12 @@ impl Connection {
                         integer(pk),
                     ];
                     if name == "table_xinfo" {
-                        row.push(integer(0));
+                        row.push(integer(
+                            column
+                                .generated
+                                .as_ref()
+                                .map_or(0, |(_, stored)| if *stored { 3 } else { 2 }),
+                        ));
                     }
                     push(row)?;
                 }
@@ -1681,10 +1717,7 @@ impl Connection {
                             return Err(Error::Limit("result columns"));
                         }
                         columns.push(f.name.clone());
-                        projection.push(Expr {
-                            kind: ExprKind::Slot(i, f.affinity, f.collation),
-                            depth: 1,
-                        });
+                        projection.push(eval::generated::field(f, i, None)?);
                         count += 1;
                     }
                 }
@@ -2054,7 +2087,13 @@ impl Connection {
                     .map(|t| t.column)
                     .collect()
             } else {
-                (0..table.columns.len()).collect()
+                table
+                    .columns
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, c)| !c.virtual_column())
+                    .map(|(i, _)| i)
+                    .collect()
             };
             let mut imported_bytes = 0usize;
             db.visit_rows(entry.root_page, |row| {
@@ -2168,10 +2207,29 @@ impl Connection {
         let mut fuel = Fuel::new(self.limits.max_steps);
         let mut exported_bytes = self.usage()?.0;
         for source in &self.state.tables {
-            let names: Vec<_> = source.columns.iter().map(|c| c.name.as_str()).collect();
+            let physical: Vec<_> = source
+                .columns
+                .iter()
+                .enumerate()
+                .filter(|(_, c)| !c.virtual_column())
+                .map(|(i, _)| i)
+                .collect();
+            let names: Vec<_> = physical
+                .iter()
+                .map(|i| source.columns[*i].name.as_str())
+                .collect();
             let mut table = Table::new(&source.name, &names);
             for (id, values) in source.rows.iter().filter(|_| !source.without_rowid) {
-                let mut values = values.clone();
+                let mut values: Vec<_> = physical
+                    .iter()
+                    .map(|i| {
+                        if Some(*i) == source.alias() {
+                            Value::Null
+                        } else {
+                            values[*i].clone()
+                        }
+                    })
+                    .collect();
                 let before = values_size(&values)?;
                 transcode_values(&mut values, encoding)?;
                 exported_bytes = exported_bytes
@@ -2179,9 +2237,6 @@ impl Connection {
                     .ok_or(Error::Limit("exported table bytes"))?;
                 if exported_bytes > self.limits.max_database_bytes {
                     return Err(Error::Limit("exported table bytes"));
-                }
-                if let Some(alias) = source.alias() {
-                    values[alias] = Value::Null;
                 }
                 table.rows.push((*id, values));
             }
@@ -2251,7 +2306,19 @@ fn index_entries(
     let mut bytes = 0;
     for (id, values) in &table.rows {
         fuel.spend()?;
-        let mut row: Vec<Value> = terms.iter().map(|t| values[t.column].clone()).collect();
+        let mut context = Eval {
+            encoding,
+            params: &[],
+            limits,
+            fuel,
+            changes: 0,
+            total_changes: 0,
+            last_rowid: 0,
+        };
+        let mut row = Vec::new();
+        for term in &terms {
+            row.push(table.read_column(term.column, *id, values, &mut context)?);
+        }
         if !table.without_rowid {
             row.push(Value::Integer(*id));
         }

@@ -42,6 +42,7 @@ impl<'a> Change<'a> {
     pub fn expression(self, table: &StoredTable, expr: &Expr) -> bool {
         self.columns.is_none()
             || matches!(expr.kind, ExprKind::Slot(i, _, _) if self.column(table, i))
+            || matches!(&expr.kind, ExprKind::Generated(r) if self.column(table, r.column))
             || expr.children().iter().any(|e| self.expression(table, e))
     }
     pub fn index(self, table: &StoredTable, index: &StoredIndex) -> bool {
@@ -61,17 +62,22 @@ pub(super) fn check(
 ) -> Result<Decision> {
     // Defaults substituted by REPLACE are checked in a second pass, allowing
     // another first-pass NOT NULL IGNORE/FAIL rule to determine the outcome.
+    let mut substituted = false;
     for pass in 0..2 {
+        if pass == 1 && substituted {
+            table.compute_generated(row.values, context)?;
+        }
         for (i, column) in table.columns.iter().enumerate() {
             if !column.not_null
                 || Some(i) == table.alias()
-                || !row.change.column(table, i)
+                || (column.generated.is_some() && pass == 0)
+                || (column.generated.is_none() && !row.change.column(table, i))
                 || !scalar::null(&row.values[i])
             {
                 continue;
             }
             let mut action = policy.resolve(column.not_null_conflict);
-            if pass == 1 && action != Conflict::Replace {
+            if pass == 1 && action != Conflict::Replace && column.generated.is_none() {
                 continue;
             }
             if action == Conflict::Replace {
@@ -79,6 +85,7 @@ pub(super) fn check(
                     if let Some(default) = &defaults[i] {
                         row.values[i] =
                             scalar::affinity(context.eval(default, &[], None)?, column.affinity)?;
+                        substituted = true;
                         continue;
                     }
                 }
@@ -185,10 +192,10 @@ pub(super) fn check(
                     .old
                     .and_then(|id| table.rows.get(&id))
                     .is_some_and(|old| {
-                        index
-                            .terms
-                            .iter()
-                            .all(|t| row.values[t.column] == old[t.column])
+                        index.terms.iter().all(|t| {
+                            !table.columns[t.column].virtual_column()
+                                && row.values[t.column] == old[t.column]
+                        })
                     })
                     || index
                         .terms
@@ -208,7 +215,7 @@ pub(super) fn check(
                         context.fuel.spend()?;
                         if scalar::compare_encoded(
                             &row.values[term.column],
-                            &prior[term.column],
+                            &table.read_column(term.column, *prior_id, prior, context)?,
                             term.collation,
                             context.encoding,
                         )? != Compare::Equal

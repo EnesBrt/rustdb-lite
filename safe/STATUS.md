@@ -19,6 +19,7 @@ is a separate `legacy/` project.
 | RETURNING | Buffered INSERT/UPSERT/UPDATE/DELETE projections, subqueries, counters and conflict behavior; [scope](RETURNING.md) |
 | AUTOINCREMENT | Persisted/editable sqlite_sequence, conflict timing, savepoints and FULL rollback; [scope](AUTOINCREMENT.md) |
 | STRICT tables | Six declared types, ANY preservation, datatype errors, catalog flags and persisted transaction prefixes; [scope](STRICT.md) |
+| Generated columns | VIRTUAL/STORED dependencies, lazy reads, typed writes, constraints and physical layouts; [scope](GENERATED.md) |
 | WITHOUT ROWID tables | Primary index storage, secondary suffixes, key-based SQL mutations, metadata and encoded interchange; [scope](WITHOUT_ROWID.md) |
 | Query optimizer, complete schema/SQL semantics | Not implemented |
 | Explicit/automatic index schemas and uniqueness | Implemented for supported column/composite keys; fresh-image rebuilds |
@@ -39,7 +40,7 @@ is a separate `legacy/` project.
 
 ## Verified locally, 2026-09-30
 
-- 104 core Rust integration tests pass in debug and release builds, including
+- 111 core Rust integration tests pass in debug and release builds, including
   3,000 deterministic database mutations, 3,000 mutations of valid native WAL
   seeds, 5,000 malformed-SQL mutations, and 3,000 journal mutations, with bounded
   budgets and panic detection.
@@ -72,10 +73,10 @@ is a separate `legacy/` project.
   Interrupted recovery, exclusive-lock lifetime, and journaled SQL transaction
   reopen tests also pass. These are adapter-contract simulations, not
   OS/power-loss tests.
-- Fifteen platform Rust tests pass in debug/release, covering real files, recovery,
+- Sixteen platform Rust tests pass in debug/release, covering real files, recovery,
   path/sidecar guards, lock lifetime, CTE/subquery data changes, views, CREATE TABLE
   AS SELECT and an eight-thread contention race.
-- Sixty-eight native file interchange/lock/SQL scenarios pass on macOS ARM64. They include
+- Seventy-seven native file interchange/lock/SQL scenarios pass on macOS ARM64. They include
   persistent native connections across updates of all three text encodings and
   updates of both auto-vacuum modes. 210 real process-interruption/partial-write
   recovery points cover ordinary and pointer-map files and match native SQLite.
@@ -142,6 +143,12 @@ is a separate `legacy/` project.
   rebalancing. Seven Rust tests include 72 encoding/page-size/vacuum combinations;
   a Unix test and nine native file cases cover persisted key changes, FAIL prefixes,
   rollback and failed writes. See [WITHOUT_ROWID.md](WITHOUT_ROWID.md).
+- 1,368 generated-column declaration/query/conflict/counter/metadata/image
+  scenarios pass against SQLite 3.53.4. Seven Rust tests cover dependency scheduling,
+  bindings, constraints, lazy/correlated reads, metadata, STRICT prefixes, budgets
+  and 72 image combinations with both table kinds. A Unix test and nine native
+  file cases cover persisted generated values and indexes, FAIL prefixes, rollback
+  and failed writes; see [GENERATED.md](GENERATED.md).
 - The separate Unix adapter compiles for macOS ARM64, Linux x86-64/i686/s390x,
   Android ARM64 and iOS ARM64. Only the macOS adapter has runtime evidence here.
 - Floating-point comparisons use exact IEEE-754 bit patterns. Text comparisons
@@ -199,6 +206,7 @@ python3 safe/scripts/returning_differential.py
 python3 safe/scripts/sequence_differential.py
 python3 safe/scripts/strict_differential.py
 python3 safe/scripts/without_rowid_differential.py
+python3 safe/scripts/generated_differential.py
 python3 safe/scripts/check_targets.py
 python3 platform/scripts/file_differential.py
 python3 platform/scripts/check_targets.py
@@ -212,9 +220,9 @@ ignored `build/safe-*.log`. The source inventory can be regenerated with
 
 ## Published CI evidence
 
-[GitHub Actions run 36633852483](https://github.com/EnesBrt/rustdb-lite/actions/runs/36633852483)
-passed all 17 jobs for commit `5a3fbbe` on 2026-09-29. That baseline includes
-97 core and 14 Unix adapter Rust integration tests, including STRICT.
+[GitHub Actions run 36639754516](https://github.com/EnesBrt/rustdb-lite/actions/runs/36639754516)
+passed all 17 jobs for commit `5135d1a` on 2026-09-30. That baseline includes
+104 core and 15 Unix adapter Rust integration tests, including WITHOUT ROWID.
 Core debug/release/doc tests passed on Ubuntu 24.04, macOS 14 ARM64 and Windows
 2022; Unix adapter debug/release/doc and native file comparisons passed on Ubuntu
 and macOS. The native differential, minimum-Rust and cross-compilation jobs also
@@ -222,5 +230,5 @@ passed.
 
 These results establish execution of the tested subset on those runners, not
 complete platform or durability support. Other target runtime tests remain
-pending. New WITHOUT ROWID coverage is recorded above and is included in subsequent CI
+pending. New generated-column coverage is recorded above and is included in subsequent CI
 runs; the linked baseline does not establish its cross-platform behavior.

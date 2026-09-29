@@ -234,6 +234,27 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'generated-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(id INTEGER PRIMARY KEY,x TEXT,g TEXT AS(upper(x)) UNIQUE,s INT AS(length(g)) STORED);INSERT INTO t(x) VALUES('é'),('rust');")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                run(SQL,path,'BEGIN',"UPDATE t SET x=x||id",'COMMIT',"INSERT INTO t(x) VALUES('RUST2') ON CONFLICT(g) DO UPDATE SET x=excluded.g||'new' RETURNING *")
+                expected=[(1,'é1','é1',2),(2,'RUST2new','RUST2NEW',8)]
+                assert connection.execute('SELECT * FROM t ORDER BY id').fetchall()==expected
+                before=path.read_bytes()
+                run(SQL,path,"INSERT INTO t(x) VALUES('fresh'),('é1')",expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,'BEGIN',"UPDATE t SET x='rollback' WHERE id=1",'ROLLBACK')
+                assert path.read_bytes()==before
+                run(SQL,path,"INSERT OR FAIL INTO t(x) VALUES('fresh'),('é1')",expect=1)
+                expected.append((3,'fresh','FRESH',5))
+                assert connection.execute('SELECT * FROM t INDEXED BY sqlite_autoindex_t_1 ORDER BY id').fetchall()==expected
+                run(SQL,path,'CREATE TABLE copied AS SELECT * FROM t')
+                assert connection.execute('SELECT * FROM copied ORDER BY id').fetchall()==expected
+                connection.close()
+                assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'

@@ -36,6 +36,7 @@ impl Connection {
         };
         let index = self.state.tables.len();
         self.state.tables.push(StoredTable {
+            generated: None,
             name: NAME.into(),
             columns,
             sql: SQL.into(),

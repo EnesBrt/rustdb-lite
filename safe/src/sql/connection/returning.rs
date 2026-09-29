@@ -43,15 +43,18 @@ impl Output {
                     .expressions(output.scope.clone(), &mut output.runtime)
                     .bind(expr, &fields, &[], false, context)?;
                 let label = item.alias.clone().unwrap_or_else(|| {
-                    if let (ExprKind::Column { .. }, ExprKind::Slot(slot, _, _)) =
-                        (&expr.kind, &bound.kind)
-                    {
-                        if *slot == table.columns.len() {
+                    let slot = match &bound.kind {
+                        ExprKind::Slot(slot, _, _) => Some(*slot),
+                        ExprKind::Generated(reference) => Some(reference.column),
+                        _ => None,
+                    };
+                    if let (ExprKind::Column { .. }, Some(slot)) = (&expr.kind, slot) {
+                        if slot == table.columns.len() {
                             table
                                 .alias()
                                 .map_or_else(|| "rowid".into(), |i| table.columns[i].name.clone())
                         } else {
-                            fields[*slot].name.clone()
+                            fields[slot].name.clone()
                         }
                     } else {
                         item.label.clone()
@@ -66,10 +69,9 @@ impl Output {
                 for (i, field) in fields.iter().enumerate().filter(|(_, f)| !f.hidden) {
                     context.fuel.spend()?;
                     output.result.columns.push(field.name.clone());
-                    output.expressions.push(Expr {
-                        kind: ExprKind::Slot(i, field.affinity, field.collation),
-                        depth: 1,
-                    });
+                    output
+                        .expressions
+                        .push(eval::generated::field(field, i, None)?);
                 }
             }
             if output.expressions.len() > 2000 {

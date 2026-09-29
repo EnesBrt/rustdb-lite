@@ -83,16 +83,16 @@ images are compact even in that mode. See [auto-vacuum format support](../safe/A
 
 ## Validation
 
-Fifteen native Rust tests cover commit/rollback/reopen, recovery, corrupt-journal
+Sixteen native Rust tests cover commit/rollback/reopen, recovery, corrupt-journal
 retention, bounded reads, file identity/sidecar guards, connection lifetime, and
 an eight-thread race for one inode, plus persisted CTE/subquery data changes and
 unchanged files after failed inserts, plus persisted views and CREATE TABLE AS SELECT. They pass
 locally in debug and release.
 
-The native differential script checks 68 scenarios involving all three database
+The native differential script checks 77 scenarios involving all three database
 encodings, metadata retention, already-open native connections, native read and
 write locks, failed duplicate Rust opens, updates of both auto-vacuum modes, and
-a recursive CTE insert, a correlated update and view/schema changes that native
+a recursive CTE insert, a correlated update, generated-column/index writes and view/schema changes that native
 SQLite reopens and validates.
 It also interrupts 210 real commit positions in ordinary and pointer-map files,
 including explicit partial page writes, and checks both Rust and SQLite 3.53.4

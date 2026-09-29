@@ -42,6 +42,9 @@ pub(super) fn primary_key(table: &mut StoredTable) {
 pub(super) fn values(table: &StoredTable, values: &[Value]) -> Result<()> {
     if table.strict {
         for (column, value) in table.columns.iter().zip(values) {
+            if column.virtual_column() {
+                continue;
+            }
             let valid = scalar::null(value)
                 || match column.declared_type.as_str() {
                     "ANY" => true,
@@ -81,7 +84,7 @@ pub(super) fn journal(
         fuel.spend()?;
         if column.not_null
             && Some(i) != table.alias()
-            && change.column(table, i)
+            && (column.generated.is_some() || change.column(table, i))
             && matches!(
                 policy.resolve(column.not_null_conflict),
                 Conflict::Abort | Conflict::Replace
@@ -113,7 +116,8 @@ pub(super) fn journal(
         fuel.spend()?;
         if let Some(clause) = upsert::handler(upserts, key, fuel)? {
             if let upsert::Action::Update { assignments, .. } = &upserts[clause].action {
-                let columns: Vec<_> = assignments.iter().map(|(i, _)| *i).collect();
+                let columns =
+                    table.changed_columns(assignments.iter().map(|(i, _)| *i).collect(), fuel)?;
                 let update = conflict::Change::update(table, &columns);
                 if journal(table, update, Conflict::Abort, checks, &[], fuel)? {
                     return Ok(true);

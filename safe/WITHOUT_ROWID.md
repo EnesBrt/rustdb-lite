@@ -43,7 +43,8 @@ with CREATE TABLE AS SELECT is an ordinary rowid table.
 ## Database and index layout
 
 The table's root is an index B-tree. Its records begin with primary-key fields,
-followed by the other declared columns in declaration order. Interior index
+followed by the other stored columns in declaration order. VIRTUAL generated
+columns are omitted from that payload. Interior index
 records contain actual rows. The writer supports overflow records, all eight
 page sizes, all three text encodings and auto-vacuum pointer maps.
 
@@ -91,7 +92,7 @@ retained FAIL prefixes, rollback, native readers and failed-statement isolation.
 
 ## Remaining scope
 
-Generated columns, foreign keys, triggers, expression/partial indexes, virtual
+Foreign keys, triggers, expression/partial indexes, virtual
 tables, native ABI and the rest of the unfinished SQL surface remain outside this
 implementation. No optimizing index access path is added: native SQLite can
 choose a different scan order for a filtered update or unordered query. That can
@@ -100,3 +101,6 @@ and resource limits also retain the differences documented in [QUERIES.md](QUERI
 
 This is evidence for the implemented subset, not completion of the full SQLite,
 public-extension, upstream-utility or platform rewrite.
+
+Generated columns are now supported within the implemented expression subset;
+see [GENERATED.md](GENERATED.md) for their evaluation, constraints and file layout.

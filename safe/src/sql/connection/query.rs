@@ -161,6 +161,7 @@ impl Data {
                     .map(|t| t[i].clone())
                     .unwrap_or_else(|| ColumnType::expression(e, &self.fields));
                 Field {
+                    generated: None,
                     table: alias.into(),
                     name,
                     affinity: typ.affinity,

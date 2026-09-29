@@ -149,7 +149,7 @@ fn possible_types(expr: &Expr) -> u8 {
         ExprKind::Collate(e, _) | ExprKind::Unary(Unary::Plus, e) => possible_types(e),
         ExprKind::Binary(Binary::Concat, ..) => 6,
         ExprKind::Parameter(_) | ExprKind::Call { .. } => 7,
-        ExprKind::Slot(..) | ExprKind::Outer(..) | ExprKind::Cast(..) => {
+        ExprKind::Slot(..) | ExprKind::Outer(..) | ExprKind::Generated(..) | ExprKind::Cast(..) => {
             affinity_types(eval::expr_affinity(expr))
         }
         ExprKind::BoundSubquery(q) if q.source.mode == parser::QueryMode::Scalar => {

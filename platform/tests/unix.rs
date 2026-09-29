@@ -57,6 +57,56 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn generated_values_and_unique_indexes_survive_commit_reopen_and_rollback() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    c.execute("CREATE TABLE t(id INTEGER PRIMARY KEY,x INT,g INT AS(x*2) UNIQUE,s TEXT AS(g||'!') STORED)", &[]).unwrap();
+    c.execute("INSERT INTO t(x) VALUES(3),(4)", &[]).unwrap();
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT g FROM t ORDER BY id", &[]).unwrap().rows,
+        vec![vec![Value::Integer(6)], vec![Value::Integer(8)]]
+    );
+    c.execute(
+        "INSERT INTO t(x) VALUES(3) ON CONFLICT(g) DO UPDATE SET x=excluded.g RETURNING *",
+        &[],
+    )
+    .unwrap();
+    let before = fs::read(&path).unwrap();
+    assert!(c.execute("INSERT INTO t(x) VALUES(9),(6)", &[]).is_err());
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("BEGIN", &[]).unwrap();
+    c.execute("UPDATE t SET x=x+100", &[]).unwrap();
+    c.execute("ROLLBACK", &[]).unwrap();
+    assert!(c
+        .execute("INSERT OR FAIL INTO t(x) VALUES(9),(6)", &[])
+        .is_err());
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT g,s FROM t ORDER BY id", &[])
+            .unwrap()
+            .rows,
+        vec![
+            vec![
+                Value::Integer(12),
+                Value::Text(sqlite_safe::Text::utf8("12!"))
+            ],
+            vec![
+                Value::Integer(8),
+                Value::Text(sqlite_safe::Text::utf8("8!"))
+            ],
+            vec![
+                Value::Integer(18),
+                Value::Text(sqlite_safe::Text::utf8("18!"))
+            ],
+        ]
+    );
+}
+
+#[test]
 fn without_rowid_primary_updates_persist_and_failures_preserve_files() {
     let temp = Temp::new();
     let path = temp.db();

@@ -32,6 +32,7 @@ impl Connection {
             .map(|field| {
                 let typ = eval::affinity_type(field.affinity);
                 Column {
+                    generated: None,
                     single_type_token: !typ.is_empty(),
                     name: field.name,
                     declared_type: typ.into(),
@@ -64,6 +65,7 @@ impl Connection {
             );
         }
         self.state.tables.push(StoredTable {
+            generated: None,
             name: name.into(),
             columns,
             sql,

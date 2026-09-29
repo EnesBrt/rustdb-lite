@@ -86,7 +86,7 @@ impl StoredTable {
         }
         if index.primary {
             for (column, c) in self.columns.iter().enumerate() {
-                if !index.terms.iter().any(|t| t.column == column) {
+                if !c.virtual_column() && !index.terms.iter().any(|t| t.column == column) {
                     terms.push(IndexTerm {
                         column,
                         collation: c.collation,

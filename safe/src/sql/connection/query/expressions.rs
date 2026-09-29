@@ -190,16 +190,11 @@ impl Resolver for Binding<'_, '_, '_, '_> {
             }
             if let Some((slot, field)) = found.first() {
                 self.expressions.runtime.outer_reads.insert(frame_index);
-                return Ok(Some(Expr {
-                    kind: ExprKind::Outer(
-                        frame_index,
-                        *slot,
-                        field.affinity,
-                        field.collation,
-                        field.declared_type.clone(),
-                    ),
-                    depth: 1,
-                }));
+                return Ok(Some(eval::generated::field(
+                    field,
+                    *slot,
+                    Some(frame_index),
+                )?));
             }
         }
         Ok(None)

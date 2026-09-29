@@ -99,6 +99,11 @@ impl Connection {
         context: &mut Eval<'_>,
     ) -> Result<Vec<Bound>> {
         let fields = table.fields(alias);
+        // Conflict targets identify columns, including virtual generated ones.
+        let mut target_fields = fields.clone();
+        for field in &mut target_fields {
+            field.generated = None;
+        }
         let mut update_fields = fields.clone();
         // A real destination named/aliased excluded shadows the pseudo-table.
         if !alias.eq_ignore_ascii_case("excluded") {
@@ -114,7 +119,7 @@ impl Connection {
             let target = clause
                 .target
                 .as_ref()
-                .map(|terms| target(table, &fields, terms, context.fuel))
+                .map(|terms| target(table, &target_fields, terms, context.fuel))
                 .transpose()?;
             if let Some(expr) = &clause.target_where {
                 self.expressions(scope.clone(), runtime).bind(
@@ -139,7 +144,7 @@ impl Connection {
                         .iter()
                         .map(|(name, expr)| {
                             Ok((
-                                table.column_index(name)?,
+                                table.write_column(name)?,
                                 self.expressions(scope.clone(), runtime).bind(
                                     expr,
                                     &update_fields,
@@ -224,7 +229,9 @@ impl Connection {
         for (value, column) in values.iter_mut().zip(&table.columns) {
             *value = scalar::affinity(core::mem::replace(value, Value::Null), column.affinity)?;
         }
-        let columns: Vec<_> = assignments.iter().map(|(i, _)| *i).collect();
+        table.compute_generated(&mut values, context)?;
+        let columns =
+            table.changed_columns(assignments.iter().map(|(i, _)| *i).collect(), context.fuel)?;
         match conflict::check(
             table,
             conflict::Row {

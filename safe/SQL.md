@@ -45,6 +45,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Lexing | UTF-8 SQL, comments, quoted identifiers, strings, BLOBs, decimal/hex numbers, numeric underscores, ordinary parameters |
 | Expressions | Arithmetic/bit operations, comparisons, NULL logic, IS/IS NOT, BETWEEN, IN lists, CASE, CAST, COLLATE, LIKE, scalar functions |
 | Tables | Rowid and WITHOUT ROWID tables; declared-type affinity; column/table PRIMARY KEY, UNIQUE and CHECK constraints (including composite keys), NOT NULL, DEFAULT, collations, constraint-name syntax |
+| Generated columns | VIRTUAL/STORED dependencies, lazy reads, typed writes, constraints and physical layouts; [scope](GENERATED.md) |
 | Primary-key storage | WITHOUT ROWID index B-trees, composite keys and index suffixes; see [WITHOUT_ROWID.md](WITHOUT_ROWID.md) |
 | Views and table snapshots | CREATE/DROP VIEW, optional view column lists, CREATE TABLE AS SELECT/VALUES/WITH; main schema, metadata and image interchange; see [VIEWS.md](VIEWS.md) |
 | Indexes | CREATE [UNIQUE] INDEX, DROP INDEX, composite column keys, ASC/DESC, built-in collations, automatic column-constraint indexes |
@@ -93,7 +94,8 @@ behaviors, not complete compatibility of every expression/feature combination.
   RETURNING cache-sharing behavior is implemented for the tested cases.
 - No date/time, JSON, math, formatting, or other functions outside the list above.
   LIKE's infix ESCAPE syntax is pending; `like(pattern,text,escape)` is available.
-  Tcl parameter suffixes and SQLite's double-quoted-string fallback are pending.
+  Tcl parameter suffixes and general double-quoted-string fallback are pending;
+  the fallback is supported in generated-column declarations.
 - Schema-inspection pragmas support the table/view/index subset above, both argument
   syntaxes, primary-key positions, default SQL, index origin, collation names,
   directions, and auxiliary rowid entries. table_list adds strict flags and an empty

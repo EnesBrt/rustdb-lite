@@ -117,6 +117,7 @@ python3 safe/scripts/returning_differential.py
 python3 safe/scripts/sequence_differential.py
 python3 safe/scripts/strict_differential.py
 python3 safe/scripts/without_rowid_differential.py
+python3 safe/scripts/generated_differential.py
 python3 safe/scripts/check_targets.py
 ```
 

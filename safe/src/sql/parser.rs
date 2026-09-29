@@ -31,6 +31,7 @@ pub enum ExprKind {
         quoted: bool,
     },
     Slot(usize, Affinity, Collation),
+    Generated(super::eval::generated::Reference),
     Outer(usize, usize, Affinity, Collation, String),
     Subquery(Subquery),
     BoundSubquery(Box<super::eval::BoundSubquery>),
@@ -122,6 +123,7 @@ impl Expr {
 }
 #[derive(Clone, Debug)]
 pub struct Column {
+    pub generated: Option<(Expr, bool)>,
     pub single_type_token: bool,
     pub name: String,
     pub declared_type: String,
@@ -141,6 +143,9 @@ pub struct Column {
     pub checks: Vec<Expr>,
 }
 impl Column {
+    pub fn virtual_column(&self) -> bool {
+        self.generated.as_ref().is_some_and(|(_, stored)| !stored)
+    }
     pub fn rowid_alias(&self) -> bool {
         self.primary
             && !self.primary_desc
@@ -827,12 +832,13 @@ impl Parser<'_> {
                         "COLLATE",
                         "REFERENCES",
                         "CONSTRAINT",
-                        "GENERATED",
                         "AS",
                         "AUTOINCREMENT",
                     ]
                     .iter()
                     .any(|s| self.is(s))
+                    && !(self.is("GENERATED")
+                        && matches!(self.tokens.get(self.at + 1).map(|t| &t.kind), Some(Kind::Word(s, false)) if s.eq_ignore_ascii_case("ALWAYS")))
                 {
                     self.name()?;
                 }
@@ -870,6 +876,7 @@ impl Parser<'_> {
                     }
                 }
                 let mut column = Column {
+                    generated: None,
                     single_type_token: self.at == type_start + 1,
                     name,
                     affinity: Affinity::from_type(&declared_type),
@@ -935,6 +942,22 @@ impl Parser<'_> {
                         self.expect("(")?;
                         column.checks.push(self.expr(0)?);
                         self.expect(")")?;
+                    } else if self.is("GENERATED") || self.is("AS") {
+                        if column.generated.is_some() {
+                            return Err(error("multiple generated column expressions"));
+                        }
+                        if self.eat("GENERATED") {
+                            self.expect("ALWAYS")?;
+                        }
+                        self.expect("AS")?;
+                        self.expect("(")?;
+                        let expr = self.expr(0)?;
+                        self.expect(")")?;
+                        let stored = self.eat("STORED");
+                        if !stored {
+                            self.eat("VIRTUAL");
+                        }
+                        column.generated = Some((expr, stored));
                     } else {
                         break;
                     }

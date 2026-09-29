@@ -86,7 +86,7 @@ file scenarios verify persistence with a connection kept open across Rust writes
 
 ## Remaining limits
 
-Generated columns, foreign keys, triggers, virtual
+Foreign keys, triggers, virtual
 tables, table-valued pragmas and complete upstream SQL compatibility remain
 unfinished. SQLite integrity/quick-check pragmas are not implemented. Import
 parses declarations and stored values but is not a comprehensive validation of
@@ -105,3 +105,6 @@ implementation's compatibility claims.
 Materialized-query evaluation and error timing retain the limits documented in
 [QUERIES.md](QUERIES.md), [UPSERT.md](UPSERT.md) and [RETURNING.md](RETURNING.md).
 Passing this subset does not establish complete STRICT or SQLite compatibility.
+
+Generated columns are now supported within the implemented expression subset;
+see [GENERATED.md](GENERATED.md) for their evaluation, constraints and file layout.

@@ -13,8 +13,10 @@ use alloc::{
 };
 use core::cmp::Ordering;
 
+pub mod generated;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Field {
+    pub generated: Option<generated::Reference>,
     pub table: String,
     pub name: String,
     pub affinity: Affinity,
@@ -35,10 +37,16 @@ pub struct BoundSubquery {
     pub declared_type: String,
 }
 pub trait Resolver {
+    fn double_quoted_strings(&self) -> bool {
+        false
+    }
     fn column(&mut self, qualifier: Option<&str>, name: &str) -> Result<Option<Expr>>;
     fn query(&mut self, source: &Subquery, fields: &[Field]) -> Result<BoundSubquery>;
 }
 pub trait Subqueries {
+    fn slot(&mut self, slot: usize, row: &[Value], _: &mut Eval<'_>) -> Result<Value> {
+        Ok(row.get(slot).cloned().unwrap_or(Value::Null))
+    }
     fn outer(&self, frame: usize, slot: usize) -> Result<Value>;
     fn run(
         &mut self,
@@ -48,6 +56,21 @@ pub trait Subqueries {
     ) -> Result<alloc::rc::Rc<Vec<Vec<Value>>>>;
 }
 struct NoQueries;
+struct GeneratedBinding;
+impl Resolver for GeneratedBinding {
+    fn double_quoted_strings(&self) -> bool {
+        true
+    }
+    fn column(&mut self, _: Option<&str>, _: &str) -> Result<Option<Expr>> {
+        Ok(None)
+    }
+    fn query(&mut self, _: &Subquery, _: &[Field]) -> Result<BoundSubquery> {
+        Err(error("subquery in generated column"))
+    }
+}
+pub fn bind_generated(expr: &Expr, fields: &[Field]) -> Result<Expr> {
+    bind_with(expr, fields, &[], false, &mut GeneratedBinding)
+}
 impl Resolver for NoQueries {
     fn column(&mut self, _: Option<&str>, _: &str) -> Result<Option<Expr>> {
         Ok(None)
@@ -184,7 +207,7 @@ pub fn bind_with(
                     first
                 };
                 if let Some((i, f)) = first {
-                    ExprKind::Slot(i, f.affinity, f.collation)
+                    return generated::field(f, i, None);
                 } else if qualifier.is_none() {
                     if let Some((_, value)) =
                         aliases.iter().find(|(n, _)| n.eq_ignore_ascii_case(name))
@@ -198,6 +221,8 @@ pub fn bind_with(
                         && (name.eq_ignore_ascii_case("true") || name.eq_ignore_ascii_case("false"))
                     {
                         ExprKind::Boolean(name.eq_ignore_ascii_case("true"))
+                    } else if *quoted && resolver.double_quoted_strings() {
+                        ExprKind::Literal(Value::Text(Text::utf8(name)))
                     } else {
                         return Err(error(format!("no such column: {name}")));
                     }
@@ -262,8 +287,10 @@ pub fn bind_with(
             fn reference(e: &Expr, outer: bool) -> bool {
                 (if outer {
                     matches!(e.kind, ExprKind::Outer(..))
+                        || matches!(&e.kind, ExprKind::Generated(r) if r.outer.is_some())
                 } else {
                     matches!(e.kind, ExprKind::Slot(..))
+                        || matches!(&e.kind, ExprKind::Generated(r) if r.outer.is_none())
                 }) || e.children().iter().any(|e| reference(e, outer))
             }
             if aggregate(name, args.len())
@@ -273,7 +300,11 @@ pub fn bind_with(
                 return Err(Error::Unsupported("aggregate owned by an outer query"));
             }
         }
-        result.depth = 1 + result.children().iter().map(|e| e.depth).max().unwrap_or(0);
+        result.depth = if let ExprKind::Generated(r) = &result.kind {
+            r.schema.read_depth[r.column].ok_or_else(|| error("generated column loop"))?
+        } else {
+            1 + result.children().iter().map(|e| e.depth).max().unwrap_or(0)
+        };
         if result.depth > 64 {
             return Err(Error::Limit("resolved expression depth"));
         }
@@ -283,6 +314,7 @@ pub fn bind_with(
 }
 pub fn expr_affinity(expr: &Expr) -> Affinity {
     match &expr.kind {
+        ExprKind::Generated(r) => r.metadata().affinity,
         ExprKind::Slot(_, a, _) | ExprKind::Outer(_, _, a, _, _) | ExprKind::Cast(_, a) => *a,
         ExprKind::BoundSubquery(q) if q.source.mode == QueryMode::Scalar => q.affinity,
         ExprKind::Collate(x, _) => expr_affinity(x),
@@ -300,6 +332,7 @@ pub fn affinity_type(affinity: Affinity) -> &'static str {
 }
 pub fn declared_type(expr: &Expr, fields: &[Field]) -> String {
     let raw = match &expr.kind {
+        ExprKind::Generated(r) => r.metadata().declared_type.clone(),
         ExprKind::Slot(i, _, _) => fields
             .get(*i)
             .map_or_else(String::new, |f| f.declared_type.clone()),
@@ -329,6 +362,7 @@ pub fn collation(expr: &Expr) -> Collation {
 }
 pub fn collation_hint(expr: &Expr) -> Option<Collation> {
     explicit_collation(expr).or_else(|| match &expr.kind {
+        ExprKind::Generated(r) => Some(r.metadata().collation),
         ExprKind::Slot(_, _, c) | ExprKind::Outer(_, _, _, c, _) => Some(*c),
         ExprKind::Unary(Unary::Plus, x) | ExprKind::Cast(x, _) => collation_hint(x),
         _ => None,
@@ -340,6 +374,7 @@ fn comparison_collation(a: &Expr, b: &Expr) -> Collation {
         .unwrap_or_else(|| {
             fn implicit(e: &Expr) -> Option<Collation> {
                 match &e.kind {
+                    ExprKind::Generated(r) => Some(r.metadata().collation),
                     ExprKind::Slot(_, _, c) | ExprKind::Outer(_, _, _, c, _) => Some(*c),
                     ExprKind::Unary(Unary::Plus, x) | ExprKind::Cast(x, _) => implicit(x),
                     _ => None,
@@ -387,6 +422,7 @@ impl Eval<'_> {
                 return Err(error("unbound expression"))
             }
             ExprKind::Outer(frame, slot, _, _, _) => queries.outer(*frame, *slot)?,
+            ExprKind::Generated(reference) => reference.read(row, queries, self)?,
             ExprKind::BoundSubquery(q) => {
                 let rows = queries.run(q, row, self)?;
                 match q.source.mode {
@@ -444,7 +480,7 @@ impl Eval<'_> {
                     Some(*not)
                 })
             }
-            ExprKind::Slot(i, _, _) => row.get(*i).cloned().unwrap_or(Value::Null),
+            ExprKind::Slot(i, _, _) => queries.slot(*i, row, self)?,
             ExprKind::Parameter(i) => self.params.get(*i).cloned().unwrap_or(Value::Null),
             ExprKind::Collate(x, _) => self.eval_with(x, row, group, queries)?,
             ExprKind::Cast(x, a) => {
