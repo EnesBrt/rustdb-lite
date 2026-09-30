@@ -15,6 +15,7 @@ use core::cmp::Ordering;
 
 mod aggregates;
 pub mod generated;
+pub mod rows;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Field {
     pub nested: Option<NestedField>,
@@ -184,6 +185,14 @@ pub struct BoundSubquery {
     pub dependencies: Vec<usize>,
     pub tables: Vec<String>,
     pub declared_type: String,
+    pub columns: Vec<QueryColumn>,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub struct QueryColumn {
+    pub affinity: Affinity,
+    pub collation: Option<Collation>,
+    pub explicit_collation: Option<Collation>,
+    pub declared_type: String,
 }
 pub trait Resolver {
     fn double_quoted_strings(&self) -> bool {
@@ -193,6 +202,20 @@ pub trait Resolver {
     fn query(&mut self, source: &Subquery, fields: &[Field]) -> Result<BoundSubquery>;
 }
 pub trait Subqueries {
+    fn row_field(
+        &mut self,
+        query: &BoundSubquery,
+        column: usize,
+        row: &[Value],
+        context: &mut Eval<'_>,
+    ) -> Result<Value> {
+        Ok(self
+            .run(query, row, context)?
+            .first()
+            .and_then(|r| r.get(column))
+            .cloned()
+            .unwrap_or(Value::Null))
+    }
     fn slot(&mut self, slot: usize, row: &[Value], _: &mut Eval<'_>) -> Result<Value> {
         Ok(row.get(slot).cloned().unwrap_or(Value::Null))
     }
@@ -352,6 +375,12 @@ pub fn bind_with(
             ExprKind::Subquery(query) => {
                 ExprKind::BoundSubquery(Box::new(resolver.query(query, fields)?))
             }
+            ExprKind::Vector(values) => {
+                ExprKind::Vector(values.iter().map(&mut rec).collect::<Result<_>>()?)
+            }
+            ExprKind::RowField(query, column, width) => {
+                ExprKind::RowField(Box::new(rec(query)?), *column, *width)
+            }
             ExprKind::InQuery(x, query, not) => {
                 ExprKind::InQuery(Box::new(rec(x)?), Box::new(rec(query)?), *not)
             }
@@ -435,6 +464,7 @@ pub fn bind_with(
             depth: 1,
             token: expr.token.clone(),
         };
+        rows::validate(&result)?;
         if let ExprKind::Call { name, args, .. } = &result.kind {
             fn reference(e: &Expr, outer: bool) -> bool {
                 (if outer {
@@ -462,7 +492,9 @@ pub fn bind_with(
         }
         Ok(result)
     }
-    inner(expr, fields, aliases, allow_aggregate, false, resolver)
+    let result = inner(expr, fields, aliases, allow_aggregate, false, resolver)?;
+    rows::scalar(&result)?;
+    Ok(result)
 }
 pub fn expr_affinity(expr: &Expr) -> Affinity {
     match &expr.kind {
@@ -504,7 +536,7 @@ pub fn type_for_affinity(raw: String, affinity: Affinity) -> String {
         affinity_type(affinity).into()
     }
 }
-fn explicit_collation(expr: &Expr) -> Option<Collation> {
+pub fn explicit_collation(expr: &Expr) -> Option<Collation> {
     if let ExprKind::Collate(_, c) = expr.kind {
         return Some(c);
     }
@@ -591,6 +623,13 @@ impl Eval<'_> {
             ExprKind::Column { .. } | ExprKind::Subquery(_) => {
                 return Err(error("unbound expression"))
             }
+            ExprKind::Vector(_) => return Err(error("row value misused")),
+            ExprKind::RowField(query, column, _) => {
+                let ExprKind::BoundSubquery(q) = &query.kind else {
+                    return Err(Error::Corrupt("row assignment query"));
+                };
+                queries.row_field(q, *column, row, self)?
+            }
             ExprKind::Outer(frame, slot, _, _, _) => queries.outer(*frame, *slot)?,
             ExprKind::Generated(reference) => reference.read(row, queries, self)?,
             ExprKind::BoundSubquery(q) => {
@@ -609,47 +648,7 @@ impl Eval<'_> {
                 let ExprKind::BoundSubquery(q) = &query.kind else {
                     return Err(error("unbound IN query"));
                 };
-                let value = self.eval_with(x, row, group, queries)?;
-                let rows = queries.run(q, row, self)?;
-                // IN query keys receive affinity before their B-tree-style
-                // comparisons, including two numeric values under TEXT affinity.
-                let affinity = scalar::comparison_affinity(expr_affinity(x), q.affinity);
-                let value = scalar::affinity(value, affinity)?;
-                let mut found = false;
-                let mut null_seen = scalar::null(&value);
-                let rhs = Expr {
-                    token: None,
-                    kind: ExprKind::Slot(0, q.affinity, q.collation.unwrap_or(Collation::Binary)),
-                    depth: 1,
-                };
-                for values in rows.iter() {
-                    self.fuel.spend()?;
-                    let v = values
-                        .first()
-                        .ok_or_else(|| error("missing IN query column"))?;
-                    if scalar::null(v) {
-                        null_seen = true;
-                    } else if !scalar::null(&value)
-                        && scalar::compare_encoded(
-                            &value,
-                            &scalar::affinity(v.clone(), affinity)?,
-                            comparison_collation(x, &rhs),
-                            self.encoding,
-                        )? == Ordering::Equal
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                boolean(if found {
-                    Some(!not)
-                } else if rows.is_empty() {
-                    Some(*not)
-                } else if null_seen {
-                    None
-                } else {
-                    Some(*not)
-                })
+                self.in_query(x, q, *not, row, group, queries)?
             }
             ExprKind::Slot(i, _, _) => queries.slot(*i, row, self)?,
             ExprKind::Parameter(i) => self.params.get(*i).cloned().unwrap_or(Value::Null),
@@ -681,11 +680,35 @@ impl Eval<'_> {
                 }
             }
             ExprKind::Binary(op, a, b) => {
+                if rows::width(a) > 1 {
+                    let mut a = rows::Input::new(a, row, self, queries)?;
+                    let mut b = rows::Input::new(b, row, self, queries)?;
+                    return self.compare_rows(*op, &mut a, &mut b, row, group, queries);
+                }
                 let av = self.eval_with(a, row, group, queries)?;
                 let bv = self.eval_with(b, row, group, queries)?;
                 self.binary(*op, a, b, av, bv)?
             }
             ExprKind::Between(x, a, b, not) => {
+                if rows::width(x) > 1 {
+                    let mut x = rows::Input::new(x, row, self, queries)?;
+                    x.materialize(row, group, self, queries)?;
+                    let mut a = rows::Input::new(a, row, self, queries)?;
+                    let low = self.compare_rows(
+                        Binary::GreaterEqual,
+                        &mut x,
+                        &mut a,
+                        row,
+                        group,
+                        queries,
+                    )?;
+                    let mut b = rows::Input::new(b, row, self, queries)?;
+                    let high =
+                        self.compare_rows(Binary::LessEqual, &mut x, &mut b, row, group, queries)?;
+                    return Ok(boolean(
+                        and(scalar::truth(&low)?, scalar::truth(&high)?).map(|v| v ^ not),
+                    ));
+                }
                 let xv = self.eval_with(x, row, group, queries)?;
                 let av = self.eval_with(a, row, group, queries)?;
                 let bv = self.eval_with(b, row, group, queries)?;
@@ -695,6 +718,9 @@ impl Eval<'_> {
                 boolean(value.map(|b| b ^ not))
             }
             ExprKind::In(x, values, not) => {
+                if values.is_empty() {
+                    return Ok(boolean(Some(*not)));
+                }
                 let xv = self.eval_with(x, row, group, queries)?;
                 let mut found = false;
                 let mut null_seen = scalar::null(&xv);
@@ -727,6 +753,28 @@ impl Eval<'_> {
                 })
             }
             ExprKind::Case(base, arms, other) => {
+                if let Some(base) = base.as_ref().filter(|b| rows::width(b) > 1) {
+                    let mut value = rows::Input::new(base, row, self, queries)?;
+                    value.materialize(row, group, self, queries)?;
+                    for (when, then) in arms {
+                        let mut when = rows::Input::new(when, row, self, queries)?;
+                        if scalar::truth(&self.compare_rows(
+                            Binary::Equal,
+                            &mut value,
+                            &mut when,
+                            row,
+                            group,
+                            queries,
+                        )?)? == Some(true)
+                        {
+                            return self.eval_with(then, row, group, queries);
+                        }
+                    }
+                    return other
+                        .as_ref()
+                        .map(|e| self.eval_with(e, row, group, queries))
+                        .unwrap_or(Ok(Value::Null));
+                }
                 let base_value = base
                     .as_ref()
                     .map(|b| self.eval_with(b, row, group, queries))

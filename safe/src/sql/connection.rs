@@ -1120,6 +1120,7 @@ impl Connection {
                         ))
                     })
                     .collect::<Result<Vec<_>>>()?;
+                let assignments = last_assignments(table, assignments, context.fuel)?;
                 let filter = filter
                     .as_ref()
                     .map(|e| {
@@ -1179,10 +1180,9 @@ impl Connection {
                     let old_bytes = values_size(&old_values)?;
                     let mut values = old_values;
                     let mut id = old_id;
+                    let mut expressions = self.expressions(scope.clone(), runtime);
                     for (column, expr) in &assignments {
-                        let value = self
-                            .expressions(scope.clone(), runtime)
-                            .eval(expr, &row, None, context)?;
+                        let value = expressions.eval(expr, &row, None, context)?;
                         if *column == values.len() || Some(*column) == table.alias() {
                             id = rowid(value)?;
                         } else {
@@ -2572,6 +2572,31 @@ fn push_row(
     }
     rows.push(row);
     Ok(())
+}
+fn last_assignments(
+    table: &StoredTable,
+    assignments: Vec<(usize, Expr)>,
+    fuel: &mut Fuel,
+) -> Result<Vec<(usize, Expr)>> {
+    let key = |column| {
+        if Some(column) == table.alias() {
+            table.columns.len()
+        } else {
+            column
+        }
+    };
+    let mut last = BTreeMap::new();
+    for (i, (column, _)) in assignments.iter().enumerate() {
+        fuel.spend()?;
+        last.insert(key(*column), i);
+    }
+    Ok(assignments
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, (column, expr))| {
+            (last.get(&key(column)) == Some(&i)).then_some((column, expr))
+        })
+        .collect())
 }
 fn aggregate_calls(expr: &Expr) -> Vec<&Expr> {
     if matches!(&expr.kind,ExprKind::Call{name,args,..} if eval::aggregate(name,args.len())) {

@@ -100,6 +100,8 @@ jobs:
         run: python3 safe/scripts/join_scope_differential.py
       - name: Compare aggregate filters, input ordering and DISTINCT
         run: python3 safe/scripts/aggregate_differential.py
+      - name: Compare row values, multi-column membership and assignments
+        run: python3 safe/scripts/row_value_differential.py
   platform-native:
     strategy:
       fail-fast: false

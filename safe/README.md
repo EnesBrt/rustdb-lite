@@ -22,7 +22,8 @@ in [STRICT.md](STRICT.md). Primary-key SQL/storage support is documented in
 [WITHOUT_ROWID.md](WITHOUT_ROWID.md). Generated columns and expression/partial
 indexes are described in [GENERATED.md](GENERATED.md) and
 [EXPRESSION_INDEXES.md](EXPRESSION_INDEXES.md). Join binding, merged-column
-values and outer-row execution are documented in [JOINS.md](JOINS.md).
+values and outer-row execution are documented in [JOINS.md](JOINS.md). Row
+comparisons, membership and tuple assignments are described in [ROW_VALUES.md](ROW_VALUES.md).
 
 ## Storage API
 
@@ -125,6 +126,7 @@ python3 safe/scripts/expression_index_differential.py
 python3 safe/scripts/join_differential.py
 python3 safe/scripts/join_scope_differential.py
 python3 safe/scripts/aggregate_differential.py
+python3 safe/scripts/row_value_differential.py
 python3 safe/scripts/check_targets.py
 ```
 

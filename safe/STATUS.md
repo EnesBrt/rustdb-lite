@@ -27,7 +27,8 @@ is a separate `legacy/` project.
 | Joins | INNER/CROSS/LEFT/RIGHT/FULL, ON/USING/NATURAL, parenthesized namespaces, merged values and correlated/forward ON scopes; [scope](JOINS.md) |
 | Aggregate modifiers | FILTER, input ORDER BY, DISTINCT and min/max bare-column selection; [scope](AGGREGATES.md) |
 | Derived tables, CTEs and compound queries | Implemented with bounded materialization and recursive work queues; [limits and differences](QUERIES.md) |
-| Expression subqueries | Scalar, EXISTS, single-column IN, correlated reads and DML; outer-owned aggregates/row-value subqueries pending |
+| Expression subqueries | Scalar and row-valued, EXISTS, IN, correlated reads and DML; outer-owned aggregates pending |
+| Row values | Comparisons, BETWEEN/CASE/IN, table-name membership and multi-column UPDATE/UPSERT assignments; [scope](ROW_VALUES.md) |
 | Views and CREATE TABLE AS SELECT | Main-schema views, lazy dependency resolution, metadata and native image interchange; [scope and limits](VIEWS.md) |
 | Rollback journal codec and commit protocol | Implemented over a storage trait; simulated failure tests; see [PAGER.md](PAGER.md) |
 | Journaled SQL API | Autocommit/transaction persistence through caller-supplied adapter |
@@ -42,7 +43,7 @@ is a separate `legacy/` project.
 
 ## Verified locally, 2026-09-30
 
-- 136 core Rust integration tests pass in debug and release builds, including
+- 142 core Rust integration tests pass in debug and release builds, including
   3,000 deterministic database mutations, 3,000 mutations of valid native WAL
   seeds, 5,000 malformed-SQL mutations, and 3,000 journal mutations, with bounded
   budgets and panic detection.
@@ -75,10 +76,10 @@ is a separate `legacy/` project.
   Interrupted recovery, exclusive-lock lifetime, and journaled SQL transaction
   reopen tests also pass. These are adapter-contract simulations, not
   OS/power-loss tests.
-- Twenty platform Rust tests pass in debug/release, covering real files, recovery,
+- Twenty-one platform Rust tests pass in debug/release, covering real files, recovery,
   path/sidecar guards, lock lifetime, CTE/subquery data changes, views, CREATE TABLE
   AS SELECT and an eight-thread contention race.
-- 113 native file interchange/lock/SQL scenarios pass on macOS ARM64. They include
+- 122 native file interchange/lock/SQL scenarios pass on macOS ARM64. They include
   persistent native connections across updates of all three text encodings and
   updates of both auto-vacuum modes. 210 real process-interruption/partial-write
   recovery points cover ordinary and pointer-map files and match native SQLite.
@@ -101,7 +102,7 @@ is a separate `legacy/` project.
   results, affinity/collation rules, lazy expression branches, CTE scopes, data
   changes and UTF-16 images. Five additional Rust tests cover rollback, bindings,
   caches, malformed prefixes and resource limits. Aggregate ownership across
-  query scopes and row-value subqueries remain unsupported. Materialization can
+  query scopes remains unsupported. Materialization can
   still differ from native evaluation/error timing; see [QUERIES.md](QUERIES.md).
 - 246 view/CREATE TABLE AS SELECT scenarios pass, including deferred dependencies,
   column metadata, canonical schema text, namespace errors, all three encodings,
@@ -180,6 +181,14 @@ is a separate `legacy/` project.
   nine native file cases verify persisted aggregate views, INSERT SELECT,
   rollback and failed writes. Materialized execution and planner-dependent
   evaluation limits remain; see [AGGREGATES.md](AGGREGATES.md).
+- 3,446 row-comparison/membership/assignment/type/scope/error/image scenarios pass
+  against SQLite 3.53.4, including two- and three-column NULL matrices. Six Rust
+  tests cover prepared bindings, lazy comparisons, shared subquery assignments,
+  repeated targets, rollback, malformed/deep expressions, width/memory limits and
+  72 image configurations. A Unix test and nine native file cases verify persisted
+  tuple updates, generated values, membership views and failed-write isolation.
+  Parser construction is split to preserve bounded errors on deeply nested
+  expressions without increasing thread stack sizes; see [ROW_VALUES.md](ROW_VALUES.md).
 - The separate Unix adapter compiles for macOS ARM64, Linux x86-64/i686/s390x,
   Android ARM64 and iOS ARM64. Only the macOS adapter has runtime evidence here.
 - Floating-point comparisons use exact IEEE-754 bit patterns. Text comparisons
@@ -242,6 +251,7 @@ python3 safe/scripts/expression_index_differential.py
 python3 safe/scripts/join_differential.py
 python3 safe/scripts/join_scope_differential.py
 python3 safe/scripts/aggregate_differential.py
+python3 safe/scripts/row_value_differential.py
 python3 safe/scripts/check_targets.py
 python3 platform/scripts/file_differential.py
 python3 platform/scripts/check_targets.py
@@ -255,10 +265,10 @@ ignored `build/safe-*.log`. The source inventory can be regenerated with
 
 ## Published CI evidence
 
-[GitHub Actions run 36690163871](https://github.com/EnesBrt/rustdb-lite/actions/runs/36690163871)
-passed all 17 jobs for commit `2172b8a` on 2026-09-30. That baseline includes
-130 core and 19 Unix adapter Rust integration tests, including parenthesized join
-namespaces and ON scope resolution.
+[GitHub Actions run 36692254140](https://github.com/EnesBrt/rustdb-lite/actions/runs/36692254140)
+passed all 17 jobs for commit `2c746f8` on 2026-09-30. That baseline includes
+136 core and 20 Unix adapter Rust integration tests, including aggregate FILTER
+and input ORDER BY semantics.
 Core debug/release/doc tests passed on Ubuntu 24.04, macOS 14 ARM64 and Windows
 2022; Unix adapter debug/release/doc and native file comparisons passed on Ubuntu
 and macOS. The native differential, minimum-Rust and cross-compilation jobs also
@@ -266,5 +276,5 @@ passed.
 
 These results establish execution of the tested subset on those runners, not
 complete platform or durability support. Other target runtime tests remain
-pending. New aggregate coverage is recorded above and is included in subsequent CI
+pending. New row-value coverage is recorded above and is included in subsequent CI
 runs; the linked baseline does not establish its cross-platform behavior.

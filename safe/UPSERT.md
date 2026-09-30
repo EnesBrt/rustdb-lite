@@ -80,8 +80,10 @@ failed updates and explicit commits.
 The RETURNING projection reports successful inserts and updates, with separate
 expression caches for each update clause; see [RETURNING.md](RETURNING.md).
 
-Row-value assignment syntax, triggers and foreign keys remain unfinished. INSERT SELECT materializes input; query planning, streaming and the
-evaluation/error-timing differences documented in [QUERIES.md](QUERIES.md) still
+Multi-column assignments use the rules in [ROW_VALUES.md](ROW_VALUES.md).
+Triggers and foreign keys remain unfinished. INSERT SELECT materializes input;
+query planning, streaming and the evaluation/error-timing differences documented
+in [QUERIES.md](QUERIES.md) still
 apply. This implementation is not evidence of complete upstream SQL parity.
 
 Generated columns are now supported within the implemented expression subset;

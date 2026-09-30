@@ -57,6 +57,51 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn row_value_updates_and_membership_views_persist_atomically() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    for sql in [
+        "CREATE TABLE t(id INT PRIMARY KEY,a TEXT,b INT)",
+        "CREATE TABLE q(a TEXT,b INT)",
+        "INSERT INTO t VALUES(1,'a',1),(2,'b',2)",
+        "INSERT INTO q VALUES('a',1)",
+        "CREATE VIEW v AS SELECT * FROM t WHERE (a,b) IN q",
+        "CREATE TABLE copied AS SELECT * FROM v",
+    ] {
+        c.execute(sql, &[]).unwrap();
+    }
+    drop(c);
+    let mut c = open(&path);
+    let before = fs::read(&path).unwrap();
+    c.execute("BEGIN", &[]).unwrap();
+    c.execute("UPDATE t SET (a,b)=(SELECT a,b+10) WHERE (a,b) IN q", &[])
+        .unwrap();
+    c.execute("ROLLBACK", &[]).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), before);
+    assert!(c
+        .execute(
+            "UPDATE t SET (a,b)=(SELECT 'bad',abs(-9223372036854775808))",
+            &[]
+        )
+        .is_err());
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("UPDATE t SET (a,b)=(SELECT a,b+10) WHERE (a,b) IN q", &[])
+        .unwrap();
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT b FROM t ORDER BY id", &[]).unwrap().rows,
+        vec![vec![Value::Integer(11)], vec![Value::Integer(2)]]
+    );
+    assert!(c.execute("SELECT * FROM v", &[]).unwrap().rows.is_empty());
+    assert_eq!(
+        c.execute("SELECT b FROM copied", &[]).unwrap().rows,
+        vec![vec![Value::Integer(1)]]
+    );
+}
+
+#[test]
 fn aggregate_views_persist_filters_ordering_and_rollback() {
     let temp = Temp::new();
     let path = temp.db();

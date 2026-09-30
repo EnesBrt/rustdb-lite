@@ -43,20 +43,20 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Area | Current implementation |
 | --- | --- |
 | Lexing | UTF-8 SQL, comments, quoted identifiers, strings, BLOBs, decimal/hex numbers, numeric underscores, ordinary parameters |
-| Expressions | Arithmetic/bit operations, comparisons, NULL logic, IS/IS NOT, BETWEEN, IN lists, CASE, CAST, COLLATE, LIKE, scalar functions |
+| Expressions | Arithmetic/bit operations, comparisons, NULL logic, IS/IS NOT, BETWEEN, IN lists, CASE, CAST, COLLATE, LIKE, scalar functions; row comparisons and membership ([scope](ROW_VALUES.md)) |
 | Tables | Rowid and WITHOUT ROWID tables; declared-type affinity; column/table PRIMARY KEY, UNIQUE and CHECK constraints (including composite keys), NOT NULL, DEFAULT, collations, constraint-name syntax |
 | Generated columns | VIRTUAL/STORED dependencies, lazy reads, typed writes, constraints and physical layouts; [scope](GENERATED.md) |
 | Primary-key storage | WITHOUT ROWID index B-trees, composite keys and index suffixes; see [WITHOUT_ROWID.md](WITHOUT_ROWID.md) |
 | Views and table snapshots | CREATE/DROP VIEW, optional view column lists, CREATE TABLE AS SELECT/VALUES/WITH; main schema, metadata and image interchange; see [VIEWS.md](VIEWS.md) |
 | Indexes | CREATE [UNIQUE] INDEX, DROP INDEX, composite column/expression keys, partial WHERE predicates, ASC/DESC, built-in collations and automatic constraint indexes; [scope](EXPRESSION_INDEXES.md) |
-| Data changes | INSERT VALUES/DEFAULT VALUES/SELECT, UPDATE, DELETE; five conflict policies, schema ON CONFLICT and REPLACE; rowid allocation with AUTOINCREMENT |
+| Data changes | INSERT VALUES/DEFAULT VALUES/SELECT, UPDATE with multi-column assignments, DELETE; five conflict policies, schema ON CONFLICT and REPLACE; rowid allocation with AUTOINCREMENT |
 | Sequences | Editable sqlite_sequence, persisted high-water values, savepoints and exhausted-rowid rollback; see [AUTOINCREMENT.md](AUTOINCREMENT.md) |
 | STRICT tables | Six declared types, ANY preservation, primary-key nullability, type errors and transaction behavior; see [STRICT.md](STRICT.md) |
 | UPSERT | ON CONFLICT targets, multiple clauses, DO NOTHING/DO UPDATE, excluded values and conditional updates; see [UPSERT.md](UPSERT.md) |
 | RETURNING | Buffered row projections on INSERT/UPSERT, UPDATE and DELETE, expression subqueries, aliases and counters; see [RETURNING.md](RETURNING.md) |
 | Queries | Projection, stars, aliases, filtering, comma/inner/cross/left/right/full joins with ON, USING, NATURAL and parenthesized groups ([scope](JOINS.md)), DISTINCT, GROUP BY, HAVING, ORDER BY, NULLS FIRST/LAST, LIMIT/OFFSET |
 | Query composition | Derived FROM tables, ordinary/recursive WITH, VALUES queries, UNION [ALL]/INTERSECT/EXCEPT; see [QUERIES.md](QUERIES.md) |
-| Expression subqueries | Scalar, EXISTS, single-column IN/NOT IN, correlated columns in queries and data changes; statement-local caching for uncorrelated results |
+| Expression subqueries | Scalar and row-valued, EXISTS, IN/NOT IN, correlated columns in queries and data changes; statement-local caching for uncorrelated results |
 | Aggregates | count, sum, total, avg, min, max, group_concat, string_agg; DISTINCT, FILTER and input ORDER BY; [scope](AGGREGATES.md) |
 | Scalar functions | typeof, length, octet_length, hex, unhex, lower, upper, abs, unicode, char, ifnull, nullif, coalesce, iif/if, instr, replace, trim/ltrim/rtrim, substr/substring, min/max, like, changes, total_changes, last_insert_rowid |
 | Collations | BINARY, ASCII NOCASE, RTRIM |
@@ -80,8 +80,8 @@ behaviors, not complete compatibility of every expression/feature combination.
 - No temporary schemas, triggers, window functions,
   virtual tables, foreign keys, ALTER TABLE, ATTACH,
   extension loading, or C ABI.
-- Row-value subqueries, the `value IN table_name` shorthand, and aggregates owned
-  by an outer query (such as `SELECT (SELECT sum(t.x)) FROM t`) remain unsupported.
+- Aggregates owned by an outer query (such as
+  `SELECT (SELECT sum(t.x)) FROM t`) remain unsupported.
   FROM subqueries cannot refer to sibling FROM sources. Scalar subqueries return
   the first row or NULL; EXISTS does not evaluate plain result expressions but
   still computes aggregate inputs. Subqueries are prohibited in DEFAULT/CHECK.
@@ -133,7 +133,8 @@ behaviors, not complete compatibility of every expression/feature combination.
   parameters, and 16 savepoints. Additional implementation caps are 1,024-byte
   names, 1,000 function arguments, 2,000 table/result columns, 64 joined tables,
   1,024 tables/views combined, 2,000 indexes per table, 2,000 CTEs per WITH, 500 compound SELECT
-  terms, and query nesting at most 32 (also bounded by `max_expr_depth`).
+  terms, 2,000 row-value components, and query nesting at most 32 (also bounded
+  by `max_expr_depth`).
   Exported table/index data also shares
   the database byte budget. These differ from SQLite's configurable limits.
 

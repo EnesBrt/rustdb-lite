@@ -2,8 +2,9 @@
 
 The safe engine implements derived FROM tables, ordinary and recursive common
 table expressions (CTEs), VALUES queries, UNION/UNION ALL/INTERSECT/EXCEPT, and
-scalar/EXISTS/IN subqueries with correlated columns. INNER/CROSS/LEFT/RIGHT/FULL
-joins support ON, USING and NATURAL, including parenthesized groups, merged-column
+scalar/row-valued/EXISTS/IN subqueries with correlated columns.
+INNER/CROSS/LEFT/RIGHT/FULL joins support ON, USING and NATURAL, including
+parenthesized groups, merged-column
 values and types, result aliases in ON and permitted forward ON references;
 see [JOINS.md](JOINS.md). Stored views use the same
 query machinery; [VIEWS.md](VIEWS.md) describes their schema and scope rules.
@@ -52,8 +53,10 @@ SELECT n, n*n FROM numbers ORDER BY n;
 - Scalar subqueries return the first row's single value, or NULL for no rows.
   They retain result affinity but do not inherit the result expression's collation.
   EXISTS returns 0/1 and skips plain projection expressions; aggregate inputs
-  still execute. IN/NOT IN subqueries use one result column, with the native
-  empty-set, NULL, affinity and comparison-collation rules covered by tests.
+  still execute. Row-valued subqueries and IN/NOT IN support multiple columns,
+  preserving per-column affinity/collation and empty-set/NULL comparison rules;
+  table-name IN shorthand is also supported. See [ROW_VALUES.md](ROW_VALUES.md)
+  for row comparisons, shared assignments and remaining limits.
 - Correlated expressions resolve columns in the nearest available outer row.
   Nested subqueries, CTEs, joins, grouping and data changes can use these values.
   Uncorrelated expression results are cached within the executing statement;
@@ -70,9 +73,8 @@ SQLite or the legacy translation.
 
 ## Remaining differences and bounds
 
-Row-value subqueries, `value IN table_name` shorthand, windows, the
-optimizing planner and index access paths remain unimplemented. Aggregates owned
-by an outer query, such as `SELECT (SELECT sum(t.x)) FROM t`, are rejected with an
+Windows, the optimizing planner and index access paths remain unimplemented.
+Aggregates owned by an outer query, such as `SELECT (SELECT sum(t.x)) FROM t`, are rejected with an
 unsupported error; relocating these aggregates into the owning query is pending.
 FROM sources cannot reference siblings as if they were lateral subqueries.
 Parenthesized join groups preserve the tested native alias, wildcard and rowid

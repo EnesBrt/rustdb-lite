@@ -189,6 +189,7 @@ impl Connection {
                             ))
                         })
                         .collect::<Result<Vec<_>>>()?;
+                    let assignments = last_assignments(table, assignments, context.fuel)?;
                     let filter = filter
                         .as_ref()
                         .map(|expr| {
@@ -244,10 +245,9 @@ impl Connection {
             return Ok(None);
         }
         let mut id = incoming.old_id;
+        let mut expressions = self.expressions(scope.clone(), runtime);
         for (column, expr) in assignments {
-            let value = self
-                .expressions(scope.clone(), runtime)
-                .eval(expr, &row, None, context)?;
+            let value = expressions.eval(expr, &row, None, context)?;
             if *column == values.len() || Some(*column) == table.alias() {
                 id = rowid(value)?;
             } else {

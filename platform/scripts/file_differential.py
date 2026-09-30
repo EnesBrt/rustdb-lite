@@ -335,6 +335,25 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'row-value-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(id INT PRIMARY KEY,a TEXT,b INT,c INT AS(b+1) STORED);CREATE TABLE q(a TEXT,b INT);INSERT INTO t(id,a,b) VALUES(1,'é',1),(2,'Rust',2),(3,'🦀',3);INSERT INTO q VALUES('é',1),('🦀',3);CREATE VIEW v AS SELECT * FROM t WHERE (a,b) IN q;")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                run(SQL,path,'CREATE TABLE copied AS SELECT * FROM v')
+                expected=connection.execute('SELECT * FROM copied ORDER BY id').fetchall()
+                before=path.read_bytes()
+                run(SQL,path,'BEGIN','UPDATE t SET (a,b)=(SELECT a,b+10) WHERE (a,b) IN q','ROLLBACK')
+                assert path.read_bytes()==before
+                run(SQL,path,"UPDATE t SET (a,b)=(SELECT 'bad',abs(-9223372036854775808))",expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,'UPDATE t SET (a,b)=(SELECT a,b+10) WHERE (a,b) IN q')
+                assert connection.execute('SELECT b,c FROM t ORDER BY id').fetchall()==[(11,12),(2,3),(13,14)]
+                assert connection.execute('SELECT * FROM copied ORDER BY id').fetchall()==expected
+                assert connection.execute('SELECT count(*) FROM v').fetchone()==(0,)
+                connection.close()
+                assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'

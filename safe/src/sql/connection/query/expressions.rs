@@ -56,6 +56,8 @@ pub(in super::super) struct Expressions<'a> {
     db: &'a Connection,
     scope: Option<Rc<Scope>>,
     runtime: &'a mut Runtime,
+    row_values: BTreeMap<usize, Rc<Vec<Vec<Value>>>>,
+    row_value_bytes: usize,
 }
 impl Connection {
     pub(in super::super) fn expressions<'a>(
@@ -67,6 +69,8 @@ impl Connection {
             db: self,
             scope,
             runtime,
+            row_values: BTreeMap::new(),
+            row_value_bytes: 0,
         }
     }
 }
@@ -230,8 +234,24 @@ impl Resolver for Binding<'_, '_, '_, '_> {
         runtime.cache = saved_cache;
         runtime.outer.pop();
         let data = result?;
-        if source.mode != QueryMode::Exists && data.projection.len() != 1 {
-            return Err(error("subquery must return one column"));
+        let columns: Vec<_> = data
+            .projection
+            .iter()
+            .map(|e| eval::QueryColumn {
+                affinity: eval::expr_affinity(e),
+                collation: eval::collation_hint(e),
+                explicit_collation: eval::explicit_collation(e),
+                declared_type: eval::declared_type(e, &data.fields),
+            })
+            .collect();
+        for column in &columns {
+            runtime.materialized_bytes = runtime
+                .materialized_bytes
+                .checked_add(core::mem::size_of::<eval::QueryColumn>() + column.declared_type.len())
+                .ok_or(Error::Limit("subquery column bytes"))?;
+            if runtime.materialized_bytes > self.context.limits.max_database_bytes {
+                return Err(Error::Limit("subquery column bytes"));
+            }
         }
         Ok(BoundSubquery {
             source: source.clone(),
@@ -239,6 +259,7 @@ impl Resolver for Binding<'_, '_, '_, '_> {
             correlated,
             dependencies,
             tables: tables.into_iter().collect(),
+            columns,
             affinity: data
                 .projection
                 .first()
@@ -252,6 +273,35 @@ impl Resolver for Binding<'_, '_, '_, '_> {
     }
 }
 impl Subqueries for Expressions<'_> {
+    fn row_field(
+        &mut self,
+        bound: &BoundSubquery,
+        column: usize,
+        row: &[Value],
+        context: &mut Eval<'_>,
+    ) -> Result<Value> {
+        let values = if let Some(values) = self.row_values.get(&bound.source.id) {
+            values.clone()
+        } else {
+            let values = self.run(bound, row, context)?;
+            for value in values.iter() {
+                self.row_value_bytes = self
+                    .row_value_bytes
+                    .checked_add(values_size(value)?)
+                    .ok_or(Error::Limit("assignment query bytes"))?;
+                if self.row_value_bytes > context.limits.max_database_bytes {
+                    return Err(Error::Limit("assignment query bytes"));
+                }
+            }
+            self.row_values.insert(bound.source.id, values.clone());
+            values
+        };
+        Ok(values
+            .first()
+            .and_then(|r| r.get(column))
+            .cloned()
+            .unwrap_or(Value::Null))
+    }
     fn outer(&self, frame: usize, slot: usize) -> Result<Value> {
         self.runtime
             .outer

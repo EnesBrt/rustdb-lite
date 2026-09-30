@@ -61,7 +61,8 @@ not a statement that these components have been implemented.
    scan-based in-memory subset now exists, including inner/outer joins with
    ON/USING/NATURAL, parenthesized join namespaces, filtered/ordered aggregates, constraints,
    derived tables, ordinary/recursive CTEs, compound queries, scalar/EXISTS/IN and
-   correlated subqueries, stored views, CREATE TABLE AS SELECT, prepared parameters,
+   correlated subqueries, row comparisons and multi-column assignments, stored
+   views, CREATE TABLE AS SELECT, prepared parameters,
    statement rollback, and savepoints. The optimizer and
    complete SQL/schema/API semantics remain unfinished; see [SQL.md](SQL.md).
 5. **Extensions:** safe function, collation, tokenizer, and virtual-table

@@ -105,6 +105,7 @@ fn compare_expression(table: &StoredTable, a: &Expr, b: &Expr) -> u8 {
                     .all(|(a, b)| a.descending == b.descending && a.nulls_first == b.nulls_first)
         }
         (ExprKind::MinMagnitude, ExprKind::MinMagnitude) => true,
+        (ExprKind::Vector(xs), ExprKind::Vector(ys)) => xs.len() == ys.len(),
         _ => false,
     };
     if !same {

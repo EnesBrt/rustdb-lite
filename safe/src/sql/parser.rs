@@ -30,6 +30,9 @@ pub enum ExprKind {
     /// A join-generated coalesce inherits affinity/collation from its first
     /// argument, unlike a user-written coalesce function.
     Merged(Vec<Expr>),
+    Vector(Vec<Expr>),
+    /// One column of a shared row-valued assignment subquery.
+    RowField(Box<Expr>, usize, usize),
     Boolean(bool),
     Column {
         qualifier: Option<String>,
@@ -113,7 +116,10 @@ impl Expr {
     }
     pub fn children(&self) -> Vec<&Expr> {
         match &self.kind {
-            ExprKind::Unary(_, x) | ExprKind::Cast(x, _) | ExprKind::Collate(x, _) => vec![x],
+            ExprKind::Unary(_, x)
+            | ExprKind::Cast(x, _)
+            | ExprKind::Collate(x, _)
+            | ExprKind::RowField(x, ..) => vec![x],
             ExprKind::Binary(_, a, b) | ExprKind::InQuery(a, b, _) => vec![a, b],
             ExprKind::Between(a, b, c, _) => vec![a, b, c],
             ExprKind::In(x, values, _) => {
@@ -135,7 +141,7 @@ impl Expr {
                 .chain(order.iter().map(|o| &o.expr))
                 .chain(filter.iter().map(Box::as_ref))
                 .collect(),
-            ExprKind::Merged(args) => args.iter().collect(),
+            ExprKind::Merged(args) | ExprKind::Vector(args) => args.iter().collect(),
             _ => Vec::new(),
         }
     }
@@ -592,9 +598,31 @@ impl Parser<'_> {
     fn assignments(&mut self) -> Result<Vec<(String, Expr)>> {
         let mut assignments = Vec::new();
         loop {
-            let name = self.name()?;
+            let names = if self.is("(") {
+                self.names()?
+            } else {
+                vec![self.name()?]
+            };
             self.expect("=")?;
-            assignments.push((name, self.expr(0)?));
+            let expr = self.expr(0)?;
+            if matches!(expr.kind, ExprKind::Subquery(_)) {
+                let width = names.len();
+                for (i, name) in names.into_iter().enumerate() {
+                    assignments.push((
+                        name,
+                        self.make(ExprKind::RowField(Box::new(expr.clone()), i, width))?,
+                    ));
+                }
+            } else {
+                let values = match expr.kind {
+                    ExprKind::Vector(values) => values,
+                    _ => vec![expr],
+                };
+                if names.len() != values.len() {
+                    return Err(error("assignment column count mismatch"));
+                }
+                assignments.extend(names.into_iter().zip(values));
+            }
             if !self.eat(",") {
                 break;
             }
@@ -1777,7 +1805,11 @@ impl Parser<'_> {
         result
     }
     fn expr_inner(&mut self, min: u8) -> Result<Expr> {
-        let mut lhs = if self.eat("+") {
+        let lhs = self.expr_prefix()?;
+        self.expr_tail(lhs, min)
+    }
+    fn expr_prefix(&mut self) -> Result<Expr> {
+        let lhs = if self.eat("+") {
             let x = self.expr(90)?;
             self.make(ExprKind::Unary(Unary::Plus, Box::new(x)))?
         } else if self.eat("-") {
@@ -1808,7 +1840,18 @@ impl Parser<'_> {
             let x = if self.is("SELECT") || self.is("WITH") || self.is("VALUES") {
                 self.subquery_expr(QueryMode::Scalar)?
             } else {
-                self.expr(0)?
+                let values = self.expr_list()?;
+                if values.len() == 1 {
+                    values
+                        .into_iter()
+                        .next()
+                        .ok_or(Error::Corrupt("empty parenthesized expression"))?
+                } else {
+                    if values.len() > 2000 {
+                        return Err(Error::Limit("row value columns"));
+                    }
+                    self.make(ExprKind::Vector(values))?
+                }
             };
             self.expect(")")?;
             x
@@ -1972,6 +2015,9 @@ impl Parser<'_> {
                 }
             }
         };
+        Ok(lhs)
+    }
+    fn expr_tail(&mut self, mut lhs: Expr, min: u8) -> Result<Expr> {
         loop {
             if self.is("COLLATE") && min <= 85 {
                 self.at += 1;
@@ -2023,20 +2069,7 @@ impl Parser<'_> {
             }
             if self.is("IN") && min <= 35 {
                 self.at += 1;
-                self.expect("(")?;
-                if self.is("SELECT") || self.is("WITH") || self.is("VALUES") {
-                    let query = self.subquery_expr(QueryMode::Set)?;
-                    self.expect(")")?;
-                    lhs = self.make(ExprKind::InQuery(Box::new(lhs), Box::new(query), negated))?;
-                    continue;
-                }
-                let values = if self.is(")") {
-                    Vec::new()
-                } else {
-                    self.expr_list()?
-                };
-                self.expect(")")?;
-                lhs = self.make(ExprKind::In(Box::new(lhs), values, negated))?;
+                lhs = self.in_expr(lhs, negated)?;
                 continue;
             }
             let op = if self.is("OR") {
@@ -2099,5 +2132,111 @@ impl Parser<'_> {
             lhs = self.make(ExprKind::Binary(op, Box::new(lhs), Box::new(rhs)))?;
         }
         Ok(lhs)
+    }
+    // Keep IN construction out of the recursive expression frame.
+    fn in_expr(&mut self, mut lhs: Expr, negated: bool) -> Result<Expr> {
+        let id = self.tokens[self.at].start;
+        if !self.is("(") {
+            let start = self.at;
+            let name = self.table_name()?;
+            let qualified = self.at == start + 3;
+            if self.eat("(") {
+                self.expect(")")?;
+            }
+            let select = Select {
+                nested_from: false,
+                items: vec![SelectItem {
+                    expr: None,
+                    star: None,
+                    alias: None,
+                    label: String::new(),
+                }],
+                sources: vec![Source {
+                    alias: name.clone(),
+                    name,
+                    qualified,
+                    query: None,
+                    left: false,
+                    right: false,
+                    natural: false,
+                    using: None,
+                    on: None,
+                }],
+                filter: None,
+                group: Vec::new(),
+                having: None,
+                order: Vec::new(),
+                limit: None,
+                offset: None,
+                distinct: false,
+            };
+            let query = self.in_source(id, QueryCore::Select(Box::new(select)))?;
+            lhs = self.make(ExprKind::InQuery(Box::new(lhs), Box::new(query), negated))?;
+            return Ok(lhs);
+        }
+        self.expect("(")?;
+        if self.is("SELECT") || self.is("WITH") || self.is("VALUES") {
+            let query = self.subquery_expr(QueryMode::Set)?;
+            self.expect(")")?;
+            lhs = self.make(ExprKind::InQuery(Box::new(lhs), Box::new(query), negated))?;
+            return Ok(lhs);
+        }
+        let values = if self.is(")") {
+            Vec::new()
+        } else {
+            self.expr_list()?
+        };
+        self.expect(")")?;
+        if values.is_empty() {
+            fn has_function(expr: &Expr) -> bool {
+                matches!(expr.kind, ExprKind::Call { .. })
+                    || expr.children().iter().any(|e| has_function(e))
+            }
+            if !has_function(&lhs) {
+                lhs = Expr::literal(Value::Integer(i64::from(negated)));
+                return Ok(lhs);
+            }
+        }
+        if values.len() == 1 {
+            if let ExprKind::Subquery(mut subquery) = values[0].kind.clone() {
+                subquery.mode = QueryMode::Set;
+                let query = self.make(ExprKind::Subquery(subquery))?;
+                lhs = self.make(ExprKind::InQuery(Box::new(lhs), Box::new(query), negated))?;
+                return Ok(lhs);
+            }
+        }
+        if let ExprKind::Vector(columns) = &lhs.kind {
+            if !values.is_empty() {
+                let mut rows = Vec::new();
+                for value in values {
+                    let ExprKind::Vector(row) = value.kind else {
+                        return Err(error("IN row value size mismatch"));
+                    };
+                    if row.len() != columns.len() {
+                        return Err(error("IN row value size mismatch"));
+                    }
+                    rows.push(row);
+                }
+                let query = self.in_source(id, QueryCore::Values(rows))?;
+                lhs = self.make(ExprKind::InQuery(Box::new(lhs), Box::new(query), negated))?;
+                return Ok(lhs);
+            }
+        }
+        lhs = self.make(ExprKind::In(Box::new(lhs), values, negated))?;
+        Ok(lhs)
+    }
+    fn in_source(&self, id: usize, core: QueryCore) -> Result<Expr> {
+        self.make(ExprKind::Subquery(Subquery {
+            id,
+            mode: QueryMode::Set,
+            query: Rc::new(Query {
+                with: Vec::new(),
+                cores: vec![core],
+                operators: Vec::new(),
+                order: Vec::new(),
+                limit: None,
+                offset: None,
+            }),
+        }))
     }
 }
