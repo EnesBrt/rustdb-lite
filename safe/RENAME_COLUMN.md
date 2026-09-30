@@ -78,6 +78,6 @@ rollback and unchanged files after rejected edits.
 Foreign keys, triggers, virtual tables, temporary/attached schemas,
 legacy_alter_table/writable_schema behavior, configurable DQS flags, exact native
 diagnostics, prepare-time schema validation and the C API remain unfinished.
-DROP COLUMN still lacks the schema-wide string normalization described in
+DROP COLUMN shares the schema-wide string normalizer, as described in
 [ALTER_TABLE.md](ALTER_TABLE.md). General query/planner and platform limitations
 remain recorded in [SQL.md](SQL.md) and [STATUS.md](STATUS.md).

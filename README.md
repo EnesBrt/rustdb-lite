@@ -76,8 +76,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
 - An offline inspection utility with `info`, `schema`, and physical `rows` output.
 
 SQLite's own `integrity_check` accepts generated files at all eight page sizes.
-175 core Rust integration tests include 14,000 malformed-input mutations
-and 600 simulated commit failure/crash variants. Twenty-six additional adapter tests
+181 core Rust integration tests include 14,000 malformed-input mutations
+and 600 simulated commit failure/crash variants. Twenty-seven additional adapter tests
 exercise real files and concurrent threads.
 The separate C oracle validates 956 SQL expression/query/error/snapshot cases and
 32 storage scenarios covering file construction, existing database reads, and WAL
@@ -105,8 +105,9 @@ rollback, schema text and encoded image interchange. Another 1,653 scenarios cov
 constraint edits, nullability, conflict policies, boolean branches and persistence.
 Another 514 scenarios compare table renames, scoped references, schema text and files.
 Another 1,035 compare column renames, literal normalization, references and encoded images.
+Another 695 cover DROP literal normalization, dependency checks and encoded schema changes.
 Incremental-vacuum scheduling and free-page retention remain pending.
-The Unix adapter passes 167 native file interchange/locking/SQL scenarios and
+The Unix adapter passes 176 native file interchange/locking/SQL scenarios and
 210 real interrupted commit/partial-write recovery points. These are not hardware
 power-loss tests. The core
 compiles for nine targets, including 32-bit, big-endian,

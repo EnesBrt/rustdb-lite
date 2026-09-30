@@ -180,7 +180,7 @@ impl Connection {
                 return Err(Error::Corrupt("view declaration missing"));
             };
             let edits = self
-                .rename_references(&query, &name, None, false, context)?
+                .rename_references(&query, Some(&name), None, false, context)?
                 .edits;
             let rewrite = Rewrite {
                 old: &name,

@@ -45,7 +45,7 @@ is a separate `legacy/` project.
 
 ## Verified locally, 2026-09-30
 
-- 175 core Rust integration tests pass in debug and release builds, including
+- 181 core Rust integration tests pass in debug and release builds, including
   3,000 deterministic database mutations, 3,000 mutations of valid native WAL
   seeds, 5,000 malformed-SQL mutations, and 3,000 journal mutations, with bounded
   budgets and panic detection.
@@ -78,10 +78,10 @@ is a separate `legacy/` project.
   Interrupted recovery, exclusive-lock lifetime, and journaled SQL transaction
   reopen tests also pass. These are adapter-contract simulations, not
   OS/power-loss tests.
-- Twenty-six platform Rust tests pass in debug/release, covering real files, recovery,
+- Twenty-seven platform Rust tests pass in debug/release, covering real files, recovery,
   path/sidecar guards, lock lifetime, CTE/subquery data changes, views, CREATE TABLE
   AS SELECT and an eight-thread contention race.
-- 167 native file interchange/lock/SQL scenarios pass on macOS ARM64. They include
+- 176 native file interchange/lock/SQL scenarios pass on macOS ARM64. They include
   persistent native connections across updates of all three text encodings and
   updates of both auto-vacuum modes. 210 real process-interruption/partial-write
   recovery points cover ordinary and pointer-map files and match native SQLite.
@@ -203,8 +203,15 @@ is a separate `legacy/` project.
   stored-value preservation, rollback, malformed prefixes, limits and 72 image
   configurations. A Unix test and nine native file cases verify persistent readers,
   commit/reopen and unchanged files after rejected edits. The native statement
-  harness now observes metadata after possible step-time reprepare. DROP
-  double-quoted-string normalization remains pending; see [ALTER_TABLE.md](ALTER_TABLE.md).
+  harness observes metadata after possible step-time reprepare; see
+  [ALTER_TABLE.md](ALTER_TABLE.md).
+- 695 additional DROP literal/dependency/transaction/schema/image comparisons
+  pass against SQLite 3.53.4. Six Rust tests cover schema-wide quote normalization,
+  CHECK dependencies, rowid/boolean rebinding, subsequent name capture, prepared
+  reuse, stored values, counters, rollback of unrelated objects, bounded work and
+  72 image configurations.
+  A Unix test and nine native file cases verify persistent peers and unchanged
+  files after errors or rollback; see [ALTER_TABLE.md](ALTER_TABLE.md).
 - 1,653 ALTER constraint/nullability/policy/schema/image scenarios pass against
   SQLite 3.53.4. Seven Rust tests cover CHECK branch/NULL behavior, names and
   preserved comments, prepared reuse, counters, rollback, resource limits and
@@ -288,6 +295,7 @@ python3 safe/scripts/aggregate_differential.py
 python3 safe/scripts/row_value_differential.py
 python3 safe/scripts/pattern_differential.py
 python3 safe/scripts/alter_differential.py
+python3 safe/scripts/drop_quote_differential.py
 python3 safe/scripts/alter_constraint_differential.py
 python3 safe/scripts/rename_differential.py
 python3 safe/scripts/rename_column_differential.py
@@ -304,19 +312,15 @@ ignored `build/safe-*.log`. The source inventory can be regenerated with
 
 ## Published CI evidence
 
-[GitHub Actions run 36706650771](https://github.com/EnesBrt/rustdb-lite/actions/runs/36706650771)
-passed all 17 jobs for commit `fc7a95e` on 2026-09-30. That baseline includes
-168 core and 25 Unix adapter Rust integration tests, including ALTER ADD/DROP,
-constraint edits and table renames. Core debug/release/doc tests passed on Ubuntu
-24.04, macOS 14 ARM64 and Windows 2022; Unix adapter debug/release/doc and native
-file comparisons passed on Ubuntu and macOS. Native differential, minimum-Rust
-and cross-compilation jobs also passed.
-
-The preceding `9a75a17` run failed its Linux file comparison because Python's
-SQLite predates ALTER ADD CHECK. The passing baseline uses the pinned 3.53.4
-executable for that edit and retains Python as a persistent reader.
+[GitHub Actions run 36710140469](https://github.com/EnesBrt/rustdb-lite/actions/runs/36710140469)
+passed all 17 jobs for commit `d80fe0a` on 2026-09-30. That baseline includes
+175 core and 26 Unix adapter Rust integration tests, including ALTER ADD/DROP,
+constraint edits, table/column renames and quote handling. Core debug/release/doc
+tests passed on Ubuntu 24.04, macOS 14 ARM64 and Windows 2022; Unix adapter
+debug/release/doc and native file comparisons passed on Ubuntu and macOS. Native
+differential, minimum-Rust and cross-compilation jobs also passed.
 
 These results establish execution of the tested subset on those runners, not
 complete platform or durability support. Other target runtime tests remain
-pending. Column rename and expanded quote-handling evidence is recorded above;
-the linked baseline does not establish this newer change's cross-platform behavior.
+pending. New DROP quote-normalization evidence is recorded above; the linked
+baseline does not establish this newer change's cross-platform behavior.

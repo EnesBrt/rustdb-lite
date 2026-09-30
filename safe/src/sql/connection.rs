@@ -1674,7 +1674,7 @@ impl Connection {
             )?;
             let mut source_fields = data.fields(&source.alias);
             if let Some(rename) = &mut runtime.rename {
-                let target = matches!(&data, query::SourceData::Table(t, _) if t.name.eq_ignore_ascii_case(&rename.table));
+                let target = matches!(&data, query::SourceData::Table(t, _) if rename.table.as_ref().is_some_and(|name| t.name.eq_ignore_ascii_case(name)));
                 if target && rename.column.is_none() {
                     rename.mark(source.location);
                 }

@@ -49,15 +49,39 @@ can reject a cycle even on an empty table.
 
 ## Dropping a column and failure isolation
 
-Dropping the only column, a primary-key column or a column referenced by an index,
-remaining CHECK, remaining generated expression or view fails. A CHECK belonging
+Dropping the only column, a primary-key column or an inline UNIQUE column fails.
+Remaining index, CHECK and generated expressions must resolve against the resulting
+schema. Unresolved unquoted view references also reject the edit. A CHECK belonging
 only to the removed column disappears with it. Quoted column references in
-index/generated expressions are checked before rebuilding, so they cannot
-silently become string literals. DROP validates deferred view definitions;
-ADD does not validate unrelated views. Explicit view lists with a width mismatch
+index/generated expressions are revalidated without string fallback before
+publishing the replacement, so they cannot silently become string literals.
+DROP validates deferred view definitions; ADD does not validate unrelated views. Explicit view lists with a width mismatch
 retain the reference's separate read-time error behavior.
 
-Each operation restores the previous schema and rows on error. Savepoints and
+Before removing a column, the engine resolves schema expressions against the
+original schema and converts double-quoted string fallbacks to escaped
+single-quoted literals. This includes unrelated table CHECK/generated expressions,
+partial-index predicates and stored views, including unused CTE definitions.
+Identifiers, comments and bare quoted defaults are preserved. The normalizer is
+shared with column renames; its mode without a rename target never changes names.
+For example, dropping `b` from `t(a,b,g AS("future"))` produces `g AS('future')`,
+so a subsequently added column named `future` cannot capture that existing string.
+
+After removal, table and index expressions bind again with double-quoted string
+fallback disabled, including checks referring to generated columns. A missing
+quoted column must not silently turn into text in a remaining CHECK. Names that
+still resolve are accepted: removing a real `rowid` column can expose the hidden
+rowid, and removing `true` or `false` can reveal unquoted SQL boolean constants.
+Stored generated values remain unchanged; virtual values and future writes use
+the resulting bindings.
+Views follow SQLite's separate behavior: an original `SELECT "b" FROM t` can
+become a string result after `b` is removed and bind to a column again if `b` is
+later reintroduced. An originally unresolved double-quoted literal is normalized
+before removal and remains a literal. Index key expressions with unresolved
+quoted names reject the edit, even in an unrelated table.
+
+Each operation restores the previous schema and rows on error, including any
+unrelated objects normalized before a later failure. Savepoints and
 transaction rollback restore both together. Journaled connections persist a
 successful edit through the existing commit protocol, and failed edits do not
 change the committed file. Images and indexes are rebuilt; this is not SQLite's
@@ -67,7 +91,9 @@ incremental schema-cookie, B-tree or page-update implementation.
 
 ```sh
 cargo test -p sqlite-safe-core --test alter
+cargo test -p sqlite-safe-core --test drop_quotes
 python3 safe/scripts/alter_differential.py
+python3 safe/scripts/drop_quote_differential.py
 cargo test -p sqlite-safe-platform --test unix alter_columns
 python3 platform/scripts/file_differential.py
 ```
@@ -91,13 +117,23 @@ virtual tables, legacy_alter_table/writable_schema behavior, schema cookies,
 prepare-time validation and the C API. Missing functions, such as date/time
 functions, remain unavailable in new defaults and generated expressions.
 
-SQLite's DROP operation also converts existing double-quoted string fallbacks
-to single-quoted literals throughout the schema. That normalization is pending.
-For example, dropping `b` from `t(a,b,g AS("future"))` currently retains the
-original quotes; native SQLite changes them to `g AS('future')`. The initial
-values agree, but subsequently adding a column named `future` can differ.
-General double-quoted-string fallback in views and CHECK expressions also remains
-unsupported. These are compatibility gaps, not covered by the passing count.
+An additional 695 native comparisons cover DROP literal normalization, quoted
+CHECK dependencies, view/CTE resolution, transactions, exact schema text and
+encoded images. Six Rust tests cover later name capture, rowid/boolean rebinding,
+prepared view reuse, counters, stored-value preservation, bounded work and rollback of normalized
+unrelated objects, plus 72 image configurations containing both table kinds. A
+Unix Rust test and nine native file scenarios cover persistent peers and
+byte-unchanged files after failed or rolled-back normalization.
+
+The full-image writer rebuilds index entries. SQLite 3.53.4 can retain stale
+entries when DROP changes an index expression's binding: for example,
+`CREATE TABLE t(a,true); CREATE INDEX ix ON t(true); INSERT INTO t VALUES(1,2);`
+followed by `ALTER TABLE t DROP true` succeeds but native `integrity_check`
+reports a missing index entry. The safe writer rebuilds this index. Physical
+index scans and constraint timing involving such stale native entries are not
+reproduced; incremental index storage remains unfinished. The name-rebinding
+comparisons above cover logical values/metadata and remove indexes before later
+writes, so they do not establish parity for that stale-index behavior.
 
 Behavior was checked against the pinned public SQLite 3.53.4 `alter.c`, `parse.y`,
 `build.c` and `vdbemem.c` source and the independently built native executable.

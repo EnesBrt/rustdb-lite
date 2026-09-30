@@ -463,6 +463,28 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'drop-quotes-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(a INT PRIMARY KEY,b TEXT,g TEXT AS(\"future\"));CREATE TABLE u(x,s AS(\"future\") STORED);INSERT INTO t(a,b) VALUES(1,'é🦀');INSERT INTO u(x) VALUES(3);CREATE VIEW v AS SELECT a,g,\"future\" AS literal FROM t;CREATE VIEW bad AS SELECT b FROM t;")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                assert connection.execute('SELECT g,literal FROM v').fetchall()==[('future','future')]
+                before=path.read_bytes()
+                run(SQL,path,'ALTER TABLE t DROP b',expect=1)
+                assert path.read_bytes()==before
+                connection.execute('DROP VIEW bad')
+                before=path.read_bytes()
+                run(SQL,path,'BEGIN','ALTER TABLE t DROP b','ROLLBACK')
+                assert path.read_bytes()==before
+                run(SQL,path,'ALTER TABLE t DROP b')
+                connection.execute("ALTER TABLE t ADD future TEXT DEFAULT 'capture'")
+                connection.execute("ALTER TABLE u ADD future TEXT DEFAULT 'capture'")
+                run(SQL,path,'INSERT INTO t(a) VALUES(4)','INSERT INTO u(x) VALUES(5)')
+                assert connection.execute('SELECT g,literal FROM v ORDER BY a').fetchall()==[('future','future'),('future','future')]
+                assert connection.execute('SELECT s FROM u ORDER BY x').fetchall()==[('future',),('future',)]
+                connection.close()
+                assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'

@@ -69,7 +69,7 @@ pub(super) struct Runtime {
     pub(super) returning_site: usize,
 }
 pub(super) struct RenameTrace {
-    pub(super) table: String,
+    pub(super) table: Option<String>,
     pub(super) column: Option<usize>,
     pub(super) fix_quotes: bool,
     pub(super) edits: BTreeMap<usize, usize>,
@@ -78,9 +78,9 @@ pub(super) struct RenameTrace {
     seen: BTreeSet<usize>,
 }
 impl RenameTrace {
-    pub(super) fn new(table: &str, column: Option<usize>, fix_quotes: bool) -> Self {
+    pub(super) fn new(table: Option<&str>, column: Option<usize>, fix_quotes: bool) -> Self {
         Self {
-            table: table.into(),
+            table: table.map(Into::into),
             column,
             fix_quotes,
             edits: BTreeMap::new(),
@@ -274,7 +274,7 @@ impl Connection {
     pub(super) fn rename_references(
         &self,
         query: &Query,
-        table: &str,
+        table: Option<&str>,
         column: Option<usize>,
         fix_quotes: bool,
         context: &mut Eval<'_>,

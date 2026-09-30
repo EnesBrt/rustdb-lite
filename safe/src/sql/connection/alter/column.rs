@@ -1,4 +1,4 @@
-//! Column renames bind original references before applying any schema edits.
+//! Bound column renames and schema-wide double-quoted literal normalization.
 use super::*;
 use parser::Location;
 
@@ -108,7 +108,17 @@ impl eval::Resolver for Resolver<'_> {
         Err(error("subquery in schema expression"))
     }
 }
+#[derive(Clone, Copy)]
+struct Rename<'a> {
+    table: usize,
+    column: usize,
+    new: &'a str,
+    quoted: bool,
+}
 impl Connection {
+    pub(super) fn normalize_schema_literals(&mut self, context: &mut Eval<'_>) -> Result<()> {
+        self.rewrite_column_schema(None, context)
+    }
     pub(super) fn rename_column(
         &mut self,
         id: usize,
@@ -126,133 +136,174 @@ impl Connection {
         {
             return Err(error(format!("duplicate column name: {new}")));
         }
-        let table_name = self.state.tables[id].name.clone();
-        let mut tables = Vec::new();
-        for (index, old_table) in self.state.tables.iter().enumerate() {
-            context.fuel.spend()?;
-            let mut edits = Edits::default();
-            let mut fields = old_table.fields(&old_table.name);
-            for (i, field) in fields.iter_mut().enumerate() {
-                field.generated = None;
-                field.rename_target = index == id
-                    && (i == selected
-                        || i == old_table.columns.len() && old_table.alias() == Some(selected));
-            }
-            let parsed = self.prepare(&old_table.sql)?;
-            let Statement::Create {
-                columns,
-                constraints,
-                ..
-            } = parsed.statement
-            else {
-                return Err(Error::Corrupt("missing table definition"));
-            };
-            if index == id {
-                edits.mark(columns[selected].location)?;
-            }
-            for constraint in &constraints {
-                if let TableConstraint::Key { columns, .. } = constraint {
-                    for column in columns {
-                        context.fuel.spend()?;
-                        if index == id && column.name.eq_ignore_ascii_case(old) {
-                            edits.mark(column.location)?;
-                        }
+        self.rewrite_column_schema(
+            Some(Rename {
+                table: id,
+                column: selected,
+                new,
+                quoted,
+            }),
+            context,
+        )?;
+        Ok(QueryResult::changed(0))
+    }
+    pub(super) fn validate_table_names(
+        &self,
+        table: &StoredTable,
+        context: &mut Eval<'_>,
+    ) -> Result<()> {
+        self.rewrite_table_schema(table, None, false, context)
+            .map(|_| ())
+    }
+    fn rewrite_table_schema(
+        &self,
+        old_table: &StoredTable,
+        target: Option<Rename<'_>>,
+        normalize: bool,
+        context: &mut Eval<'_>,
+    ) -> Result<(String, Vec<String>)> {
+        let (new, quoted) = target.map_or(("", false), |r| (r.new, r.quoted));
+        let mut edits = Edits::default();
+        let mut fields = old_table.fields(&old_table.name);
+        for (i, field) in fields.iter_mut().enumerate() {
+            field.generated = None;
+            field.rename_target = target.is_some_and(|r| {
+                i == r.column || i == old_table.columns.len() && old_table.alias() == Some(r.column)
+            });
+        }
+        let parsed = self.prepare(&old_table.sql)?;
+        let Statement::Create {
+            columns,
+            constraints,
+            ..
+        } = parsed.statement
+        else {
+            return Err(Error::Corrupt("missing table definition"));
+        };
+        if let Some(target) = target {
+            edits.mark(columns[target.column].location)?;
+        }
+        for constraint in &constraints {
+            if let TableConstraint::Key { columns, .. } = constraint {
+                for column in columns {
+                    context.fuel.spend()?;
+                    if target.is_some_and(|r| {
+                        column
+                            .name
+                            .eq_ignore_ascii_case(&old_table.columns[r.column].name)
+                    }) {
+                        edits.mark(column.location)?;
                     }
                 }
             }
-            for expr in columns
-                .iter()
-                .flat_map(|c| &c.checks)
-                .chain(constraints.iter().filter_map(|c| {
-                    if let TableConstraint::Check(e) = c {
-                        Some(e)
-                    } else {
-                        None
-                    }
-                }))
-            {
+        }
+        for expr in columns
+            .iter()
+            .flat_map(|c| &c.checks)
+            .chain(constraints.iter().filter_map(|c| {
+                if let TableConstraint::Check(e) = c {
+                    Some(e)
+                } else {
+                    None
+                }
+            }))
+        {
+            eval::bind_with(
+                expr,
+                &fields,
+                &[],
+                false,
+                &mut Resolver {
+                    edits: &mut edits,
+                    quotes: normalize,
+                    fuel: context.fuel,
+                },
+            )?;
+        }
+        for column in &columns {
+            if let Some((expr, _)) = &column.generated {
                 eval::bind_with(
                     expr,
+                    &fields[..old_table.columns.len()],
+                    &[],
+                    false,
+                    &mut Resolver {
+                        edits: &mut edits,
+                        quotes: normalize,
+                        fuel: context.fuel,
+                    },
+                )?;
+            }
+        }
+        let sql = edits.apply(&old_table.sql, new, quoted, context)?;
+        let mut indexes = Vec::new();
+        for old_index in &old_table.indexes {
+            let Some(sql) = &old_index.sql else { continue };
+            let parsed = self.prepare(sql)?;
+            let Statement::CreateIndex {
+                columns, predicate, ..
+            } = parsed.statement
+            else {
+                return Err(Error::Corrupt("missing index definition"));
+            };
+            let mut edits = Edits::default();
+            for column in columns {
+                let mut expr = column.expr;
+                let value = if let ExprKind::Collate(e, _) = &mut expr.kind {
+                    e.as_mut()
+                } else {
+                    &mut expr
+                };
+                if let ExprKind::Literal(Value::Text(name)) = &value.kind {
+                    value.kind = ExprKind::Column {
+                        qualifier: None,
+                        qualifier_location: Default::default(),
+                        name: name.to_string()?,
+                        quoted: true,
+                        double_quoted: false,
+                    };
+                }
+                eval::bind_with(
+                    &expr,
+                    &fields[..old_table.columns.len()],
+                    &[],
+                    false,
+                    &mut Resolver {
+                        edits: &mut edits,
+                        quotes: false,
+                        fuel: context.fuel,
+                    },
+                )?;
+            }
+            if let Some(predicate) = predicate {
+                eval::bind_with(
+                    &predicate,
                     &fields,
                     &[],
                     false,
                     &mut Resolver {
                         edits: &mut edits,
-                        quotes: true,
+                        quotes: normalize,
                         fuel: context.fuel,
                     },
                 )?;
             }
-            for column in &columns {
-                if let Some((expr, _)) = &column.generated {
-                    eval::bind_with(
-                        expr,
-                        &fields[..old_table.columns.len()],
-                        &[],
-                        false,
-                        &mut Resolver {
-                            edits: &mut edits,
-                            quotes: true,
-                            fuel: context.fuel,
-                        },
-                    )?;
-                }
-            }
-            let sql = edits.apply(&old_table.sql, new, quoted, context)?;
-            let mut indexes = Vec::new();
-            for old_index in &old_table.indexes {
-                let Some(sql) = &old_index.sql else { continue };
-                let parsed = self.prepare(sql)?;
-                let Statement::CreateIndex {
-                    columns, predicate, ..
-                } = parsed.statement
-                else {
-                    return Err(Error::Corrupt("missing index definition"));
-                };
-                let mut edits = Edits::default();
-                for column in columns {
-                    let mut expr = column.expr;
-                    let value = if let ExprKind::Collate(e, _) = &mut expr.kind {
-                        e.as_mut()
-                    } else {
-                        &mut expr
-                    };
-                    if let ExprKind::Literal(Value::Text(name)) = &value.kind {
-                        value.kind = ExprKind::Column {
-                            qualifier: None,
-                            qualifier_location: Default::default(),
-                            name: name.to_string()?,
-                            quoted: true,
-                            double_quoted: false,
-                        };
-                    }
-                    eval::bind_with(
-                        &expr,
-                        &fields[..old_table.columns.len()],
-                        &[],
-                        false,
-                        &mut Resolver {
-                            edits: &mut edits,
-                            quotes: false,
-                            fuel: context.fuel,
-                        },
-                    )?;
-                }
-                if let Some(predicate) = predicate {
-                    eval::bind_with(
-                        &predicate,
-                        &fields,
-                        &[],
-                        false,
-                        &mut Resolver {
-                            edits: &mut edits,
-                            quotes: true,
-                            fuel: context.fuel,
-                        },
-                    )?;
-                }
-                indexes.push(edits.apply(sql, new, quoted, context)?);
-            }
+            indexes.push(edits.apply(sql, new, quoted, context)?);
+        }
+        Ok((sql, indexes))
+    }
+    fn rewrite_column_schema(
+        &mut self,
+        rename: Option<Rename<'_>>,
+        context: &mut Eval<'_>,
+    ) -> Result<()> {
+        let table_name = rename.map(|r| self.state.tables[r.table].name.clone());
+        let (new, quoted) = rename.map_or(("", false), |r| (r.new, r.quoted));
+        let mut tables = Vec::new();
+        for (index, old_table) in self.state.tables.iter().enumerate() {
+            context.fuel.spend()?;
+            let target = rename.filter(|r| r.table == index);
+            let (sql, indexes) = self.rewrite_table_schema(old_table, target, true, context)?;
             if sql == old_table.sql
                 && indexes
                     .iter()
@@ -293,8 +344,13 @@ impl Connection {
             let Statement::CreateView { query, .. } = parsed.statement else {
                 return Err(Error::Corrupt("missing view definition"));
             };
-            let trace =
-                self.rename_references(&query, &table_name, Some(selected), true, context)?;
+            let trace = self.rename_references(
+                &query,
+                table_name.as_deref(),
+                rename.map(|r| r.column),
+                true,
+                context,
+            )?;
             let sql = Edits {
                 names: trace.edits,
                 strings: trace.strings,
@@ -311,7 +367,6 @@ impl Connection {
         }
         self.state.tables = tables;
         self.state.views = views;
-        self.alter_validate_views(context)?;
-        Ok(QueryResult::changed(0))
+        self.alter_validate_views(context)
     }
 }

@@ -57,6 +57,53 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn drop_column_normalizes_unrelated_schema_and_preserves_failed_files() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    for sql in [
+        "CREATE TABLE t(a,b,g AS(\"future\"))",
+        "CREATE TABLE u(x,s AS(\"future\") STORED)",
+        "INSERT INTO t(a,b) VALUES(1,2)",
+        "INSERT INTO u(x) VALUES(3)",
+        "CREATE VIEW bad AS SELECT b FROM t",
+    ] {
+        c.execute(sql, &[]).unwrap();
+    }
+    let before = fs::read(&path).unwrap();
+    assert!(c.execute("ALTER TABLE t DROP b", &[]).is_err());
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("DROP VIEW bad", &[]).unwrap();
+    let before = fs::read(&path).unwrap();
+    for sql in ["BEGIN", "ALTER TABLE t DROP b", "ROLLBACK"] {
+        c.execute(sql, &[]).unwrap();
+    }
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("ALTER TABLE t DROP b", &[]).unwrap();
+    drop(c);
+    let mut c = open(&path);
+    for sql in [
+        "ALTER TABLE t ADD future TEXT DEFAULT 'capture'",
+        "ALTER TABLE u ADD future TEXT DEFAULT 'capture'",
+        "INSERT INTO t(a) VALUES(4)",
+        "INSERT INTO u(x) VALUES(5)",
+    ] {
+        c.execute(sql, &[]).unwrap();
+    }
+    drop(c);
+    let mut c = open(&path);
+    for sql in ["SELECT g FROM t ORDER BY a", "SELECT s FROM u ORDER BY x"] {
+        assert_eq!(
+            c.execute(sql, &[]).unwrap().rows,
+            vec![
+                vec![Value::Text(Text::utf8("future"))],
+                vec![Value::Text(Text::utf8("future"))]
+            ]
+        );
+    }
+}
+
+#[test]
 fn column_rename_persists_dependencies_literals_and_rollback() {
     let temp = Temp::new();
     let path = temp.db();

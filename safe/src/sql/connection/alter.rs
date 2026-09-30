@@ -118,48 +118,12 @@ pub(super) fn record_default(
     }
     Ok(Some(value))
 }
-fn references(expr: &Expr, column: usize, fuel: &mut Fuel) -> Result<bool> {
-    fuel.spend()?;
-    if matches!(expr.kind, ExprKind::Slot(i, ..) if i == column) {
-        return Ok(true);
-    }
-    for child in expr.children() {
-        if references(child, column, fuel)? {
-            return Ok(true);
-        }
-    }
-    Ok(false)
-}
-fn drop_dependencies(table: &StoredTable, column: usize, fuel: &mut Fuel) -> Result<()> {
+fn drop_column_constraints(table: &StoredTable, column: usize) -> Result<()> {
     if table.primary_key.contains(&column) {
         return Err(error("cannot drop PRIMARY KEY column"));
     }
-    for index in &table.indexes {
-        for term in &index.terms {
-            let used = match &term.key {
-                IndexKey::Column(i) => *i == column,
-                IndexKey::Expression(e) => references(&e.signature, column, fuel)?,
-            };
-            if used {
-                return Err(error(format!("column is used by index {}", index.name)));
-            }
-        }
-        if let Some(predicate) = &index.predicate {
-            if references(&predicate.signature, column, fuel)? {
-                return Err(error(format!("column is used by index {}", index.name)));
-            }
-        }
-    }
-    if let Some(schema) = &table.generated {
-        for (i, generated) in schema.columns.iter().enumerate() {
-            if i != column {
-                if let Some(expr) = &generated.expression {
-                    if references(expr, column, fuel)? {
-                        return Err(error("column is used by generated expression"));
-                    }
-                }
-            }
-        }
+    if table.columns[column].unique {
+        return Err(error("cannot drop UNIQUE column"));
     }
     Ok(())
 }
@@ -175,6 +139,15 @@ impl Connection {
         if old.name.to_ascii_lowercase().starts_with("sqlite_") {
             return Err(error("system tables may not be altered"));
         }
+        if let Alter::Drop(column) = action {
+            let n = real_column(old, column)?;
+            if old.columns.len() == 1 {
+                return Err(error("cannot drop the only column"));
+            }
+            drop_column_constraints(old, n)?;
+            self.normalize_schema_literals(context)?;
+        }
+        let old = &self.state.tables[id];
         let spans = column_spans(&old.sql, old.columns.len(), self.limits)?;
         let mut sql = old.sql.clone();
         let mut dropped = None;
@@ -341,8 +314,6 @@ impl Connection {
                 if old.columns.len() == 1 {
                     return Err(error("cannot drop the only column"));
                 }
-                drop_dependencies(old, n, context.fuel)?;
-                self.alter_validate_views(context)?;
                 let range = if n + 1 < spans.len() {
                     spans[n].start..spans[n + 1].start
                 } else {
@@ -377,6 +348,12 @@ impl Connection {
         }
         let new_id = builder.index(name)?;
         let mut table = builder.state.tables.remove(new_id);
+        if dropped.is_some() {
+            // SQLite reloads the resulting table and indexes without the DQS
+            // fallback. Names may legitimately rebind (rowid, TRUE or FALSE),
+            // but a missing quoted column must not turn into a string.
+            self.validate_table_names(&table, context)?;
+        }
         let expected = match action {
             Alter::Drop(_) => self.state.tables[id].columns.len() - 1,
             Alter::Add { .. } => self.state.tables[id].columns.len() + 1,
