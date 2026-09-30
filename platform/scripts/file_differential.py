@@ -255,6 +255,29 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'expression-index-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(id INTEGER PRIMARY KEY,x TEXT,active INT);INSERT INTO t VALUES(1,'Rust',1),(2,'RUST',0);")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                run(SQL,path,'CREATE UNIQUE INDEX ix ON t(lower(x)) WHERE active=1','CREATE INDEX iy ON t(length(x) DESC) WHERE active IS NOT NULL')
+                before=path.read_bytes()
+                run(SQL,path,'UPDATE t SET active=1 WHERE id=2',expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,"INSERT INTO t VALUES(3,'RUST',1) ON CONFLICT(lower(x)) WHERE active=1 DO UPDATE SET x='changed'")
+                assert connection.execute('SELECT id FROM t INDEXED BY ix WHERE active=1 ORDER BY id').fetchall()==[(1,)]
+                before=path.read_bytes()
+                run(SQL,path,'BEGIN','UPDATE t SET active=0','ROLLBACK')
+                assert path.read_bytes()==before
+                run(SQL,path,"INSERT OR FAIL INTO t VALUES(3,'fresh',1),(4,'CHANGED',1)",expect=1)
+                expected=[(1,'changed',1),(2,'RUST',0),(3,'fresh',1)]
+                assert connection.execute('SELECT * FROM t ORDER BY id').fetchall()==expected
+                assert connection.execute('SELECT * FROM t INDEXED BY iy WHERE active IS NOT NULL ORDER BY id').fetchall()==expected
+                run(SQL,path,'UPDATE t SET active=1 WHERE id=2','CREATE TABLE copied AS SELECT * FROM t')
+                assert connection.execute('SELECT id FROM t INDEXED BY ix WHERE active=1 ORDER BY id').fetchall()==[(1,),(2,),(3,)]
+                connection.close()
+                assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'

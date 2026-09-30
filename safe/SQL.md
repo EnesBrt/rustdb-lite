@@ -48,7 +48,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Generated columns | VIRTUAL/STORED dependencies, lazy reads, typed writes, constraints and physical layouts; [scope](GENERATED.md) |
 | Primary-key storage | WITHOUT ROWID index B-trees, composite keys and index suffixes; see [WITHOUT_ROWID.md](WITHOUT_ROWID.md) |
 | Views and table snapshots | CREATE/DROP VIEW, optional view column lists, CREATE TABLE AS SELECT/VALUES/WITH; main schema, metadata and image interchange; see [VIEWS.md](VIEWS.md) |
-| Indexes | CREATE [UNIQUE] INDEX, DROP INDEX, composite column keys, ASC/DESC, built-in collations, automatic column-constraint indexes |
+| Indexes | CREATE [UNIQUE] INDEX, DROP INDEX, composite column/expression keys, partial WHERE predicates, ASC/DESC, built-in collations and automatic constraint indexes; [scope](EXPRESSION_INDEXES.md) |
 | Data changes | INSERT VALUES/DEFAULT VALUES/SELECT, UPDATE, DELETE; five conflict policies, schema ON CONFLICT and REPLACE; rowid allocation with AUTOINCREMENT |
 | Sequences | Editable sqlite_sequence, persisted high-water values, savepoints and exhausted-rowid rollback; see [AUTOINCREMENT.md](AUTOINCREMENT.md) |
 | STRICT tables | Six declared types, ANY preservation, primary-key nullability, type errors and transaction behavior; see [STRICT.md](STRICT.md) |
@@ -95,7 +95,7 @@ behaviors, not complete compatibility of every expression/feature combination.
 - No date/time, JSON, math, formatting, or other functions outside the list above.
   LIKE's infix ESCAPE syntax is pending; `like(pattern,text,escape)` is available.
   Tcl parameter suffixes and general double-quoted-string fallback are pending;
-  the fallback is supported in generated-column declarations.
+  the fallback is supported in generated-column and index declarations.
 - Schema-inspection pragmas support the table/view/index subset above, both argument
   syntaxes, primary-key positions, default SQL, index origin, collation names,
   directions, and auxiliary rowid entries. table_list adds strict flags and an empty
@@ -113,7 +113,8 @@ behaviors, not complete compatibility of every expression/feature combination.
   Ordinary-table random rowid allocation after i64::MAX is pending, including
   manually setting that rowid on sqlite_sequence before it needs a new entry.
   Exports rebuild table/index trees; there is no incremental index mutation or
-  index-based query access. Expression and partial indexes are not supported.
+  index-based query access. Expression and partial index support is documented
+  in [EXPRESSION_INDEXES.md](EXPRESSION_INDEXES.md).
   Import rejects triggers, unsupported index definitions, and other schemas
   that cannot be parsed. Index metadata is preserved and entries are rebuilt from
   table values; import is not a complete physical index integrity check.

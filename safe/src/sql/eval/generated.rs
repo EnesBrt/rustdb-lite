@@ -47,6 +47,7 @@ impl Reference {
             .ok_or(Error::Corrupt("generated column offset"))?;
         reference.outer = outer;
         Ok(Expr {
+            token: None,
             kind: ExprKind::Generated(reference),
             depth,
         })
@@ -152,6 +153,7 @@ pub fn field(field: &Field, slot: usize, outer: Option<usize>) -> Result<Expr> {
         reference.expression(slot, outer)
     } else {
         Ok(Expr {
+            token: None,
             depth: 1,
             kind: match outer {
                 Some(frame) => ExprKind::Outer(

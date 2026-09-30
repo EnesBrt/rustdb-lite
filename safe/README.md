@@ -19,7 +19,9 @@ cache/error behavior are described in [RETURNING.md](RETURNING.md). The lower-le
 is shown below. Persistent automatic rowids and sqlite_sequence are documented in
 [AUTOINCREMENT.md](AUTOINCREMENT.md). STRICT types and catalog flags are described
 in [STRICT.md](STRICT.md). Primary-key SQL/storage support is documented in
-[WITHOUT_ROWID.md](WITHOUT_ROWID.md).
+[WITHOUT_ROWID.md](WITHOUT_ROWID.md). Generated columns and expression/partial
+indexes are described in [GENERATED.md](GENERATED.md) and
+[EXPRESSION_INDEXES.md](EXPRESSION_INDEXES.md).
 
 ## Storage API
 
@@ -118,6 +120,7 @@ python3 safe/scripts/sequence_differential.py
 python3 safe/scripts/strict_differential.py
 python3 safe/scripts/without_rowid_differential.py
 python3 safe/scripts/generated_differential.py
+python3 safe/scripts/expression_index_differential.py
 python3 safe/scripts/check_targets.py
 ```
 

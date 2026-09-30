@@ -57,6 +57,51 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn expression_partial_indexes_persist_membership_conflicts_and_fail_prefixes() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    c.execute(
+        "CREATE TABLE t(id INTEGER PRIMARY KEY,x TEXT,active INT)",
+        &[],
+    )
+    .unwrap();
+    c.execute("INSERT INTO t VALUES(1,'Rust',1),(2,'RUST',0)", &[])
+        .unwrap();
+    c.execute("CREATE UNIQUE INDEX ix ON t(lower(x)) WHERE active=1", &[])
+        .unwrap();
+    drop(c);
+    let mut c = open(&path);
+    let before = fs::read(&path).unwrap();
+    assert!(c.execute("UPDATE t SET active=1 WHERE id=2", &[]).is_err());
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("INSERT INTO t VALUES(3,'RUST',1) ON CONFLICT(lower(x)) WHERE active=1 DO UPDATE SET x='changed'",&[]).unwrap();
+    c.execute("BEGIN", &[]).unwrap();
+    c.execute("UPDATE t SET active=0", &[]).unwrap();
+    c.execute("ROLLBACK", &[]).unwrap();
+    assert!(c
+        .execute(
+            "INSERT OR FAIL INTO t VALUES(3,'fresh',1),(4,'CHANGED',1)",
+            &[]
+        )
+        .is_err());
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT id,active FROM t ORDER BY id", &[])
+            .unwrap()
+            .rows,
+        vec![
+            vec![Value::Integer(1), Value::Integer(1)],
+            vec![Value::Integer(2), Value::Integer(0)],
+            vec![Value::Integer(3), Value::Integer(1)]
+        ]
+    );
+    c.execute("UPDATE t SET active=1 WHERE id=2", &[]).unwrap();
+    assert!(c.execute("INSERT INTO t VALUES(4,'rust',1)", &[]).is_err());
+}
+
+#[test]
 fn generated_values_and_unique_indexes_survive_commit_reopen_and_rollback() {
     let temp = Temp::new();
     let path = temp.db();

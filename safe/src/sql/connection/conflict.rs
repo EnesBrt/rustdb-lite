@@ -47,7 +47,14 @@ impl<'a> Change<'a> {
     }
     pub fn index(self, table: &StoredTable, index: &StoredIndex) -> bool {
         self.rowid
-            || index.terms.iter().any(|t| self.column(table, t.column))
+            || index
+                .predicate
+                .as_ref()
+                .is_some_and(|p| self.expression(table, &p.signature))
+            || index.terms.iter().any(|t| match &t.key {
+                IndexKey::Column(i) => self.column(table, *i),
+                IndexKey::Expression(e) => self.expression(table, &e.signature),
+            })
             || (table.without_rowid && table.primary_key.iter().any(|i| self.column(table, *i)))
     }
 }
@@ -183,24 +190,29 @@ pub(super) fn check(
                     strict::values(table, row.values)?;
                     type_checked = true;
                 }
+                if !index.includes(table, row.id, row.values, context)? {
+                    continue;
+                }
+                let key_values = index.values(table, row.id, row.values, context)?;
                 if !index.unique {
                     continue;
                 }
-                // An unchanged key cannot introduce a duplicate. Avoid repeated
-                // scans and encoding of long text when updating another column.
-                if row
-                    .old
-                    .and_then(|id| table.rows.get(&id))
-                    .is_some_and(|old| {
-                        index.terms.iter().all(|t| {
-                            !table.columns[t.column].virtual_column()
-                                && row.values[t.column] == old[t.column]
-                        })
-                    })
-                    || index
-                        .terms
-                        .iter()
-                        .any(|t| scalar::null(&row.values[t.column]))
+                // Only full column indexes can skip comparing identical inputs.
+                // Entering a partial index can create a duplicate even when its
+                // key values did not change.
+                if (index.predicate.is_none()
+                    && row
+                        .old
+                        .and_then(|id| table.rows.get(&id))
+                        .is_some_and(|old| {
+                            index.terms.iter().all(|t| match t.key {
+                                IndexKey::Column(i) => {
+                                    !table.columns[i].virtual_column() && row.values[i] == old[i]
+                                }
+                                _ => false,
+                            })
+                        }))
+                    || key_values.iter().any(scalar::null)
                 {
                     continue;
                 }
@@ -210,12 +222,15 @@ pub(super) fn check(
                     if Some(*prior_id) == row.old || replaced.contains(prior_id) {
                         continue;
                     }
+                    if !index.includes(table, *prior_id, prior, context)? {
+                        continue;
+                    }
                     let mut equal = true;
-                    for term in &index.terms {
+                    for (term, value) in index.terms.iter().zip(&key_values) {
                         context.fuel.spend()?;
                         if scalar::compare_encoded(
-                            &row.values[term.column],
-                            &table.read_column(term.column, *prior_id, prior, context)?,
+                            value,
+                            &term.value(table, *prior_id, prior, context)?,
                             term.collation,
                             context.encoding,
                         )? != Compare::Equal

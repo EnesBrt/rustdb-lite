@@ -45,7 +45,9 @@ washers. The update does not change `last_insert_rowid()`; the new insertion doe
   when needed to disambiguate its joins from the following ON CONFLICT clause.
   DEFAULT VALUES does not accept UPSERT, matching SQLite's grammar.
 - A target WHERE expression is resolved, but does not filter a matching full
-  unique index. Partial-index creation and matching remain unsupported.
+  unique index. Matching a partial unique index requires the same predicate
+  expression. Expression keys use structural and lexical matching, without
+  algebraic rewriting; see [EXPRESSION_INDEXES.md](EXPRESSION_INDEXES.md).
 
 Each inserted or updated row contributes to changes and total_changes. Skipped
 rows do not. Target/name resolution errors leave the previous changes count;
@@ -78,8 +80,7 @@ failed updates and explicit commits.
 The RETURNING projection reports successful inserts and updates, with separate
 expression caches for each update clause; see [RETURNING.md](RETURNING.md).
 
-Expression/partial indexes, row-value assignment syntax, triggers and foreign
-keys remain unfinished. INSERT SELECT materializes input; query planning, streaming and the
+Row-value assignment syntax, triggers and foreign keys remain unfinished. INSERT SELECT materializes input; query planning, streaming and the
 evaluation/error-timing differences documented in [QUERIES.md](QUERIES.md) still
 apply. This implementation is not evidence of complete upstream SQL parity.
 

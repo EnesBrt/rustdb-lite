@@ -48,8 +48,11 @@ The pinned SQLite 3.53.4 reference does not make `OP_TypeCheck` itself request a
 statement journal. Within an explicit transaction, earlier writes in the same
 statement can therefore survive a datatype error. Another emitted constraint
 capable of ABORT, including constraints in a DO UPDATE action, causes statement
-rollback instead. Autocommit rolls back the implicit transaction. The safe engine
-models those decisions for the implemented constraints. Rowid type mismatches
+rollback instead. Functions in generated columns or affected index keys/predicates
+also request a statement journal, including in non-unique indexes; inline
+conditional functions such as coalesce do not. Autocommit rolls back the implicit
+transaction. The safe engine models those decisions for these implemented paths;
+the tests do not establish every expression/error-timing combination. Rowid type mismatches
 follow the same journal behavior in ordinary tables as well.
 
 For example, after `CREATE TABLE t(x INT) STRICT; BEGIN;`, executing

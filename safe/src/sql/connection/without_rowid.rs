@@ -20,13 +20,14 @@ pub(super) fn declaration(table: &mut StoredTable, descending: bool) -> Result<(
         let c = &table.columns[column];
         if let Some(index) = table.indexes.iter_mut().find(|index| {
             index.terms.len() == 1
-                && index.terms[0].column == column
+                && index.terms[0].key == IndexKey::Column(column)
                 && index.terms[0].collation == c.collation
         }) {
             index.primary = true;
             index.conflict = index.conflict.merge(table.key_conflict)?;
         } else {
             table.indexes.push(StoredIndex {
+                predicate: None,
                 name: format!(
                     "sqlite_autoindex_{}_{}",
                     table.name,
@@ -37,7 +38,7 @@ pub(super) fn declaration(table: &mut StoredTable, descending: bool) -> Result<(
                 primary: true,
                 conflict: table.key_conflict,
                 terms: vec![IndexTerm {
-                    column,
+                    key: IndexKey::Column(column),
                     collation: c.collation,
                     collation_name: c.collation_name.clone(),
                     descending,
@@ -54,13 +55,17 @@ pub(super) fn declaration(table: &mut StoredTable, descending: bool) -> Result<(
     for term in &index.terms {
         if !terms
             .iter()
-            .any(|prior| prior.column == term.column && prior.collation == term.collation)
+            .any(|prior| prior.key == term.key && prior.collation == term.collation)
         {
             terms.push(term.clone());
         }
     }
     index.terms = terms;
-    table.primary_key = index.terms.iter().map(|t| t.column).collect();
+    table.primary_key = index
+        .terms
+        .iter()
+        .map(IndexTerm::column)
+        .collect::<Result<_>>()?;
     for &i in &table.primary_key {
         if !table.columns[i].not_null {
             table.columns[i].not_null = true;
@@ -86,9 +91,14 @@ impl StoredTable {
         }
         if index.primary {
             for (column, c) in self.columns.iter().enumerate() {
-                if !c.virtual_column() && !index.terms.iter().any(|t| t.column == column) {
+                if !c.virtual_column()
+                    && !index
+                        .terms
+                        .iter()
+                        .any(|t| t.key == IndexKey::Column(column))
+                {
                     terms.push(IndexTerm {
-                        column,
+                        key: IndexKey::Column(column),
                         collation: c.collation,
                         collation_name: c.collation_name.clone(),
                         descending: false,
@@ -100,7 +110,7 @@ impl StoredTable {
                 if !index
                     .terms
                     .iter()
-                    .any(|t| t.column == term.column && t.collation == term.collation)
+                    .any(|t| t.key == term.key && t.collation == term.collation)
                 {
                     let mut term = term.clone();
                     // Automatic UNIQUE indexes retain SQLite's historical ASC
@@ -123,8 +133,8 @@ impl StoredTable {
         sort_by(ids, context.fuel, |a, b| {
             for term in terms {
                 let cmp = scalar::compare_encoded(
-                    &self.rows[a][term.column],
-                    &self.rows[b][term.column],
+                    &self.rows[a][term.column()?],
+                    &self.rows[b][term.column()?],
                     term.collation,
                     context.encoding,
                 )?;
@@ -166,7 +176,7 @@ impl StoredTable {
             for (term, value) in terms.iter().zip(key) {
                 context.fuel.spend()?;
                 if scalar::compare_encoded(
-                    &row[term.column],
+                    &row[term.column()?],
                     value,
                     term.collation,
                     context.encoding,

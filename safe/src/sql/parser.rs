@@ -18,6 +18,9 @@ use alloc::{
 pub struct Expr {
     pub kind: ExprKind,
     pub depth: usize,
+    /// Spelling retained where SQLite compares schema expressions lexically
+    /// (large/real numeric literals, blobs, and CAST type names).
+    pub token: Option<String>,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
@@ -100,6 +103,7 @@ impl Expr {
         Self {
             kind: ExprKind::Literal(value),
             depth: 1,
+            token: None,
         }
     }
     pub fn children(&self) -> Vec<&Expr> {
@@ -244,6 +248,12 @@ pub struct IndexColumn {
     pub descending: bool,
 }
 #[derive(Clone, Debug)]
+pub struct IndexExpression {
+    pub expr: Expr,
+    pub descending: bool,
+    pub collation_name: Option<String>,
+}
+#[derive(Clone, Debug)]
 pub enum TableConstraint {
     Key {
         columns: Vec<IndexColumn>,
@@ -303,7 +313,8 @@ pub enum Statement {
     CreateIndex {
         name: String,
         table: String,
-        columns: Vec<IndexColumn>,
+        columns: Vec<IndexExpression>,
+        predicate: Option<Expr>,
         unique: bool,
         if_not_exists: bool,
         sql: String,
@@ -625,6 +636,40 @@ impl Parser<'_> {
     fn index_columns(&mut self) -> Result<Vec<IndexColumn>> {
         self.key_columns(false).map(|(columns, _)| columns)
     }
+    fn index_expressions(&mut self) -> Result<Vec<IndexExpression>> {
+        self.expect("(")?;
+        let mut terms = Vec::new();
+        loop {
+            let start = self.at;
+            let expr = self.expr(0)?;
+            let collation_name = if matches!(expr.kind, ExprKind::Collate(..)) {
+                self.tokens[start..self.at].windows(2).rev().find_map(|pair| {
+                    if matches!(&pair[0].kind, Kind::Word(s, false) if s.eq_ignore_ascii_case("COLLATE")) {
+                        match &pair[1].kind { Kind::Word(s, _) | Kind::String(s) => Some(s.clone()), _ => None }
+                    } else { None }
+                })
+            } else {
+                None
+            };
+            let descending = self.eat("DESC");
+            if !descending {
+                self.eat("ASC");
+            }
+            terms.push(IndexExpression {
+                expr,
+                descending,
+                collation_name,
+            });
+            if terms.len() > 2000 {
+                return Err(Error::Limit("index terms"));
+            }
+            if !self.eat(",") {
+                break;
+            }
+        }
+        self.expect(")")?;
+        Ok(terms)
+    }
     fn key_columns(&mut self, primary: bool) -> Result<(Vec<IndexColumn>, bool)> {
         self.expect("(")?;
         let mut columns = Vec::new();
@@ -736,12 +781,14 @@ impl Parser<'_> {
                 let name_end = self.at;
                 self.expect("ON")?;
                 let table = self.name()?;
-                let columns = self.index_columns()?;
+                let columns = self.index_expressions()?;
+                let predicate = self.optional_where()?;
                 let end = self.tokens[self.at - 1].end;
                 return Ok(Statement::CreateIndex {
                     name,
                     table,
                     columns,
+                    predicate,
                     unique,
                     if_not_exists,
                     sql: self.schema_sql(start, end, name_start, name_end),
@@ -1580,7 +1627,11 @@ impl Parser<'_> {
         Ok((order, limit, offset))
     }
     fn make(&self, kind: ExprKind) -> Result<Expr> {
-        let mut expr = Expr { kind, depth: 1 };
+        let mut expr = Expr {
+            kind,
+            depth: 1,
+            token: None,
+        };
         expr.depth = 1 + expr.children().iter().map(|e| e.depth).max().unwrap_or(0);
         if expr.depth > self.limits.max_expr_depth.min(64) {
             return Err(Error::Limit("SQL expression depth"));
@@ -1665,16 +1716,23 @@ impl Parser<'_> {
                 parts.push(self.name()?);
             }
             self.expect(")")?;
-            self.make(ExprKind::Cast(
+            let mut expr = self.make(ExprKind::Cast(
                 Box::new(x),
                 Affinity::from_type(&parts.join(" ")),
-            ))?
+            ))?;
+            expr.token = Some(parts.join(" "));
+            expr
         } else {
             let token = self.peek().clone();
             self.at += 1;
             match token {
                 Kind::String(s) => Expr::literal(Value::Text(Text::utf8(&s))),
-                Kind::Blob(b) => Expr::literal(Value::Blob(b)),
+                Kind::Blob(b) => {
+                    let mut expr = Expr::literal(Value::Blob(b));
+                    let token = &self.tokens[self.at - 1];
+                    expr.token = Some(self.sql[token.start..token.end].into());
+                    expr
+                }
                 Kind::Number(s) => {
                     if s.trim_start_matches('0') == "9223372036854775808" {
                         self.make(ExprKind::MinMagnitude)?
@@ -1690,7 +1748,12 @@ impl Parser<'_> {
                         } else {
                             Value::Real(s.parse::<f64>().map_err(|_| error("invalid number"))?)
                         };
-                        Expr::literal(v)
+                        let small = matches!(v, Value::Integer(n) if (0..=i64::from(i32::MAX)).contains(&n));
+                        let mut expr = Expr::literal(v);
+                        if !small {
+                            expr.token = Some(s);
+                        }
+                        expr
                     }
                 }
                 Kind::Parameter(name) => {

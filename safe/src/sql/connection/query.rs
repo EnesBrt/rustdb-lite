@@ -647,6 +647,7 @@ fn compound_order(order: &[Ordering], parts: &[Data]) -> Result<Vec<Ordering>> {
             let (slot, selected) = found
                 .ok_or_else(|| error("ORDER BY term does not match a compound result column"))?;
             let mut expr = Expr {
+                token: None,
                 depth: 1,
                 kind: ExprKind::Slot(
                     slot,
@@ -656,6 +657,7 @@ fn compound_order(order: &[Ordering], parts: &[Data]) -> Result<Vec<Ordering>> {
             };
             if let ExprKind::Collate(_, collation) = &term.expr.kind {
                 expr = Expr {
+                    token: None,
                     depth: 2,
                     kind: ExprKind::Collate(Box::new(expr), *collation),
                 };

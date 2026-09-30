@@ -282,7 +282,11 @@ pub fn bind_with(
             }
             _ => expr.kind.clone(),
         };
-        let mut result = Expr { kind, depth: 1 };
+        let mut result = Expr {
+            kind,
+            depth: 1,
+            token: expr.token.clone(),
+        };
         if let ExprKind::Call { name, args, .. } = &result.kind {
             fn reference(e: &Expr, outer: bool) -> bool {
                 (if outer {
@@ -448,6 +452,7 @@ impl Eval<'_> {
                 let mut found = false;
                 let mut null_seen = scalar::null(&value);
                 let rhs = Expr {
+                    token: None,
                     kind: ExprKind::Slot(0, q.affinity, q.collation.unwrap_or(Collation::Binary)),
                     depth: 1,
                 };

@@ -92,7 +92,8 @@ retained FAIL prefixes, rollback, native readers and failed-statement isolation.
 
 ## Remaining scope
 
-Foreign keys, triggers, expression/partial indexes, virtual
+Expression and partial secondary indexes are supported within the scope in
+[EXPRESSION_INDEXES.md](EXPRESSION_INDEXES.md). Foreign keys, triggers, virtual
 tables, native ABI and the rest of the unfinished SQL surface remain outside this
 implementation. No optimizing index access path is added: native SQLite can
 choose a different scan order for a filtered update or unordered query. That can

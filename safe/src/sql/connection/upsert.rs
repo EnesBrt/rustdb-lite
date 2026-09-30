@@ -28,7 +28,13 @@ pub(super) fn handler(clauses: &[Bound], key: Key, fuel: &mut Fuel) -> Result<Op
     }
     Ok(None)
 }
-fn target(table: &StoredTable, fields: &[Field], terms: &[Expr], fuel: &mut Fuel) -> Result<Key> {
+fn target(
+    table: &StoredTable,
+    fields: &[Field],
+    terms: &[Expr],
+    predicate: Option<&Expr>,
+    fuel: &mut Fuel,
+) -> Result<Key> {
     let mut resolved = Vec::new();
     for expr in terms {
         fuel.spend()?;
@@ -50,6 +56,12 @@ fn target(table: &StoredTable, fields: &[Field], terms: &[Expr], fuel: &mut Fuel
             {
                 continue;
             }
+            if let Some(filter) = &index.predicate {
+                if predicate.is_none_or(|p| !indexes::same_expression(table, p, &filter.signature))
+                {
+                    continue;
+                }
+            }
             let mut matches = true;
             for key in &index.terms {
                 let mut found = false;
@@ -62,9 +74,16 @@ fn target(table: &StoredTable, fields: &[Field], terms: &[Expr], fuel: &mut Fuel
                     // The reference resolves an IPK reference to rowid, but
                     // retains its declared column number in a composite index.
                     // Those do not match in sqlite3UpsertAnalyzeTarget().
-                    if matches!(expr.kind, ExprKind::Slot(slot, _, _) if slot == key.column && !rowid(slot))
-                        && collation.is_none_or(|c| c == key.collation)
-                    {
+                    let same_key = match &key.key {
+                        IndexKey::Column(column) => {
+                            matches!(expr.kind, ExprKind::Slot(slot, _, _) if slot == *column && !rowid(slot))
+                                && collation.is_none_or(|c| c == key.collation)
+                        }
+                        IndexKey::Expression(e) => {
+                            indexes::matches_target(table, term, e, key.collation)
+                        }
+                    };
+                    if same_key {
                         found = true;
                         break;
                     }
@@ -116,20 +135,35 @@ impl Connection {
         let mut seen = BTreeSet::new();
         for clause in clauses {
             context.fuel.spend()?;
+            // Target WHERE expressions are resolved even when a full index
+            // makes their value irrelevant. Use the query resolver so valid
+            // subqueries do not turn a later constraint error into a bind error.
+            let predicate = clause
+                .target_where
+                .as_ref()
+                .map(|expr| {
+                    self.expressions(scope.clone(), runtime).bind(
+                        expr,
+                        &target_fields,
+                        &[],
+                        false,
+                        context,
+                    )
+                })
+                .transpose()?;
             let target = clause
                 .target
                 .as_ref()
-                .map(|terms| target(table, &target_fields, terms, context.fuel))
+                .map(|terms| {
+                    target(
+                        table,
+                        &target_fields,
+                        terms,
+                        predicate.as_ref(),
+                        context.fuel,
+                    )
+                })
                 .transpose()?;
-            if let Some(expr) = &clause.target_where {
-                self.expressions(scope.clone(), runtime).bind(
-                    expr,
-                    &fields,
-                    &[],
-                    false,
-                    context,
-                )?;
-            }
             // SQLite ignores the action of redundant clauses, even if that
             // action would contain an unresolved column or function.
             let duplicate = target.is_some_and(|key| !seen.insert(key));

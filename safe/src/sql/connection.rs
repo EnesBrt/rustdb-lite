@@ -14,6 +14,7 @@ use core::cmp::Ordering as Compare;
 mod catalog;
 mod conflict;
 mod generated;
+mod indexes;
 mod query;
 mod returning;
 mod schema;
@@ -62,13 +63,24 @@ struct StoredView {
 }
 #[derive(Clone)]
 struct IndexTerm {
-    column: usize,
+    key: IndexKey,
     collation: Collation,
     collation_name: String,
     descending: bool,
 }
+#[derive(Clone, PartialEq)]
+enum IndexKey {
+    Column(usize),
+    Expression(alloc::boxed::Box<IndexExpression>),
+}
+#[derive(Clone, PartialEq)]
+struct IndexExpression {
+    value: Expr,
+    signature: Expr,
+}
 #[derive(Clone)]
 struct StoredIndex {
+    predicate: Option<IndexExpression>,
     name: String,
     sql: Option<String>,
     terms: Vec<IndexTerm>,
@@ -475,6 +487,7 @@ impl Connection {
                 name,
                 table,
                 columns,
+                predicate,
                 unique,
                 if_not_exists,
                 sql,
@@ -502,37 +515,22 @@ impl Connection {
                 if table.indexes.len() >= 2000 {
                     return Err(Error::Limit("indexes per table"));
                 }
-                let terms = columns
-                    .iter()
-                    .map(|c| {
-                        let column = table
-                            .columns
-                            .iter()
-                            .position(|x| x.name.eq_ignore_ascii_case(&c.name))
-                            .ok_or_else(|| error(format!("no such column: {}", c.name)))?;
-                        Ok(IndexTerm {
-                            column,
-                            collation: c.collation.unwrap_or(table.columns[column].collation),
-                            collation_name: c
-                                .collation_name
-                                .as_ref()
-                                .unwrap_or(&table.columns[column].collation_name)
-                                .clone(),
-                            descending: c.descending,
-                        })
-                    })
-                    .collect::<Result<Vec<_>>>()?;
-                let index = StoredIndex {
-                    name: name.clone(),
-                    sql: Some(sql.clone()),
-                    terms,
-                    unique: *unique,
-                    primary: false,
-                    conflict: Conflict::Default,
-                };
-                if *unique {
-                    index_entries(table, &index, context.limits, context.fuel, Encoding::Utf8)?;
-                }
+                let index = indexes::declaration(
+                    table,
+                    name,
+                    columns,
+                    predicate.as_ref(),
+                    *unique,
+                    sql,
+                    context.fuel,
+                )?;
+                index_entries(
+                    table,
+                    &index,
+                    context.limits,
+                    context.fuel,
+                    context.encoding,
+                )?;
                 table.indexes.push(index);
                 return Ok(QueryResult::changed(0));
             }
@@ -633,6 +631,7 @@ impl Connection {
                     }
                     if column.unique || (column.primary && !column.rowid_alias()) {
                         table.indexes.push(StoredIndex {
+                            predicate: None,
                             name: format!("sqlite_autoindex_{}_{}", name, table.indexes.len() + 1),
                             sql: None,
                             unique: true,
@@ -643,7 +642,7 @@ impl Connection {
                                 column.unique_conflict
                             },
                             terms: vec![IndexTerm {
-                                column: i,
+                                key: IndexKey::Column(i),
                                 collation: column.collation,
                                 collation_name: column.collation_name.clone(),
                                 descending: column.index_desc,
@@ -676,7 +675,7 @@ impl Connection {
                                             error(format!("no such column: {}", key.name))
                                         })?;
                                     Ok(IndexTerm {
-                                        column,
+                                        key: IndexKey::Column(column),
                                         collation: key
                                             .collation
                                             .unwrap_or(table.columns[column].collation),
@@ -690,31 +689,34 @@ impl Connection {
                                 })
                                 .collect::<Result<Vec<_>>>()?;
                             if *primary {
-                                table.primary_key = terms.iter().map(|t| t.column).collect();
+                                table.primary_key =
+                                    terms.iter().map(IndexTerm::column).collect::<Result<_>>()?;
                             }
                             // Unlike the column form INTEGER PRIMARY KEY DESC,
                             // a single-column table PRIMARY KEY aliases rowid
                             // even when its indexed-column sort order is DESC.
                             if *primary
                                 && terms.len() == 1
-                                && table.columns[terms[0].column].single_type_token
-                                && table.columns[terms[0].column]
+                                && table.columns[terms[0].column()?].single_type_token
+                                && table.columns[terms[0].column()?]
                                     .declared_type
                                     .eq_ignore_ascii_case("INTEGER")
                             {
-                                table.rowid_alias = Some(terms[0].column);
+                                table.rowid_alias = Some(terms[0].column()?);
                                 table.key_conflict = *conflict;
                                 primary_desc = terms[0].descending;
                                 continue;
                             }
                             // SQLite coalesces automatic constraints with equal
                             // column/collation sequences, ignoring sort order.
-                            if let Some(index) = table.indexes.iter_mut().find(|index| {
-                                index.terms.len() == terms.len()
-                                    && index.terms.iter().zip(&terms).all(|(a, b)| {
-                                        a.column == b.column && a.collation == b.collation
-                                    })
-                            }) {
+                            if let Some(index) =
+                                table.indexes.iter_mut().find(|index| {
+                                    index.terms.len() == terms.len()
+                                        && index.terms.iter().zip(&terms).all(|(a, b)| {
+                                            a.key == b.key && a.collation == b.collation
+                                        })
+                                })
+                            {
                                 index.primary |= *primary;
                                 index.conflict = index.conflict.merge(*conflict)?;
                                 continue;
@@ -723,6 +725,7 @@ impl Connection {
                                 return Err(Error::Limit("indexes per table"));
                             }
                             table.indexes.push(StoredIndex {
+                                predicate: None,
                                 name: format!(
                                     "sqlite_autoindex_{}_{}",
                                     name,
@@ -1550,7 +1553,7 @@ impl Connection {
                         text(&index.name),
                         integer(usize::from(index.unique)),
                         text(origin),
-                        integer(0),
+                        integer(usize::from(index.predicate.is_some())),
                     ])?;
                 }
             }
@@ -1571,8 +1574,10 @@ impl Connection {
                 }
                 let mut row = vec![
                     integer(i),
-                    integer(term.column),
-                    text(&table.columns[term.column].name),
+                    term.column().map(integer).unwrap_or(Value::Integer(-2)),
+                    term.column()
+                        .map(|i| text(&table.columns[i].name))
+                        .unwrap_or(Value::Null),
                 ];
                 if name == "index_xinfo" {
                     row.extend([
@@ -2084,8 +2089,8 @@ impl Connection {
                 table
                     .storage_terms(table.primary_index()?)?
                     .iter()
-                    .map(|t| t.column)
-                    .collect()
+                    .map(IndexTerm::column)
+                    .collect::<Result<_>>()?
             } else {
                 table
                     .columns
@@ -2315,9 +2320,14 @@ fn index_entries(
             total_changes: 0,
             last_rowid: 0,
         };
+        if !index.includes(table, *id, values, &mut context)? {
+            continue;
+        }
         let mut row = Vec::new();
+        let mut row_bytes = 0usize;
         for term in &terms {
-            row.push(table.read_column(term.column, *id, values, &mut context)?);
+            let value = term.value(table, *id, values, &mut context)?;
+            push_value(&mut row, value, &mut row_bytes, limits)?;
         }
         if !table.without_rowid {
             row.push(Value::Integer(*id));

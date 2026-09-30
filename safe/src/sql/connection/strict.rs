@@ -80,6 +80,36 @@ pub(super) fn journal(
     if !table.strict && !change.rowid {
         return Ok(true);
     }
+    // OP_Function/OP_PureFunc request a statement journal even for a non-unique
+    // index. This also applies to functions in generated columns, which every
+    // write computes before constraint processing. SQLite implements these four
+    // conditional functions inline, without emitting a function opcode.
+    fn function(expr: &Expr) -> bool {
+        matches!(&expr.kind, ExprKind::Call { name, .. } if !["coalesce", "ifnull", "iif", "if"].contains(&name.to_ascii_lowercase().as_str()))
+            || expr.children().iter().any(|e| function(e))
+    }
+    if table.generated.as_ref().is_some_and(|schema| {
+        schema
+            .columns
+            .iter()
+            .any(|c| c.expression.as_ref().is_some_and(function))
+    }) {
+        return Ok(true);
+    }
+    for index in &table.indexes {
+        fuel.spend()?;
+        if change.index(table, index)
+            && (index
+                .predicate
+                .as_ref()
+                .is_some_and(|p| function(&p.signature))
+                || index.terms.iter().any(
+                    |term| matches!(&term.key, IndexKey::Expression(e) if function(&e.signature)),
+                ))
+        {
+            return Ok(true);
+        }
+    }
     for (i, column) in table.columns.iter().enumerate() {
         fuel.spend()?;
         if column.not_null

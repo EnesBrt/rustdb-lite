@@ -85,8 +85,9 @@ metadata, cycles, malformed prefixes, resource limits, STRICT error prefixes and
 A Unix test and nine native file scenarios cover commit/reopen, index constraints,
 retained FAIL prefixes and unchanged files after aborted or rolled-back writes.
 
-ALTER TABLE (including ADD COLUMN), foreign keys, triggers, expression/partial
-index syntax, date/time, JSON and other missing functions remain unsupported.
+Expression and partial indexes can use generated values; see
+[EXPRESSION_INDEXES.md](EXPRESSION_INDEXES.md). ALTER TABLE (including ADD COLUMN),
+foreign keys, triggers, date/time, JSON and other missing functions remain unsupported.
 Imported schemas must otherwise fit the supported SQL subset. The query execution
 and error-timing differences in [QUERIES.md](QUERIES.md), planner-dependent row
 order and the STRICT physical-error difference in [STRICT.md](STRICT.md) still
