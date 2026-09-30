@@ -312,7 +312,16 @@ impl Conflict {
     }
 }
 #[derive(Clone, Debug)]
+pub enum Alter {
+    Add { column: Box<Column>, sql: String },
+    Drop(String),
+}
+#[derive(Clone, Debug)]
 pub enum Statement {
+    Alter {
+        name: String,
+        action: Alter,
+    },
     CreateView {
         name: String,
         columns: Option<Vec<String>>,
@@ -400,7 +409,8 @@ impl Statement {
     pub fn mutating(&self) -> bool {
         match self {
             Self::With { statement, .. } => statement.mutating(),
-            Self::Create { .. }
+            Self::Alter { .. }
+            | Self::Create { .. }
             | Self::CreateView { .. }
             | Self::DropView { .. }
             | Self::CreateAs { .. }
@@ -750,6 +760,202 @@ impl Parser<'_> {
         self.expect(")")?;
         Ok((columns, autoincrement))
     }
+    fn column(&mut self) -> Result<(Column, bool)> {
+        let mut autoincrement = false;
+        let name = self.name()?;
+        let type_start = self.at;
+        while matches!(self.peek(), Kind::Word(_, _) | Kind::String(_))
+            && ![
+                "PRIMARY",
+                "NOT",
+                "NULL",
+                "UNIQUE",
+                "CHECK",
+                "DEFAULT",
+                "COLLATE",
+                "REFERENCES",
+                "CONSTRAINT",
+                "AS",
+                "AUTOINCREMENT",
+            ]
+            .iter()
+            .any(|s| self.is(s))
+            && !(self.is("GENERATED")
+                && matches!(self.tokens.get(self.at + 1).map(|t| &t.kind), Some(Kind::Word(s, false)) if s.eq_ignore_ascii_case("ALWAYS")))
+        {
+            self.name()?;
+        }
+        let mut declared_type = String::new();
+        if self.is("(") && self.at == type_start {
+            return Err(self.expected("declared type before type size"));
+        }
+        if self.eat("(") {
+            loop {
+                if !self.eat("+") {
+                    self.eat("-");
+                }
+                if matches!(self.peek(), Kind::Number(_)) {
+                    self.at += 1;
+                } else {
+                    return Err(self.expected("type size"));
+                }
+                if !self.eat(",") {
+                    break;
+                }
+            }
+            self.expect(")")?;
+        }
+        if self.at > type_start {
+            declared_type = match &self.tokens[type_start].kind {
+                Kind::Word(name, true) | Kind::String(name) => name.clone(),
+                _ => self.sql[self.tokens[type_start].start..self.tokens[self.at - 1].end].into(),
+            };
+            if let Some(name) = ["ANY", "BLOB", "INT", "INTEGER", "REAL", "TEXT"]
+                .iter()
+                .find(|name| name.eq_ignore_ascii_case(&declared_type))
+            {
+                declared_type = (*name).into();
+            }
+        }
+        let mut column = Column {
+            generated: None,
+            single_type_token: self.at == type_start + 1,
+            name,
+            affinity: Affinity::from_type(&declared_type),
+            declared_type,
+            collation: Collation::Binary,
+            collation_name: "BINARY".into(),
+            not_null: false,
+            not_null_conflict: Conflict::Default,
+            primary: false,
+            primary_desc: false,
+            unique: false,
+            primary_conflict: Conflict::Default,
+            unique_conflict: Conflict::Default,
+            index_desc: false,
+            default: None,
+            default_sql: None,
+            checks: Vec::new(),
+        };
+        loop {
+            if self.eat("CONSTRAINT") {
+                self.name()?;
+            } else if self.eat("PRIMARY") {
+                if column.primary {
+                    return Err(error("multiple primary keys"));
+                }
+                self.expect("KEY")?;
+                column.primary = true;
+                column.primary_desc = self.eat("DESC");
+                if !column.primary_desc {
+                    self.eat("ASC");
+                }
+                if !column.unique {
+                    column.index_desc = column.primary_desc;
+                }
+                column.primary_conflict = self.on_conflict()?;
+                autoincrement |= self.eat("AUTOINCREMENT");
+            } else if self.eat("NOT") {
+                self.expect("NULL")?;
+                column.not_null = true;
+                column.not_null_conflict = self.on_conflict()?;
+            } else if self.eat("NULL") {
+                self.on_conflict()?;
+            } else if self.eat("UNIQUE") {
+                column.unique = true;
+                column.unique_conflict = column.unique_conflict.merge(self.on_conflict()?)?;
+            } else if self.eat("DEFAULT") {
+                let begin = self.tokens[self.at].start;
+                let parenthesized = self.is("(");
+                if (self.is("+") || self.is("-"))
+                    && matches!(
+                        self.tokens.get(self.at + 1).map(|t| &t.kind),
+                        Some(Kind::Symbol("("))
+                    )
+                {
+                    return Err(self.expected("literal after default sign"));
+                }
+                let mut default = self.expr(90)?;
+                if !parenthesized {
+                    let term =
+                        |e: &Expr| matches!(e.kind, ExprKind::Literal(_) | ExprKind::MinMagnitude);
+                    if !(term(&default)
+                        || matches!(
+                            default.kind,
+                            ExprKind::Column {
+                                qualifier: None,
+                                ..
+                            }
+                        )
+                        || matches!(&default.kind, ExprKind::Unary(Unary::Plus | Unary::Minus, child) if term(child)))
+                    {
+                        return Err(self.expected("literal or parenthesized default"));
+                    }
+                    if let ExprKind::Column {
+                        qualifier: None,
+                        name,
+                        quoted,
+                    } = &default.kind
+                    {
+                        if !quoted
+                            && ["CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP"]
+                                .iter()
+                                .any(|v| name.eq_ignore_ascii_case(v))
+                        {
+                            return Err(Error::Unsupported("date/time default functions"));
+                        }
+                        default = if !quoted
+                            && (name.eq_ignore_ascii_case("true")
+                                || name.eq_ignore_ascii_case("false"))
+                        {
+                            Expr {
+                                kind: ExprKind::Boolean(name.eq_ignore_ascii_case("true")),
+                                depth: 1,
+                                token: None,
+                            }
+                        } else {
+                            Expr::literal(Value::Text(Text::utf8(name)))
+                        };
+                    }
+                }
+                column.default = Some(default);
+                let end = self.tokens[self.at - 1].end;
+                let sql = if parenthesized {
+                    &self.sql[begin + 1..end - 1]
+                } else {
+                    &self.sql[begin..end]
+                };
+                column.default_sql =
+                    Some(sql.trim_matches(|c: char| c.is_ascii_whitespace()).into());
+            } else if self.eat("COLLATE") {
+                column.collation_name = self.name()?;
+                column.collation = Collation::parse(&column.collation_name)?;
+            } else if self.eat("CHECK") {
+                self.expect("(")?;
+                column.checks.push(self.expr(0)?);
+                self.expect(")")?;
+            } else if self.is("GENERATED") || self.is("AS") {
+                if column.generated.is_some() {
+                    return Err(error("multiple generated column expressions"));
+                }
+                if self.eat("GENERATED") {
+                    self.expect("ALWAYS")?;
+                }
+                self.expect("AS")?;
+                self.expect("(")?;
+                let expr = self.expr(0)?;
+                self.expect(")")?;
+                let stored = self.eat("STORED");
+                if !stored {
+                    self.eat("VIRTUAL");
+                }
+                column.generated = Some((expr, stored));
+            } else {
+                break;
+            }
+        }
+        Ok((column, autoincrement))
+    }
     fn statement(&mut self) -> Result<Statement> {
         let start = self.tokens[self.at].start;
         if self.is("WITH") {
@@ -911,149 +1117,8 @@ impl Parser<'_> {
                 if table_constraints {
                     return Err(self.expected("table constraint"));
                 }
-                let name = self.name()?;
-                let type_start = self.at;
-                while matches!(self.peek(), Kind::Word(_, _) | Kind::String(_))
-                    && ![
-                        "PRIMARY",
-                        "NOT",
-                        "NULL",
-                        "UNIQUE",
-                        "CHECK",
-                        "DEFAULT",
-                        "COLLATE",
-                        "REFERENCES",
-                        "CONSTRAINT",
-                        "AS",
-                        "AUTOINCREMENT",
-                    ]
-                    .iter()
-                    .any(|s| self.is(s))
-                    && !(self.is("GENERATED")
-                        && matches!(self.tokens.get(self.at + 1).map(|t| &t.kind), Some(Kind::Word(s, false)) if s.eq_ignore_ascii_case("ALWAYS")))
-                {
-                    self.name()?;
-                }
-                let mut declared_type = String::new();
-                if self.is("(") && self.at == type_start {
-                    return Err(self.expected("declared type before type size"));
-                }
-                if self.eat("(") {
-                    loop {
-                        if !self.eat("+") {
-                            self.eat("-");
-                        }
-                        if matches!(self.peek(), Kind::Number(_)) {
-                            self.at += 1;
-                        } else {
-                            return Err(self.expected("type size"));
-                        }
-                        if !self.eat(",") {
-                            break;
-                        }
-                    }
-                    self.expect(")")?;
-                }
-                if self.at > type_start {
-                    declared_type = match &self.tokens[type_start].kind {
-                        Kind::Word(name, true) | Kind::String(name) => name.clone(),
-                        _ => self.sql[self.tokens[type_start].start..self.tokens[self.at - 1].end]
-                            .into(),
-                    };
-                    if let Some(name) = ["ANY", "BLOB", "INT", "INTEGER", "REAL", "TEXT"]
-                        .iter()
-                        .find(|name| name.eq_ignore_ascii_case(&declared_type))
-                    {
-                        declared_type = (*name).into();
-                    }
-                }
-                let mut column = Column {
-                    generated: None,
-                    single_type_token: self.at == type_start + 1,
-                    name,
-                    affinity: Affinity::from_type(&declared_type),
-                    declared_type,
-                    collation: Collation::Binary,
-                    collation_name: "BINARY".into(),
-                    not_null: false,
-                    not_null_conflict: Conflict::Default,
-                    primary: false,
-                    primary_desc: false,
-                    unique: false,
-                    primary_conflict: Conflict::Default,
-                    unique_conflict: Conflict::Default,
-                    index_desc: false,
-                    default: None,
-                    default_sql: None,
-                    checks: Vec::new(),
-                };
-                loop {
-                    if self.eat("CONSTRAINT") {
-                        self.name()?;
-                    } else if self.eat("PRIMARY") {
-                        if column.primary {
-                            return Err(error("multiple primary keys"));
-                        }
-                        self.expect("KEY")?;
-                        column.primary = true;
-                        column.primary_desc = self.eat("DESC");
-                        if !column.primary_desc {
-                            self.eat("ASC");
-                        }
-                        if !column.unique {
-                            column.index_desc = column.primary_desc;
-                        }
-                        column.primary_conflict = self.on_conflict()?;
-                        autoincrement |= self.eat("AUTOINCREMENT");
-                    } else if self.eat("NOT") {
-                        self.expect("NULL")?;
-                        column.not_null = true;
-                        column.not_null_conflict = self.on_conflict()?;
-                    } else if self.eat("NULL") {
-                        self.on_conflict()?;
-                    } else if self.eat("UNIQUE") {
-                        column.unique = true;
-                        column.unique_conflict =
-                            column.unique_conflict.merge(self.on_conflict()?)?;
-                    } else if self.eat("DEFAULT") {
-                        let begin = self.tokens[self.at].start;
-                        let parenthesized = self.is("(");
-                        column.default = Some(self.expr(90)?);
-                        let end = self.tokens[self.at - 1].end;
-                        let sql = if parenthesized {
-                            &self.sql[begin + 1..end - 1]
-                        } else {
-                            &self.sql[begin..end]
-                        };
-                        column.default_sql =
-                            Some(sql.trim_matches(|c: char| c.is_ascii_whitespace()).into());
-                    } else if self.eat("COLLATE") {
-                        column.collation_name = self.name()?;
-                        column.collation = Collation::parse(&column.collation_name)?;
-                    } else if self.eat("CHECK") {
-                        self.expect("(")?;
-                        column.checks.push(self.expr(0)?);
-                        self.expect(")")?;
-                    } else if self.is("GENERATED") || self.is("AS") {
-                        if column.generated.is_some() {
-                            return Err(error("multiple generated column expressions"));
-                        }
-                        if self.eat("GENERATED") {
-                            self.expect("ALWAYS")?;
-                        }
-                        self.expect("AS")?;
-                        self.expect("(")?;
-                        let expr = self.expr(0)?;
-                        self.expect(")")?;
-                        let stored = self.eat("STORED");
-                        if !stored {
-                            self.eat("VIRTUAL");
-                        }
-                        column.generated = Some((expr, stored));
-                    } else {
-                        break;
-                    }
-                }
+                let (column, automatic) = self.column()?;
+                autoincrement |= automatic;
                 columns.push(column);
                 if !self.eat(",") {
                     break;
@@ -1088,6 +1153,34 @@ impl Parser<'_> {
                 if_not_exists,
                 sql: self.schema_sql(start, end, name_start, name_end),
             });
+        }
+        if self.eat("ALTER") {
+            self.expect("TABLE")?;
+            let name = self.table_name()?;
+            let action = if self.eat("ADD") {
+                self.eat("COLUMN");
+                if ["CONSTRAINT", "CHECK", "PRIMARY", "UNIQUE", "FOREIGN"]
+                    .iter()
+                    .any(|s| self.is(s))
+                {
+                    return Err(Error::Unsupported("ALTER TABLE constraint edits"));
+                }
+                let start = self.tokens[self.at].start;
+                let (column, _) = self.column()?;
+                let end = self.tokens[self.at - 1].end;
+                Alter::Add {
+                    column: Box::new(column),
+                    sql: self.sql[start..end].into(),
+                }
+            } else {
+                self.expect("DROP")?;
+                self.eat("COLUMN");
+                if self.is("CONSTRAINT") {
+                    return Err(Error::Unsupported("ALTER TABLE constraint edits"));
+                }
+                Alter::Drop(self.name()?)
+            };
+            return Ok(Statement::Alter { name, action });
         }
         if self.eat("DROP") {
             if self.eat("VIEW") {
@@ -1905,7 +1998,9 @@ impl Parser<'_> {
                 }
                 Kind::Number(s) => {
                     if s.trim_start_matches('0') == "9223372036854775808" {
-                        self.make(ExprKind::MinMagnitude)?
+                        let mut expr = self.make(ExprKind::MinMagnitude)?;
+                        expr.token = Some(s);
+                        expr
                     } else {
                         let v = if s.starts_with("0x") || s.starts_with("0X") {
                             Value::Integer(

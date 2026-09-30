@@ -58,9 +58,15 @@ def oracle(lib, statements):
             code=lib.sqlite3_prepare_v2(db,sql.encode(),-1,c.byref(stmt),c.byref(tail))
             rows=[];columns=[]
             if code == 0:
-                columns=[lib.sqlite3_column_name(stmt,i).decode() for i in range(lib.sqlite3_column_count(stmt))]
+                first_step = True
                 while True:
                     code=lib.sqlite3_step(stmt)
+                    # sqlite3_step may reprepare after a schema change. Observe
+                    # execution metadata, as the Rust QueryResult API does; a
+                    # stale pre-step width would read nonexistent columns as NULL.
+                    if first_step:
+                        columns=[lib.sqlite3_column_name(stmt,i).decode() for i in range(lib.sqlite3_column_count(stmt))]
+                        first_step = False
                     if code != 100: break
                     row=[]
                     for i in range(len(columns)):

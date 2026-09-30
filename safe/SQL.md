@@ -45,6 +45,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Lexing | UTF-8 SQL, comments, quoted identifiers, strings, BLOBs, decimal/hex numbers, numeric underscores, ordinary parameters |
 | Expressions | Arithmetic/bit operations, comparisons, NULL logic, IS/IS NOT, BETWEEN, IN lists, CASE, CAST, COLLATE, LIKE/ESCAPE/GLOB ([scope](PATTERNS.md)), scalar functions; row comparisons and membership ([scope](ROW_VALUES.md)) |
 | Tables | Rowid and WITHOUT ROWID tables; declared-type affinity; column/table PRIMARY KEY, UNIQUE and CHECK constraints (including composite keys), NOT NULL, DEFAULT, collations, constraint-name syntax |
+| Schema edits | ALTER TABLE ADD/DROP COLUMN, default affinity, dependency checks and atomic rollback; [scope](ALTER_TABLE.md) |
 | Generated columns | VIRTUAL/STORED dependencies, lazy reads, typed writes, constraints and physical layouts; [scope](GENERATED.md) |
 | Primary-key storage | WITHOUT ROWID index B-trees, composite keys and index suffixes; see [WITHOUT_ROWID.md](WITHOUT_ROWID.md) |
 | Views and table snapshots | CREATE/DROP VIEW, optional view column lists, CREATE TABLE AS SELECT/VALUES/WITH; main schema, metadata and image interchange; see [VIEWS.md](VIEWS.md) |
@@ -78,8 +79,10 @@ behaviors, not complete compatibility of every expression/feature combination.
   access for the connection lifetime. Shared readers, WAL checkpoints and complete
   platform coverage remain unfinished. The CLI still uses snapshots.
 - No temporary schemas, triggers, window functions,
-  virtual tables, foreign keys, ALTER TABLE, ATTACH,
+  virtual tables, foreign keys, ATTACH,
   extension loading, or C ABI.
+- Table/column renames and ALTER constraint edits remain unfinished;
+  see [ALTER_TABLE.md](ALTER_TABLE.md) for implemented column edits and remaining gaps.
 - Aggregates owned by an outer query (such as
   `SELECT (SELECT sum(t.x)) FROM t`) remain unsupported.
   FROM subqueries cannot refer to sibling FROM sources. Scalar subqueries return

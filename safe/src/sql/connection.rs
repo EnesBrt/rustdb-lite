@@ -12,6 +12,7 @@ use super::{
 use crate::{Database, Encoding, Error, ImageBuilder, Result, Table, Text, Value};
 use alloc::{collections::BTreeMap, format, string::String, vec, vec::Vec};
 use core::cmp::Ordering as Compare;
+mod alter;
 mod catalog;
 mod conflict;
 mod generated;
@@ -181,6 +182,7 @@ struct Savepoint {
 /// A private, in-memory database. Transaction operations only roll back owned
 /// memory; they do not imply filesystem locking, crash recovery, or durability.
 pub struct Connection {
+    schema_reload: bool,
     state: State,
     limits: SqlLimits,
     transaction: Option<State>,
@@ -205,6 +207,7 @@ impl Connection {
     }
     pub fn with_limits(limits: SqlLimits) -> Self {
         Self {
+            schema_reload: false,
             state: State::default(),
             limits,
             transaction: None,
@@ -491,6 +494,7 @@ impl Connection {
             Statement::Select(query) => {
                 return Ok(self.query(query, context, scope, runtime, false)?.result)
             }
+            Statement::Alter { name, action } => return self.alter_table(name, action, context),
             Statement::CreateIndex {
                 name,
                 table,
@@ -753,7 +757,7 @@ impl Connection {
                     return Err(error("AUTOINCREMENT requires an INTEGER PRIMARY KEY"));
                 }
                 strict::primary_key(&mut table);
-                generated::declaration(&mut table, context.fuel)?;
+                generated::declaration(&mut table, context.fuel, self.schema_reload)?;
                 self.state.tables.push(table);
                 if *autoincrement {
                     self.ensure_sequence()?;
@@ -2153,6 +2157,7 @@ impl Connection {
             return Err(Error::Corrupt("duplicate sqlite_sequence schema"));
         }
         let mut connection = Self::new();
+        connection.schema_reload = true;
         for entry in &schema {
             if entry.kind == "index" {
                 continue;
@@ -2250,8 +2255,11 @@ impl Connection {
                     if !present[i] {
                         *value = defaults[i]
                             .as_ref()
-                            .map(|d| context.eval(d, &[], None))
+                            .map(|d| {
+                                alter::record_default(d, table.columns[i].affinity, &mut context)
+                            })
                             .transpose()?
+                            .flatten()
                             .unwrap_or(Value::Null);
                     }
                 }
@@ -2326,6 +2334,7 @@ impl Connection {
         connection.state.application_id = db.header().application_id;
         connection.state.encoding = Some(db.header().encoding);
         connection.state.auto_vacuum = db.header().auto_vacuum;
+        connection.schema_reload = false;
         Ok(connection)
     }
     /// Export a new image, with table and index B-trees, without modifying any file.

@@ -28,7 +28,8 @@ Only the already implemented deterministic scalar functions are available.
 Parameters, subqueries, aggregates, qualified references, hidden rowid references,
 non-deterministic counter functions, DEFAULT and generated primary keys are
 rejected. Every table needs an ordinary column. Self references and
-cycles wholly among virtual columns are rejected at declaration. Native-style
+cycles wholly among virtual columns are rejected by CREATE TABLE. ALTER schema
+reload can preserve cycles; reading those values and writing still fail. Native-style
 cycles through stored columns (including a stored self reference) can be
 declared and read from stored values, but
 INSERT and UPDATE reject their unschedulable dependency graph.
@@ -86,15 +87,16 @@ A Unix test and nine native file scenarios cover commit/reopen, index constraint
 retained FAIL prefixes and unchanged files after aborted or rolled-back writes.
 
 Expression and partial indexes can use generated values; see
-[EXPRESSION_INDEXES.md](EXPRESSION_INDEXES.md). ALTER TABLE (including ADD COLUMN),
-foreign keys, triggers, date/time, JSON and other missing functions remain unsupported.
+[EXPRESSION_INDEXES.md](EXPRESSION_INDEXES.md). ADD/DROP COLUMN are described in
+[ALTER_TABLE.md](ALTER_TABLE.md). Foreign keys, triggers, date/time, JSON and other
+missing functions remain unsupported.
 Imported schemas must otherwise fit the supported SQL subset. The query execution
 and error-timing differences in [QUERIES.md](QUERIES.md), planner-dependent row
 order and the STRICT physical-error difference in [STRICT.md](STRICT.md) still
 apply. These tests do not establish all generated-expression combinations or
 production compatibility. Native constant-folding exceptions for cyclic virtual
 expressions, such as `g AS(0 AND g)` and `g AS(1 OR g)`, are not reproduced;
-these declarations are currently rejected.
+these CREATE declarations are currently rejected.
 
 Reference: [SQLite generated columns](https://sqlite.org/gencol.html); implementation
 behavior is checked against the pinned native `build.c`, `insert.c`, `update.c`,

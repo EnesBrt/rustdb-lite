@@ -3,7 +3,11 @@ use super::*;
 use alloc::rc::Rc;
 use eval::generated::{Column as GeneratedColumn, Schema};
 
-pub(super) fn declaration(table: &mut StoredTable, fuel: &mut Fuel) -> Result<()> {
+pub(super) fn declaration(
+    table: &mut StoredTable,
+    fuel: &mut Fuel,
+    schema_reload: bool,
+) -> Result<()> {
     if table.columns.iter().all(|c| c.generated.is_none()) {
         return Ok(());
     }
@@ -39,7 +43,8 @@ pub(super) fn declaration(table: &mut StoredTable, fuel: &mut Fuel) -> Result<()
         });
     }
     // Resolve dependencies once. A cycle entirely among VIRTUAL columns is
-    // rejected by DDL. Cycles through STORED values can be read, but writing
+    // rejected by CREATE; ALTER/image schema reload can retain them until a
+    // read tries to bind the cycle. Cycles through STORED values can be read, but writing
     // requires computing every generated value and rejects those cycles too.
     let mut read_depth: Vec<_> = columns
         .iter()
@@ -72,7 +77,7 @@ pub(super) fn declaration(table: &mut StoredTable, fuel: &mut Fuel) -> Result<()
             break;
         }
     }
-    if read_depth.iter().any(Option::is_none) {
+    if !schema_reload && read_depth.iter().any(Option::is_none) {
         return Err(error("generated column loop"));
     }
     table.generated = Some(Rc::new(Schema {

@@ -57,6 +57,64 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn alter_columns_persist_and_failed_edits_leave_files_unchanged() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    for sql in [
+        "CREATE TABLE t(id INT PRIMARY KEY,a INT,discarded TEXT,s INT AS(a*2) STORED) STRICT, WITHOUT ROWID",
+        "INSERT INTO t(id,a,discarded) VALUES(1,3,'remove'),(2,4,'remove')",
+        "CREATE INDEX ix ON t((s+1)) WHERE a>0",
+        "CREATE VIEW v AS SELECT id,s FROM t",
+        "ALTER TABLE t ADD b TEXT DEFAULT 42",
+        "ALTER TABLE t DROP discarded",
+    ] { c.execute(sql,&[]).unwrap(); }
+    drop(c);
+    let mut c = open(&path);
+    let before = fs::read(&path).unwrap();
+    for sql in [
+        "ALTER TABLE t ADD bad INT DEFAULT 'bad'",
+        "ALTER TABLE t DROP s",
+        "ALTER TABLE t ADD bad INT CHECK(bad>0) DEFAULT -1",
+    ] {
+        assert!(c.execute(sql, &[]).is_err());
+        assert_eq!(fs::read(&path).unwrap(), before);
+    }
+    c.execute("BEGIN", &[]).unwrap();
+    c.execute("ALTER TABLE t DROP b", &[]).unwrap();
+    c.execute("ALTER TABLE t ADD z INT AS(a+1)", &[]).unwrap();
+    c.execute("ROLLBACK", &[]).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("ALTER TABLE t ADD z INT AS(a+1)", &[]).unwrap();
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT b,z,s FROM t ORDER BY id", &[])
+            .unwrap()
+            .rows,
+        vec![
+            vec![
+                Value::Text(Text::utf8("42")),
+                Value::Integer(4),
+                Value::Integer(6)
+            ],
+            vec![
+                Value::Text(Text::utf8("42")),
+                Value::Integer(5),
+                Value::Integer(8)
+            ]
+        ]
+    );
+    assert_eq!(
+        c.execute("SELECT * FROM v ORDER BY id", &[]).unwrap().rows,
+        vec![
+            vec![Value::Integer(1), Value::Integer(6)],
+            vec![Value::Integer(2), Value::Integer(8)]
+        ]
+    );
+}
+
+#[test]
 fn pattern_views_and_generated_values_persist_atomically() {
     let temp = Temp::new();
     let path = temp.db();

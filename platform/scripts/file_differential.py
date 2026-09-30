@@ -373,6 +373,28 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'alter-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(id INT PRIMARY KEY,a INT,discarded TEXT,s INT AS(a*2) STORED) STRICT, WITHOUT ROWID;INSERT INTO t(id,a,discarded) VALUES(1,3,'remove'),(2,4,'remove');CREATE INDEX ix ON t((s+1)) WHERE a>0;CREATE VIEW v AS SELECT id,s FROM t;")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                assert connection.execute('SELECT * FROM v ORDER BY id').fetchall()==[(1,6),(2,8)]
+                run(SQL,path,'ALTER TABLE t ADD b TEXT DEFAULT 42','ALTER TABLE t DROP discarded')
+                assert connection.execute('SELECT b,s FROM t ORDER BY id').fetchall()==[('42',6),('42',8)]
+                before=path.read_bytes()
+                run(SQL,path,'BEGIN','ALTER TABLE t DROP b','ALTER TABLE t ADD z INT AS(a+1)','ROLLBACK')
+                assert path.read_bytes()==before
+                for sql in ["ALTER TABLE t ADD bad INT DEFAULT 'bad'",'ALTER TABLE t DROP s','ALTER TABLE t ADD bad INT CHECK(bad>0) DEFAULT -1']:
+                    run(SQL,path,sql,expect=1)
+                    assert path.read_bytes()==before
+                run(SQL,path,'ALTER TABLE t ADD z INT AS(a+1)')
+                assert connection.execute('SELECT b,z,s FROM t ORDER BY id').fetchall()==[('42',4,6),('42',5,8)]
+                connection.execute("ALTER TABLE t ADD native_col TEXT DEFAULT 'é🦀'")
+                run(SQL,path,'ALTER TABLE t DROP native_col')
+                assert connection.execute('SELECT * FROM v ORDER BY id').fetchall()==[(1,6),(2,8)]
+                connection.close()
+                assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'
