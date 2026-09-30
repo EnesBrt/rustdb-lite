@@ -13,6 +13,7 @@ use alloc::{
 };
 use core::cmp::Ordering;
 
+mod aggregates;
 pub mod generated;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Field {
@@ -383,9 +384,14 @@ pub fn bind_with(
                 args,
                 star,
                 distinct,
+                order,
+                filter,
             } => {
                 validate_call(name, args.len(), *star, *distinct)?;
                 let agg = aggregate(name, args.len());
+                if !agg && (!order.is_empty() || filter.is_some()) {
+                    return Err(error("FILTER and ORDER BY require an aggregate"));
+                }
                 if agg && (!allow || inside) {
                     return Err(error("misuse of aggregate function"));
                 }
@@ -397,6 +403,29 @@ pub fn bind_with(
                         .collect::<Result<_>>()?,
                     star: *star,
                     distinct: *distinct,
+                    order: order
+                        .iter()
+                        .map(|o| {
+                            Ok(super::parser::Ordering {
+                                expr: inner(
+                                    &o.expr,
+                                    fields,
+                                    aliases,
+                                    allow,
+                                    inside || agg,
+                                    resolver,
+                                )?,
+                                descending: o.descending,
+                                nulls_first: o.nulls_first,
+                            })
+                        })
+                        .collect::<Result<_>>()?,
+                    filter: filter
+                        .as_ref()
+                        .map(|f| {
+                            inner(f, fields, aliases, allow, inside || agg, resolver).map(Box::new)
+                        })
+                        .transpose()?,
                 }
             }
             _ => expr.kind.clone(),
@@ -417,8 +446,8 @@ pub fn bind_with(
                 }) || e.children().iter().any(|e| reference(e, outer))
             }
             if aggregate(name, args.len())
-                && args.iter().any(|e| reference(e, true))
-                && !args.iter().any(|e| reference(e, false))
+                && result.children().iter().any(|e| reference(e, true))
+                && !result.children().iter().any(|e| reference(e, false))
             {
                 return Err(Error::Unsupported("aggregate owned by an outer query"));
             }
@@ -478,6 +507,11 @@ pub fn type_for_affinity(raw: String, affinity: Affinity) -> String {
 fn explicit_collation(expr: &Expr) -> Option<Collation> {
     if let ExprKind::Collate(_, c) = expr.kind {
         return Some(c);
+    }
+    // Aggregate FILTER and ORDER BY have their own comparisons. Their explicit
+    // collations do not become the collation of the aggregate's result.
+    if let ExprKind::Call { args, .. } = &expr.kind {
+        return args.iter().find_map(explicit_collation);
     }
     expr.children().into_iter().find_map(explicit_collation)
 }
@@ -717,18 +751,10 @@ impl Eval<'_> {
                     Value::Null
                 }
             }
-            ExprKind::Call {
-                name,
-                args,
-                star,
-                distinct,
-            } => {
+            ExprKind::Call { name, args, .. } => {
                 if aggregate(name, args.len()) {
                     self.aggregate(
-                        name,
-                        args,
-                        *star,
-                        *distinct,
+                        expr,
                         group.ok_or_else(|| error("aggregate outside grouping"))?,
                         queries,
                     )?
@@ -1128,172 +1154,6 @@ impl Eval<'_> {
             _ => return Err(error(format!("unimplemented function: {name}"))),
         };
         Ok(value)
-    }
-    fn aggregate(
-        &mut self,
-        name: &str,
-        args: &[Expr],
-        star: bool,
-        distinct: bool,
-        rows: &[Vec<Value>],
-        queries: &mut dyn Subqueries,
-    ) -> Result<Value> {
-        let mut values = Vec::new();
-        let mut value_bytes = 0usize;
-        for row in rows {
-            self.fuel.spend()?;
-            let v = if star || (name == "count" && args.is_empty()) {
-                Value::Integer(1)
-            } else {
-                self.eval_with(&args[0], row, None, queries)?
-            };
-            let separator = if args.len() > 1 {
-                Some(self.eval_with(&args[1], row, None, queries)?)
-            } else {
-                None
-            };
-            if scalar::null(&v) {
-                continue;
-            }
-            if distinct {
-                let mut duplicate = false;
-                for (previous, _) in &values {
-                    self.fuel.spend()?;
-                    if scalar::compare_encoded(&v, previous, collation(&args[0]), self.encoding)?
-                        == Ordering::Equal
-                    {
-                        duplicate = true;
-                        break;
-                    }
-                }
-                if duplicate {
-                    continue;
-                }
-            }
-            value_bytes = value_bytes
-                .checked_add(
-                    scalar::size(&v)
-                        + separator.as_ref().map(scalar::size).unwrap_or(0)
-                        + core::mem::size_of::<(Value, Option<Value>)>(),
-                )
-                .ok_or(Error::Limit("aggregate bytes"))?;
-            if value_bytes > self.limits.max_database_bytes {
-                return Err(Error::Limit("aggregate bytes"));
-            }
-            values.push((v, separator));
-        }
-        if name == "count" {
-            return Ok(Value::Integer(values.len() as i64));
-        }
-        if name == "group_concat" || name == "string_agg" {
-            if values.is_empty() {
-                return Ok(Value::Null);
-            }
-            let mut out = Vec::new();
-            for (i, (value, separator)) in values.iter().enumerate() {
-                let separator = if let Some(s) = separator {
-                    scalar::text_bytes(s)?
-                } else {
-                    alloc::vec![b',']
-                };
-                let value = scalar::text_bytes(value)?;
-                let extra = value
-                    .len()
-                    .checked_add(if i == 0 { 0 } else { separator.len() })
-                    .and_then(|n| n.checked_add(out.len()))
-                    .ok_or(Error::Limit("SQL value size"))?;
-                if extra > self.limits.max_value_bytes {
-                    return Err(Error::Limit("SQL value size"));
-                }
-                if i != 0 {
-                    out.extend_from_slice(&separator);
-                }
-                out.extend_from_slice(&value);
-            }
-            return Ok(Value::Text(Text {
-                bytes: out,
-                encoding: Encoding::Utf8,
-            }));
-        }
-        if name == "min" || name == "max" {
-            let mut result = Value::Null;
-            for (v, _) in values {
-                let cmp = scalar::compare_encoded(&v, &result, collation(&args[0]), self.encoding)?;
-                if scalar::null(&result)
-                    || (name == "min" && cmp == Ordering::Less)
-                    || (name == "max" && cmp == Ordering::Greater)
-                {
-                    result = v;
-                }
-            }
-            return Ok(result);
-        }
-        if values.is_empty() {
-            return Ok(if name == "total" {
-                Value::Real(0.0)
-            } else {
-                Value::Null
-            });
-        }
-        let mut integer_sum = 0i64;
-        let mut approximate = false;
-        let mut overflow = false;
-        let mut sum = 0.0f64;
-        let mut correction = 0.0f64;
-        for (v, _) in &values {
-            // Aggregate numeric_type differs from arithmetic coercion: fully
-            // numeric text may remain an integer, but BLOBs do not acquire one.
-            let typed = scalar::numeric_type(v)?;
-            if !approximate {
-                if let Value::Integer(n) = typed {
-                    if let Some(next) = integer_sum.checked_add(n) {
-                        integer_sum = next;
-                        continue;
-                    }
-                    overflow = true;
-                }
-                approximate = true;
-                let small = integer_sum % 16384;
-                sum = (integer_sum - small) as f64;
-                correction = small as f64;
-            }
-            if let Value::Integer(n) = typed {
-                if n.unsigned_abs() >= 4503599627370496 {
-                    let small = n % 16384;
-                    compensated_add(&mut sum, &mut correction, (n - small) as f64);
-                    compensated_add(&mut sum, &mut correction, small as f64);
-                } else {
-                    compensated_add(&mut sum, &mut correction, n as f64);
-                }
-            } else {
-                overflow = false;
-                compensated_add(
-                    &mut sum,
-                    &mut correction,
-                    scalar::float(&scalar::numeric(&typed)?),
-                );
-            }
-        }
-        if name == "sum" {
-            if overflow {
-                return Err(error("integer overflow"));
-            }
-            if !approximate {
-                return Ok(Value::Integer(integer_sum));
-            }
-        }
-        let result = if !approximate {
-            integer_sum as f64
-        } else if correction.is_finite() {
-            sum + correction
-        } else {
-            sum
-        };
-        Ok(scalar::real(if name == "avg" {
-            result / values.len() as f64
-        } else {
-            result
-        }))
     }
 }
 fn substring_range(size: usize, start: i64, length: i64) -> (usize, usize) {

@@ -6,6 +6,7 @@ use super::{
         Statement, TableConstraint,
     },
     scalar::{self, Affinity, Collation},
+    sort::{compare_keys, sort_by},
     SqlLimits,
 };
 use crate::{Database, Encoding, Error, ImageBuilder, Result, Table, Text, Value};
@@ -2013,8 +2014,18 @@ impl Connection {
         }
         let aggregates = projection
             .iter()
+            .chain(order.iter().map(|o| &o.expr))
+            .chain(having.iter())
             .flat_map(aggregate_calls)
             .collect::<Vec<_>>();
+        let mut extrema = Vec::new();
+        for expr in &aggregates {
+            if matches!(&expr.kind, ExprKind::Call { name, args, .. } if args.len() == 1 && (name == "min" || name == "max"))
+                && !extrema.contains(expr)
+            {
+                extrema.push(*expr);
+            }
+        }
         let mut output: Vec<Candidate> = Vec::new();
         let mut output_bytes = 0usize;
         for (_, members) in groups {
@@ -2022,32 +2033,12 @@ impl Connection {
                 .first()
                 .cloned()
                 .unwrap_or_else(|| vec![Value::Null; fields.len()]);
-            if aggregates.len() == 1 && (!existence || having.is_some()) {
-                if let ExprKind::Call { name, args, .. } = &aggregates[0].kind {
-                    if name == "min" || name == "max" {
-                        let mut best = Value::Null;
-                        for member in &members {
-                            let value = self
-                                .expressions(scope.clone(), runtime)
-                                .eval(&args[0], member, None, context)?;
-                            if scalar::null(&value) {
-                                continue;
-                            }
-                            let cmp = scalar::compare_encoded(
-                                &value,
-                                &best,
-                                eval::collation(&args[0]),
-                                context.encoding,
-                            )?;
-                            if scalar::null(&best)
-                                || (name == "min" && cmp == Compare::Less)
-                                || (name == "max" && cmp == Compare::Greater)
-                            {
-                                representative = member.clone();
-                                best = value;
-                            }
-                        }
-                    }
+            if !extrema.is_empty() && (!existence || having.is_some()) {
+                if let Some(i) = self
+                    .expressions(scope.clone(), runtime)
+                    .representative(&extrema, &members, context)?
+                {
+                    representative = members[i].clone();
                 }
             }
             let grouped = if aggregate || !group.is_empty() {
@@ -2605,77 +2596,6 @@ fn sort(
     sort_by(rows, fuel, |a, b| {
         compare_keys(&a.keys, &b.keys, order, encoding)
     })
-}
-fn compare_keys(
-    a: &[Value],
-    b: &[Value],
-    order: &[Ordering],
-    encoding: Encoding,
-) -> Result<Compare> {
-    for ((a, b), term) in a.iter().zip(b).zip(order) {
-        let cmp = if scalar::null(a) != scalar::null(b) {
-            let nulls_first = term.nulls_first.unwrap_or(!term.descending);
-            if scalar::null(a) == nulls_first {
-                Compare::Less
-            } else {
-                Compare::Greater
-            }
-        } else {
-            let cmp = scalar::compare_encoded(a, b, eval::collation(&term.expr), encoding)?;
-            if term.descending {
-                cmp.reverse()
-            } else {
-                cmp
-            }
-        };
-        if cmp != Compare::Equal {
-            return Ok(cmp);
-        }
-    }
-    Ok(Compare::Equal)
-}
-fn sort_by<T>(
-    rows: Vec<T>,
-    fuel: &mut Fuel,
-    compare: impl Fn(&T, &T) -> Result<Compare>,
-) -> Result<Vec<T>> {
-    let mut indices: Vec<usize> = (0..rows.len()).collect();
-    let mut buffer = indices.clone();
-    let mut width = 1;
-    while width < indices.len() {
-        let mut start = 0;
-        while start < indices.len() {
-            let middle = (start + width).min(indices.len());
-            let end = (middle + width).min(indices.len());
-            let (mut a, mut b, mut at) = (start, middle, start);
-            while a < middle || b < end {
-                fuel.spend()?;
-                if b == end
-                    || (a < middle
-                        && compare(&rows[indices[a]], &rows[indices[b]])? != Compare::Greater)
-                {
-                    buffer[at] = indices[a];
-                    a += 1;
-                } else {
-                    buffer[at] = indices[b];
-                    b += 1;
-                }
-                at += 1;
-            }
-            start = end;
-        }
-        core::mem::swap(&mut indices, &mut buffer);
-        width = width.saturating_mul(2);
-    }
-    let mut rows: Vec<Option<T>> = rows.into_iter().map(Some).collect();
-    indices
-        .into_iter()
-        .map(|i| {
-            rows[i]
-                .take()
-                .ok_or_else(|| error("invalid sort permutation"))
-        })
-        .collect()
 }
 
 fn positional_integer(expr: &Expr) -> Option<i64> {

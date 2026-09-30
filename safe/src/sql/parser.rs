@@ -55,6 +55,8 @@ pub enum ExprKind {
         args: Vec<Expr>,
         star: bool,
         distinct: bool,
+        order: Vec<Ordering>,
+        filter: Option<Box<Expr>>,
     },
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -123,7 +125,17 @@ impl Expr {
                 .chain(arms.iter().flat_map(|(a, b)| [a, b]))
                 .chain(other.iter().map(Box::as_ref))
                 .collect(),
-            ExprKind::Call { args, .. } | ExprKind::Merged(args) => args.iter().collect(),
+            ExprKind::Call {
+                args,
+                order,
+                filter,
+                ..
+            } => args
+                .iter()
+                .chain(order.iter().map(|o| &o.expr))
+                .chain(filter.iter().map(Box::as_ref))
+                .collect(),
+            ExprKind::Merged(args) => args.iter().collect(),
             _ => Vec::new(),
         }
     }
@@ -1693,7 +1705,7 @@ impl Parser<'_> {
             offset: None,
         })
     }
-    fn query_tail(&mut self) -> Result<(Vec<Ordering>, Option<Expr>, Option<Expr>)> {
+    fn order_by(&mut self) -> Result<Vec<Ordering>> {
         let mut order = Vec::new();
         if self.eat("ORDER") {
             self.expect("BY")?;
@@ -1718,11 +1730,18 @@ impl Parser<'_> {
                     descending,
                     nulls_first,
                 });
+                if order.len() > 2000 {
+                    return Err(Error::Limit("ORDER BY terms"));
+                }
                 if !self.eat(",") {
                     break;
                 }
             }
         }
+        Ok(order)
+    }
+    fn query_tail(&mut self) -> Result<(Vec<Ordering>, Option<Expr>, Option<Expr>)> {
+        let order = self.order_by()?;
         let mut limit = None;
         let mut offset = None;
         if self.eat("LIMIT") {
@@ -1892,13 +1911,37 @@ impl Parser<'_> {
                 Kind::Word(name, quoted) => {
                     if self.eat("(") {
                         let distinct = self.eat("DISTINCT");
+                        let all = !distinct && self.eat("ALL");
                         let star = self.eat("*");
-                        let args = if star || self.is(")") {
+                        if star && (distinct || all) {
+                            return Err(error("invalid star argument"));
+                        }
+                        let args = if star || self.is(")") || self.is("ORDER") {
                             Vec::new()
                         } else {
                             self.expr_list()?
                         };
+                        let mut order = if star { Vec::new() } else { self.order_by()? };
+                        // SQLite discards ORDER BY on calls without arguments,
+                        // before resolving even the names in the ordering terms.
+                        if args.is_empty() {
+                            order.clear();
+                        }
                         self.expect(")")?;
+                        let filter = if self.is("FILTER")
+                            && self
+                                .tokens
+                                .get(self.at + 1)
+                                .is_some_and(|t| matches!(t.kind, Kind::Symbol("(")))
+                        {
+                            self.at += 2;
+                            self.expect("WHERE")?;
+                            let filter = self.expr(0)?;
+                            self.expect(")")?;
+                            Some(Box::new(filter))
+                        } else {
+                            None
+                        };
                         if args.len() > 1000 {
                             return Err(Error::Limit("function arguments"));
                         }
@@ -1907,6 +1950,8 @@ impl Parser<'_> {
                             args,
                             star,
                             distinct,
+                            order,
+                            filter,
                         })?
                     } else {
                         let (qualifier, name) = if self.eat(".") {

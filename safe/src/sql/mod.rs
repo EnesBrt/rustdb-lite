@@ -7,6 +7,7 @@ mod journaled;
 mod lexer;
 mod parser;
 mod scalar;
+mod sort;
 
 use crate::Error;
 use alloc::string::String;

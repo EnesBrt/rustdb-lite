@@ -57,7 +57,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Queries | Projection, stars, aliases, filtering, comma/inner/cross/left/right/full joins with ON, USING, NATURAL and parenthesized groups ([scope](JOINS.md)), DISTINCT, GROUP BY, HAVING, ORDER BY, NULLS FIRST/LAST, LIMIT/OFFSET |
 | Query composition | Derived FROM tables, ordinary/recursive WITH, VALUES queries, UNION [ALL]/INTERSECT/EXCEPT; see [QUERIES.md](QUERIES.md) |
 | Expression subqueries | Scalar, EXISTS, single-column IN/NOT IN, correlated columns in queries and data changes; statement-local caching for uncorrelated results |
-| Aggregates | count, sum, total, avg, min, max, group_concat, string_agg; single-argument DISTINCT |
+| Aggregates | count, sum, total, avg, min, max, group_concat, string_agg; DISTINCT, FILTER and input ORDER BY; [scope](AGGREGATES.md) |
 | Scalar functions | typeof, length, octet_length, hex, unhex, lower, upper, abs, unicode, char, ifnull, nullif, coalesce, iif/if, instr, replace, trim/ltrim/rtrim, substr/substring, min/max, like, changes, total_changes, last_insert_rowid |
 | Collations | BINARY, ASCII NOCASE, RTRIM |
 | Transactions | BEGIN/COMMIT/ROLLBACK and nested savepoints over private owned memory |

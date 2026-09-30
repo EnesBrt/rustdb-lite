@@ -71,6 +71,14 @@ impl Connection {
     }
 }
 impl Expressions<'_> {
+    pub(in super::super) fn representative(
+        &mut self,
+        extrema: &[&Expr],
+        rows: &[Vec<Value>],
+        context: &mut Eval<'_>,
+    ) -> Result<Option<usize>> {
+        context.aggregate_representative(extrema, rows, self)
+    }
     pub(in super::super) fn bind(
         &mut self,
         expr: &Expr,

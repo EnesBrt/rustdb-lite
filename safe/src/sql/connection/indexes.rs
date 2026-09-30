@@ -81,14 +81,29 @@ fn compare_expression(table: &StoredTable, a: &Expr, b: &Expr) -> u8 {
                 args: xs,
                 star: xx,
                 distinct: xxx,
+                order: xo,
+                filter: xf,
             },
             ExprKind::Call {
                 name: y,
                 args: ys,
                 star: yy,
                 distinct: yyy,
+                order: yo,
+                filter: yf,
             },
-        ) => x.eq_ignore_ascii_case(y) && xs.len() == ys.len() && xx == yy && xxx == yyy,
+        ) => {
+            x.eq_ignore_ascii_case(y)
+                && xs.len() == ys.len()
+                && xx == yy
+                && xxx == yyy
+                && xo.len() == yo.len()
+                && xf.is_some() == yf.is_some()
+                && xo
+                    .iter()
+                    .zip(yo)
+                    .all(|(a, b)| a.descending == b.descending && a.nulls_first == b.nulls_first)
+        }
         (ExprKind::MinMagnitude, ExprKind::MinMagnitude) => true,
         _ => false,
     };

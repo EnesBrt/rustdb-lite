@@ -9,7 +9,7 @@ use sqlite_safe::{
     journal::{self, JournalLimits},
     pager::{Pager, Storage},
     sql::JournaledConnection,
-    Error, Value,
+    Error, Text, Value,
 };
 use sqlite_safe_platform::unix::UnixStorage;
 use std::{
@@ -56,6 +56,56 @@ fn seed(path: &Path) {
         .unwrap();
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
+#[test]
+fn aggregate_views_persist_filters_ordering_and_rollback() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    for sql in [
+        "CREATE TABLE t(g INT,x TEXT,k INT,keep INT)",
+        "INSERT INTO t VALUES(1,'b',2,1),(1,'a',1,1),(1,'c',3,0)",
+        "CREATE VIEW v AS SELECT g,group_concat(x ORDER BY k) FILTER(WHERE keep) label,count(*) FILTER(WHERE keep) n FROM t GROUP BY g",
+        "CREATE TABLE copied AS SELECT * FROM v",
+    ] {
+        c.execute(sql, &[]).unwrap();
+    }
+    drop(c);
+    let mut c = open(&path);
+    let before = fs::read(&path).unwrap();
+    let expected = c.execute("SELECT * FROM v", &[]).unwrap().rows;
+    assert_eq!(
+        expected,
+        vec![vec![
+            Value::Integer(1),
+            Value::Text(Text::utf8("a,b")),
+            Value::Integer(2)
+        ]]
+    );
+    c.execute("BEGIN", &[]).unwrap();
+    c.execute("UPDATE t SET keep=1", &[]).unwrap();
+    c.execute("ROLLBACK", &[]).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), before);
+    assert!(c
+        .execute(
+            "CREATE TABLE bad AS SELECT group_concat(x ORDER BY abs(-9223372036854775808)) FROM t",
+            &[]
+        )
+        .is_err());
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("INSERT INTO t SELECT g,label,4,1 FROM v", &[])
+        .unwrap();
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT * FROM copied", &[]).unwrap().rows,
+        expected
+    );
+    assert_eq!(
+        c.execute("SELECT n,label FROM v", &[]).unwrap().rows,
+        vec![vec![Value::Integer(3), Value::Text(Text::utf8("a,b,a,b"))]]
+    );
+}
+
 #[test]
 fn grouped_join_namespaces_persist_through_views_and_failed_writes() {
     let temp = Temp::new();

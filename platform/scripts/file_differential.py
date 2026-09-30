@@ -316,6 +316,25 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'aggregate-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(g INT,x TEXT,k INT,keep INT);INSERT INTO t VALUES(1,'é',3,1),(1,'Rust',2,1),(1,'🦀',1,0),(2,'safe',4,1);CREATE VIEW v AS SELECT g,group_concat(x,'|' ORDER BY k) FILTER(WHERE keep) AS label,count(*) FILTER(WHERE keep) AS n FROM t GROUP BY g;")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                run(SQL,path,'CREATE TABLE copied AS SELECT * FROM v')
+                expected=connection.execute('SELECT * FROM v ORDER BY g').fetchall()
+                assert connection.execute('SELECT * FROM copied ORDER BY g').fetchall()==expected
+                before=path.read_bytes()
+                run(SQL,path,'BEGIN','UPDATE t SET keep=1','ROLLBACK')
+                assert path.read_bytes()==before
+                run(SQL,path,'CREATE TABLE bad AS SELECT group_concat(x ORDER BY abs(-9223372036854775808)) FROM t',expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,'INSERT INTO t SELECT g,label,5,1 FROM v')
+                assert connection.execute('SELECT g,n FROM v ORDER BY g').fetchall()==[(1,3),(2,2)]
+                assert connection.execute('SELECT * FROM copied ORDER BY g').fetchall()==expected
+                connection.close()
+                assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'
