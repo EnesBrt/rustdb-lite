@@ -94,6 +94,8 @@ jobs:
         run: python3 safe/scripts/generated_differential.py
       - name: Compare expression and partial indexes with the native reference
         run: python3 safe/scripts/expression_index_differential.py
+      - name: Compare joins, merged columns and correlated outer rows
+        run: python3 safe/scripts/join_differential.py
   platform-native:
     strategy:
       fail-fast: false

@@ -278,6 +278,25 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'joins-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE a(x TEXT,y INT);CREATE TABLE b(x TEXT,z INT);CREATE VIEW v AS SELECT * FROM a FULL JOIN b USING(x);INSERT INTO a VALUES('é',1),('Rust',2);INSERT INTO b VALUES('Rust',3),('🦀',4);")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                run(SQL,path,'CREATE TABLE result AS SELECT * FROM v')
+                expected=connection.execute('SELECT * FROM v ORDER BY x').fetchall()
+                assert connection.execute('SELECT * FROM result ORDER BY x').fetchall()==expected
+                before=path.read_bytes()
+                run(SQL,path,'BEGIN',"INSERT INTO a SELECT x,10 FROM v WHERE y IS NULL",'ROLLBACK')
+                assert path.read_bytes()==before
+                run(SQL,path,'INSERT INTO a SELECT abs(-9223372036854775808),1 FROM v',expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,'INSERT INTO a SELECT x,10 FROM v WHERE y IS NULL')
+                assert connection.execute('SELECT count(*) FROM v WHERE y IS NULL').fetchone()==(0,)
+                assert connection.execute('SELECT * FROM result ORDER BY x').fetchall()==expected
+                connection.close()
+                assert native(path,'PRAGMA integrity_check;')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'

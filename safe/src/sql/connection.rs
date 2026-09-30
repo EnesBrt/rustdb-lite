@@ -15,6 +15,7 @@ mod catalog;
 mod conflict;
 mod generated;
 mod indexes;
+mod joins;
 mod query;
 mod returning;
 mod schema;
@@ -95,6 +96,7 @@ impl StoredTable {
                 .iter()
                 .enumerate()
                 .map(|(i, c)| Field {
+                    merged: Vec::new(),
                     generated: self.generated.as_ref().filter(|_| c.virtual_column()).map(
                         |schema| eval::generated::Reference {
                             schema: schema.clone(),
@@ -114,6 +116,7 @@ impl StoredTable {
                 .collect();
         if !self.without_rowid {
             fields.push(Field {
+                merged: Vec::new(),
                 generated: None,
                 table: alias.into(),
                 name: "rowid".into(),
@@ -1670,8 +1673,27 @@ impl Connection {
             if field_bytes > context.limits.max_database_bytes {
                 return Err(Error::Limit("query field bytes"));
             }
+            let start = fields.len();
             let width = source_fields.len();
             fields.extend(source_fields);
+            let mut constraints = joins::using(
+                &mut fields,
+                start,
+                source,
+                query.sources.iter().any(|s| s.right),
+                context.fuel,
+            )?;
+            field_bytes = field_bytes
+                .checked_add(
+                    fields
+                        .iter()
+                        .map(|f| f.merged.len() * core::mem::size_of::<usize>())
+                        .sum::<usize>(),
+                )
+                .ok_or(Error::Limit("query field bytes"))?;
+            if field_bytes > context.limits.max_database_bytes {
+                return Err(Error::Limit("query field bytes"));
+            }
             let on = source
                 .on
                 .as_ref()
@@ -1680,7 +1702,8 @@ impl Connection {
                         .bind(x, &fields, &[], false, context)
                 })
                 .transpose()?;
-            sources.push((source, data, on, width));
+            constraints.extend(on);
+            sources.push((source, data, constraints, start, width));
         }
         let mut projection = Vec::new();
         let mut columns = Vec::new();
@@ -1713,6 +1736,7 @@ impl Connection {
                 let mut count = 0;
                 for (i, f) in fields.iter().enumerate() {
                     if !f.hidden
+                        && (!f.qualified_only || item.star.is_some())
                         && item
                             .star
                             .as_ref()
@@ -1722,7 +1746,38 @@ impl Connection {
                             return Err(Error::Limit("result columns"));
                         }
                         columns.push(f.name.clone());
-                        projection.push(eval::generated::field(f, i, None)?);
+                        let merge_star = sources
+                            .iter()
+                            .enumerate()
+                            .find(|(_, (_, _, _, start, width))| i >= *start && i < start + width)
+                            .is_some_and(|(source_index, (_, _, _, start, width))| {
+                                query.sources[source_index + 1..].iter().any(|s| s.right)
+                                    && fields[start + width..].iter().any(|right| {
+                                        right.qualified_only
+                                            && right.name.eq_ignore_ascii_case(&f.name)
+                                    })
+                            });
+                        // SQLite also expands a qualified wildcard through the
+                        // merged name when that source precedes a RIGHT/FULL join
+                        // and a later USING clause includes the column.
+                        projection.push(if merge_star {
+                            eval::bind(
+                                &Expr {
+                                    depth: 1,
+                                    token: None,
+                                    kind: ExprKind::Column {
+                                        qualifier: None,
+                                        name: f.name.clone(),
+                                        quoted: false,
+                                    },
+                                },
+                                &fields,
+                                &[],
+                                true,
+                            )?
+                        } else {
+                            eval::field(&fields, i, None, item.star.is_some())?
+                        });
                         count += 1;
                     }
                 }
@@ -1810,21 +1865,40 @@ impl Connection {
             });
         }
         let mut rows = vec![Vec::new()];
-        for (source, data, on, width) in sources {
+        for (source, data, constraints, start, width) in sources {
             let mut joined = Vec::new();
             let mut bytes = 0;
+            let mut right_matches = if source.right {
+                vec![false; data.len()]
+            } else {
+                Vec::new()
+            };
             for left in rows {
                 let mut matched = false;
-                for values in data.rows().take(source_cap.unwrap_or(usize::MAX)) {
+                for (i, values) in data
+                    .rows()
+                    .take(source_cap.unwrap_or(usize::MAX))
+                    .enumerate()
+                {
                     context.fuel.spend()?;
                     let mut row = left.clone();
                     row.extend(values);
-                    if self.expressions(scope.clone(), runtime).filter(
-                        on.as_ref(),
-                        &row,
-                        context,
-                    )? {
+                    let mut included = true;
+                    for on in &constraints {
+                        if !self.expressions(scope.clone(), runtime).filter(
+                            Some(on),
+                            &row,
+                            context,
+                        )? {
+                            included = false;
+                            break;
+                        }
+                    }
+                    if included {
                         matched = true;
+                        if source.right {
+                            right_matches[i] = true;
+                        }
                         push_row(&mut joined, row, &mut bytes, context.limits)?;
                     }
                 }
@@ -1832,6 +1906,16 @@ impl Connection {
                     let mut row = left;
                     row.extend(core::iter::repeat_n(Value::Null, width));
                     push_row(&mut joined, row, &mut bytes, context.limits)?;
+                }
+            }
+            if source.right {
+                for (i, values) in data.rows().enumerate() {
+                    context.fuel.spend()?;
+                    if !right_matches[i] {
+                        let mut row = vec![Value::Null; start];
+                        row.extend(values);
+                        push_row(&mut joined, row, &mut bytes, context.limits)?;
+                    }
                 }
             }
             rows = joined;

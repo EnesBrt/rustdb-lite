@@ -148,7 +148,7 @@ fn possible_types(expr: &Expr) -> u8 {
         ExprKind::Literal(Value::Blob(_)) => 4,
         ExprKind::Collate(e, _) | ExprKind::Unary(Unary::Plus, e) => possible_types(e),
         ExprKind::Binary(Binary::Concat, ..) => 6,
-        ExprKind::Parameter(_) | ExprKind::Call { .. } => 7,
+        ExprKind::Parameter(_) | ExprKind::Call { .. } | ExprKind::Merged(_) => 7,
         ExprKind::Slot(..) | ExprKind::Outer(..) | ExprKind::Generated(..) | ExprKind::Cast(..) => {
             affinity_types(eval::expr_affinity(expr))
         }

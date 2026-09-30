@@ -161,6 +161,7 @@ impl Data {
                     .map(|t| t[i].clone())
                     .unwrap_or_else(|| ColumnType::expression(e, &self.fields));
                 Field {
+                    merged: Vec::new(),
                     generated: None,
                     table: alias.into(),
                     name,
@@ -179,6 +180,12 @@ pub(super) enum SourceData<'a> {
     Query(Rc<Data>),
 }
 impl SourceData<'_> {
+    pub(super) fn len(&self) -> usize {
+        match self {
+            Self::Table(t, _) => t.rows.len(),
+            Self::Query(q) => q.result.rows.len(),
+        }
+    }
     pub(super) fn fields(&self, alias: &str) -> Vec<Field> {
         match self {
             Self::Table(t, _) => t.fields(alias),

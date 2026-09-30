@@ -21,7 +21,8 @@ is shown below. Persistent automatic rowids and sqlite_sequence are documented i
 in [STRICT.md](STRICT.md). Primary-key SQL/storage support is documented in
 [WITHOUT_ROWID.md](WITHOUT_ROWID.md). Generated columns and expression/partial
 indexes are described in [GENERATED.md](GENERATED.md) and
-[EXPRESSION_INDEXES.md](EXPRESSION_INDEXES.md).
+[EXPRESSION_INDEXES.md](EXPRESSION_INDEXES.md). Join binding, merged-column
+values and outer-row execution are documented in [JOINS.md](JOINS.md).
 
 ## Storage API
 
@@ -121,6 +122,7 @@ python3 safe/scripts/strict_differential.py
 python3 safe/scripts/without_rowid_differential.py
 python3 safe/scripts/generated_differential.py
 python3 safe/scripts/expression_index_differential.py
+python3 safe/scripts/join_differential.py
 python3 safe/scripts/check_targets.py
 ```
 

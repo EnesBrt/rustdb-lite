@@ -17,6 +17,9 @@ pub mod generated;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Field {
     pub generated: Option<generated::Reference>,
+    /// Physical columns supplying an unqualified USING/NATURAL value.
+    /// One slot selects a RIGHT value; multiple slots form a FULL coalesce.
+    pub merged: Vec<usize>,
     pub table: String,
     pub name: String,
     pub affinity: Affinity,
@@ -25,6 +28,41 @@ pub struct Field {
     /// Pseudo-table fields such as UPSERT's excluded require a qualifier.
     pub qualified_only: bool,
     pub declared_type: String,
+}
+pub fn field(fields: &[Field], slot: usize, outer: Option<usize>, qualified: bool) -> Result<Expr> {
+    let f = fields.get(slot).ok_or(Error::Corrupt("query field slot"))?;
+    if qualified || f.merged.is_empty() {
+        return generated::field(f, slot, outer);
+    }
+    let args = f
+        .merged
+        .iter()
+        .map(|i| {
+            generated::field(
+                fields.get(*i).ok_or(Error::Corrupt("merged field slot"))?,
+                *i,
+                outer,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    coalesced(args)
+}
+pub fn coalesced(mut args: Vec<Expr>) -> Result<Expr> {
+    if args.len() == 1 {
+        return Ok(args.remove(0));
+    }
+    if args.is_empty() {
+        return Err(Error::Corrupt("empty merged field"));
+    }
+    let depth = 1 + args.iter().map(|e| e.depth).max().unwrap_or(0);
+    if depth > 64 {
+        return Err(Error::Limit("merged expression depth"));
+    }
+    Ok(Expr {
+        depth,
+        token: None,
+        kind: ExprKind::Merged(args),
+    })
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct BoundSubquery {
@@ -206,8 +244,8 @@ pub fn bind_with(
                 } else {
                     first
                 };
-                if let Some((i, f)) = first {
-                    return generated::field(f, i, None);
+                if let Some((i, _)) = first {
+                    return field(fields, i, None, qualifier.is_some());
                 } else if qualifier.is_none() {
                     if let Some((_, value)) =
                         aliases.iter().find(|(n, _)| n.eq_ignore_ascii_case(name))
@@ -259,6 +297,9 @@ pub fn bind_with(
             ),
             ExprKind::Cast(x, a) => ExprKind::Cast(Box::new(rec(x)?), *a),
             ExprKind::Collate(x, c) => ExprKind::Collate(Box::new(rec(x)?), *c),
+            ExprKind::Merged(args) => {
+                ExprKind::Merged(args.iter().map(&mut rec).collect::<Result<_>>()?)
+            }
             ExprKind::Call {
                 name,
                 args,
@@ -322,6 +363,7 @@ pub fn expr_affinity(expr: &Expr) -> Affinity {
         ExprKind::Slot(_, a, _) | ExprKind::Outer(_, _, a, _, _) | ExprKind::Cast(_, a) => *a,
         ExprKind::BoundSubquery(q) if q.source.mode == QueryMode::Scalar => q.affinity,
         ExprKind::Collate(x, _) => expr_affinity(x),
+        ExprKind::Merged(args) => args.first().map_or(Affinity::None, expr_affinity),
         _ => Affinity::None,
     }
 }
@@ -369,6 +411,7 @@ pub fn collation_hint(expr: &Expr) -> Option<Collation> {
         ExprKind::Generated(r) => Some(r.metadata().collation),
         ExprKind::Slot(_, _, c) | ExprKind::Outer(_, _, _, c, _) => Some(*c),
         ExprKind::Unary(Unary::Plus, x) | ExprKind::Cast(x, _) => collation_hint(x),
+        ExprKind::Merged(args) => args.first().and_then(collation_hint),
         _ => None,
     })
 }
@@ -381,6 +424,7 @@ fn comparison_collation(a: &Expr, b: &Expr) -> Collation {
                     ExprKind::Generated(r) => Some(r.metadata().collation),
                     ExprKind::Slot(_, _, c) | ExprKind::Outer(_, _, _, c, _) => Some(*c),
                     ExprKind::Unary(Unary::Plus, x) | ExprKind::Cast(x, _) => implicit(x),
+                    ExprKind::Merged(args) => args.first().and_then(implicit),
                     _ => None,
                 }
             }
@@ -421,6 +465,16 @@ impl Eval<'_> {
         let value = match &expr.kind {
             ExprKind::Literal(v) => v.clone(),
             ExprKind::MinMagnitude => Value::Real(9223372036854775808.0),
+            ExprKind::Merged(args) => {
+                let mut value = Value::Null;
+                for arg in args {
+                    value = self.eval_with(arg, row, group, queries)?;
+                    if !scalar::null(&value) {
+                        break;
+                    }
+                }
+                value
+            }
             ExprKind::Boolean(b) => Value::Integer(i64::from(*b)),
             ExprKind::Column { .. } | ExprKind::Subquery(_) => {
                 return Err(error("unbound expression"))

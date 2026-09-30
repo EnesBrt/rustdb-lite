@@ -57,6 +57,62 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn joined_views_and_insert_select_persist_across_reopen_and_rollback() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    for sql in [
+        "CREATE TABLE a(x INT,y TEXT)",
+        "CREATE TABLE b(x INT,z TEXT)",
+        "INSERT INTO a VALUES(1,'left'),(2,'both')",
+        "INSERT INTO b VALUES(2,'both'),(3,'right')",
+        "CREATE VIEW v AS SELECT * FROM a FULL JOIN b USING(x)",
+        "CREATE TABLE result AS SELECT * FROM v",
+    ] {
+        c.execute(sql, &[]).unwrap();
+    }
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT x FROM v ORDER BY x", &[]).unwrap().rows,
+        vec![
+            vec![Value::Integer(1)],
+            vec![Value::Integer(2)],
+            vec![Value::Integer(3)]
+        ]
+    );
+    let before = fs::read(&path).unwrap();
+    c.execute("BEGIN", &[]).unwrap();
+    c.execute("INSERT INTO a SELECT x,'new' FROM v WHERE y IS NULL", &[])
+        .unwrap();
+    c.execute("ROLLBACK", &[]).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), before);
+    assert!(c
+        .execute(
+            "INSERT INTO a SELECT abs(-9223372036854775808),z FROM v",
+            &[]
+        )
+        .is_err());
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("INSERT INTO a SELECT x,'new' FROM v WHERE y IS NULL", &[])
+        .unwrap();
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT count(*) FROM v WHERE y IS NULL", &[])
+            .unwrap()
+            .rows,
+        vec![vec![Value::Integer(0)]]
+    );
+    assert_eq!(
+        c.execute("SELECT count(*) FROM result WHERE y IS NULL", &[])
+            .unwrap()
+            .rows,
+        vec![vec![Value::Integer(1)]]
+    );
+}
+
+#[test]
 fn expression_partial_indexes_persist_membership_conflicts_and_fail_prefixes() {
     let temp = Temp::new();
     let path = temp.db();

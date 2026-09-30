@@ -27,6 +27,9 @@ pub enum ExprKind {
     Literal(Value),
     /// Decimal integer token 2^63. A syntactic unary minus can still form MIN.
     MinMagnitude,
+    /// A join-generated coalesce inherits affinity/collation from its first
+    /// argument, unlike a user-written coalesce function.
+    Merged(Vec<Expr>),
     Boolean(bool),
     Column {
         qualifier: Option<String>,
@@ -120,7 +123,7 @@ impl Expr {
                 .chain(arms.iter().flat_map(|(a, b)| [a, b]))
                 .chain(other.iter().map(Box::as_ref))
                 .collect(),
-            ExprKind::Call { args, .. } => args.iter().collect(),
+            ExprKind::Call { args, .. } | ExprKind::Merged(args) => args.iter().collect(),
             _ => Vec::new(),
         }
     }
@@ -171,6 +174,9 @@ pub struct Source {
     pub query: Option<Box<Query>>,
     pub alias: String,
     pub left: bool,
+    pub right: bool,
+    pub natural: bool,
+    pub using: Option<Vec<String>>,
     pub on: Option<Expr>,
 }
 #[derive(Clone, Debug, PartialEq)]
@@ -1512,6 +1518,8 @@ impl Parser<'_> {
         let mut sources = Vec::new();
         if self.eat("FROM") {
             let mut left = false;
+            let mut right = false;
+            let mut natural = false;
             loop {
                 let start = self.at;
                 let query = if self.eat("(") {
@@ -1533,27 +1541,69 @@ impl Parser<'_> {
                 } else {
                     None
                 };
+                let using = if self.eat("USING") {
+                    Some(self.names()?)
+                } else {
+                    None
+                };
+                if (natural && (on.is_some() || using.is_some()))
+                    || (on.is_some() && using.is_some())
+                    || (sources.is_empty() && (on.is_some() || using.is_some()))
+                {
+                    return Err(error("invalid join constraint"));
+                }
                 sources.push(Source {
                     name,
                     qualified,
                     query,
                     alias,
                     left,
+                    right,
+                    natural,
+                    using,
                     on,
                 });
+                left = false;
+                right = false;
+                natural = false;
                 if self.eat(",") {
-                    left = false;
                     continue;
                 }
-                left = self.eat("LEFT");
-                if left {
-                    self.eat("OUTER");
+                let mut outer = false;
+                let mut inner = false;
+                let mut count = 0;
+                loop {
+                    if self.eat("NATURAL") {
+                        natural = true;
+                    } else if self.eat("LEFT") {
+                        left = true;
+                        outer = true;
+                    } else if self.eat("RIGHT") {
+                        right = true;
+                        outer = true;
+                    } else if self.eat("FULL") {
+                        left = true;
+                        right = true;
+                        outer = true;
+                    } else if self.eat("OUTER") {
+                        outer = true;
+                    } else if self.eat("INNER") || self.eat("CROSS") {
+                        inner = true;
+                    } else {
+                        break;
+                    }
+                    count += 1;
+                    if count > 3 {
+                        return Err(error("invalid join type"));
+                    }
                 }
-                let inner = self.eat("INNER") || self.eat("CROSS");
+                if (inner && outer) || (outer && !left && !right) {
+                    return Err(error("invalid join type"));
+                }
                 if self.eat("JOIN") {
                     continue;
                 }
-                if left || inner {
+                if count != 0 {
                     return Err(self.expected("JOIN"));
                 }
                 break;

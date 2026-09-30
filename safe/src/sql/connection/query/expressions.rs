@@ -33,6 +33,7 @@ impl Runtime {
         for f in fields {
             bytes = bytes
                 .checked_add(core::mem::size_of::<Field>())
+                .and_then(|n| n.checked_add(f.merged.len() * core::mem::size_of::<usize>()))
                 .and_then(|n| n.checked_add(f.table.len()))
                 .and_then(|n| n.checked_add(f.name.len()))
                 .and_then(|n| n.checked_add(f.declared_type.len()))
@@ -188,12 +189,13 @@ impl Resolver for Binding<'_, '_, '_, '_> {
             if found.len() > 1 {
                 return Err(error(format!("ambiguous column: {name}")));
             }
-            if let Some((slot, field)) = found.first() {
+            if let Some((slot, _)) = found.first() {
                 self.expressions.runtime.outer_reads.insert(frame_index);
-                return Ok(Some(eval::generated::field(
-                    field,
+                return Ok(Some(eval::field(
+                    &frame.fields,
                     *slot,
                     Some(frame_index),
+                    qualifier.is_some(),
                 )?));
             }
         }
