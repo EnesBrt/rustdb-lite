@@ -104,6 +104,8 @@ jobs:
         run: python3 safe/scripts/row_value_differential.py
       - name: Compare table renames, scopes, metadata and schema text
         run: python3 safe/scripts/rename_differential.py
+      - name: Compare column renames, quote normalization and persisted schemas
+        run: python3 safe/scripts/rename_column_differential.py
       - name: Compare ALTER constraints, nullability, policies and schema text
         run: python3 safe/scripts/alter_constraint_differential.py
       - name: Compare ALTER columns, defaults, dependencies and persisted schemas

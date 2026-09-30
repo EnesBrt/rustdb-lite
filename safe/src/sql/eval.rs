@@ -19,7 +19,7 @@ mod patterns;
 pub mod rows;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Field {
-    pub rename_table: bool,
+    pub rename_target: bool,
     pub nested: Option<NestedField>,
     pub generated: Option<generated::Reference>,
     /// Physical columns supplying an unqualified USING/NATURAL value.
@@ -198,6 +198,9 @@ pub struct QueryColumn {
     pub declared_type: String,
 }
 pub trait Resolver {
+    fn literal(&mut self, _: &Expr, _: &str) -> Result<()> {
+        Ok(())
+    }
     fn resolved(&mut self, _: &Expr, _: &Field) -> Result<()> {
         Ok(())
     }
@@ -239,7 +242,7 @@ pub trait Subqueries {
         context: &mut Eval<'_>,
     ) -> Result<alloc::rc::Rc<Vec<Vec<Value>>>>;
 }
-struct NoQueries;
+struct NoQueries(bool);
 struct GeneratedBinding;
 impl Resolver for GeneratedBinding {
     fn double_quoted_strings(&self) -> bool {
@@ -256,6 +259,9 @@ pub fn bind_generated(expr: &Expr, fields: &[Field]) -> Result<Expr> {
     bind_with(expr, fields, &[], false, &mut GeneratedBinding)
 }
 impl Resolver for NoQueries {
+    fn double_quoted_strings(&self) -> bool {
+        self.0
+    }
     fn column(&mut self, _: &Expr, _: Option<&str>, _: &str, _: bool) -> Result<Option<Expr>> {
         Ok(None)
     }
@@ -334,7 +340,10 @@ pub fn bind(
     aliases: &[(String, Expr)],
     allow_aggregate: bool,
 ) -> Result<Expr> {
-    bind_with(expr, fields, aliases, allow_aggregate, &mut NoQueries)
+    bind_with(expr, fields, aliases, allow_aggregate, &mut NoQueries(true))
+}
+pub fn bind_default(expr: &Expr) -> Result<Expr> {
+    bind_with(expr, &[], &[], false, &mut NoQueries(false))
 }
 pub fn bind_with(
     expr: &Expr,
@@ -357,6 +366,8 @@ pub fn bind_with(
                 qualifier,
                 name,
                 quoted,
+                double_quoted,
+                ..
             } => {
                 if let Some(i) = resolve_field(fields, qualifier.as_deref(), name)? {
                     resolver.resolved(expr, &fields[i])?;
@@ -374,7 +385,8 @@ pub fn bind_with(
                         && (name.eq_ignore_ascii_case("true") || name.eq_ignore_ascii_case("false"))
                     {
                         ExprKind::Boolean(name.eq_ignore_ascii_case("true"))
-                    } else if *quoted && resolver.double_quoted_strings() {
+                    } else if *double_quoted && resolver.double_quoted_strings() {
+                        resolver.literal(expr, name)?;
                         ExprKind::Literal(Value::Text(Text::utf8(name)))
                     } else {
                         return Err(error(format!("no such column: {name}")));
@@ -663,7 +675,7 @@ impl Eval<'_> {
         row: &[Value],
         group: Option<&[Vec<Value>]>,
     ) -> Result<Value> {
-        self.eval_with(expr, row, group, &mut NoQueries)
+        self.eval_with(expr, row, group, &mut NoQueries(false))
     }
     pub fn eval_with(
         &mut self,

@@ -70,15 +70,21 @@ pub(super) struct Runtime {
 }
 pub(super) struct RenameTrace {
     pub(super) table: String,
+    pub(super) column: Option<usize>,
+    pub(super) fix_quotes: bool,
     pub(super) edits: BTreeMap<usize, usize>,
+    pub(super) strings: BTreeMap<usize, (usize, String)>,
     pending: Vec<(Box<Query>, Option<Rc<Scope>>)>,
     seen: BTreeSet<usize>,
 }
 impl RenameTrace {
-    pub(super) fn new(table: &str) -> Self {
+    pub(super) fn new(table: &str, column: Option<usize>, fix_quotes: bool) -> Self {
         Self {
             table: table.into(),
+            column,
+            fix_quotes,
             edits: BTreeMap::new(),
+            strings: BTreeMap::new(),
             pending: Vec::new(),
             seen: BTreeSet::new(),
         }
@@ -86,6 +92,18 @@ impl RenameTrace {
     pub(super) fn mark(&mut self, location: parser::Location) {
         if let Some((start, end)) = location.0 {
             self.edits.insert(start, end);
+        }
+    }
+    pub(super) fn reference(&mut self, expr: &Expr, shadowed: bool) {
+        if self.column.is_some() {
+            self.mark(expr.location);
+        } else if !shadowed {
+            if let ExprKind::Column {
+                qualifier_location, ..
+            } = &expr.kind
+            {
+                self.mark(*qualifier_location);
+            }
         }
     }
 }
@@ -184,7 +202,7 @@ impl Data {
                     .map(|t| t[i].clone())
                     .unwrap_or_else(|| ColumnType::expression(e, &self.fields));
                 Field {
-                    rename_table: false,
+                    rename_target: false,
                     nested: self.nested.as_ref().map(|fields| fields[i].clone()),
                     merged: Vec::new(),
                     generated: None,
@@ -257,10 +275,12 @@ impl Connection {
         &self,
         query: &Query,
         table: &str,
+        column: Option<usize>,
+        fix_quotes: bool,
         context: &mut Eval<'_>,
-    ) -> Result<BTreeMap<usize, usize>> {
+    ) -> Result<RenameTrace> {
         let mut runtime = Runtime {
-            rename: Some(RenameTrace::new(table)),
+            rename: Some(RenameTrace::new(table, column, fix_quotes)),
             ..Runtime::default()
         };
         self.query(query, context, None, &mut runtime, true)?;
@@ -287,7 +307,7 @@ impl Connection {
                 .take()
                 .ok_or(Error::Corrupt("missing CTE rename trace"))?;
         }
-        Ok(trace.edits)
+        Ok(trace)
     }
     pub(super) fn view_query(
         &self,
@@ -560,7 +580,7 @@ impl Connection {
             }
             parts.push(part);
         }
-        let order = compound_order(&query.order, &parts, |expr, fields| {
+        let order = compound_order(&query.order, &parts, &query.cores, |expr, fields| {
             if runtime.rename.is_some() {
                 self.expressions(scope.clone(), runtime)
                     .bind(expr, fields, &[], true, context)?;
@@ -694,6 +714,7 @@ impl Connection {
 fn compound_order(
     order: &[Ordering],
     parts: &[Data],
+    cores: &[QueryCore],
     mut matched: impl FnMut(&Expr, &[Field]) -> Result<()>,
 ) -> Result<Vec<Ordering>> {
     order
@@ -710,7 +731,7 @@ fn compound_order(
                 }
                 found = Some((n as usize - 1, &parts[0].projection[n as usize - 1]));
             } else {
-                for part in parts {
+                for (part, core) in parts.iter().zip(cores) {
                     if let ExprKind::Column {
                         qualifier: None,
                         name,
@@ -723,8 +744,15 @@ fn compound_order(
                             .iter()
                             .position(|n| n.eq_ignore_ascii_case(name))
                         {
-                            found = Some((i, &part.projection[i]));
-                            break;
+                            let explicit_alias = matches!(core, QueryCore::Select(select)
+                                if select.items.iter().any(|item| item.alias.as_ref()
+                                    .is_some_and(|alias| alias.eq_ignore_ascii_case(name))
+                                    || item.expr.is_none() && part.fields.iter().any(|f|
+                                        f.wildcard(item.star.as_deref()) && f.name.eq_ignore_ascii_case(name))));
+                            if explicit_alias {
+                                found = Some((i, &part.projection[i]));
+                                break;
+                            }
                         }
                     }
                     if let Ok(bound) = eval::bind(expression, &part.fields, &[], true) {

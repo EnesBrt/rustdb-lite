@@ -84,8 +84,9 @@ SQLite can reprepare a statement after a schema change; pre-step metadata can be
 stale even when the executed query is correct.
 
 ALTER COLUMN SET/DROP NOT NULL, ADD CHECK and DROP CONSTRAINT are described in
-[ALTER_CONSTRAINTS.md](ALTER_CONSTRAINTS.md). [Table renames](RENAME.md) are
-implemented. Remaining work includes RENAME COLUMN, temporary/attached schemas, foreign keys, triggers,
+[ALTER_CONSTRAINTS.md](ALTER_CONSTRAINTS.md). [Table renames](RENAME.md) and
+[column renames](RENAME_COLUMN.md) are implemented. Remaining work includes
+temporary/attached schemas, foreign keys, triggers,
 virtual tables, legacy_alter_table/writable_schema behavior, schema cookies,
 prepare-time validation and the C API. Missing functions, such as date/time
 functions, remain unavailable in new defaults and generated expressions.

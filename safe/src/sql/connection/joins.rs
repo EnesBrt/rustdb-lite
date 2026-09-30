@@ -65,8 +65,10 @@ pub(super) fn nested_projection(
                     token: None,
                     kind: ExprKind::Column {
                         qualifier: None,
+                        qualifier_location: Default::default(),
                         name: name.clone(),
                         quoted: false,
+                        double_quoted: false,
                     },
                 },
                 fields,

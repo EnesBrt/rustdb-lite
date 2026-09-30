@@ -87,9 +87,9 @@ configurations containing both table kinds. A Unix test and nine native file
 scenarios cover persistent native readers, commit/reopen and unchanged files on
 failed or rolled-back edits.
 
-[Table renames](RENAME.md) are also implemented. Foreign keys, triggers,
-virtual/temporary/attached schemas, column RENAME,
-general double-quoted-string fallback, schema cookies and the C API remain
+[Table renames](RENAME.md) and [column renames](RENAME_COLUMN.md) are also
+implemented. Foreign keys, triggers, virtual/temporary/attached schemas,
+configurable double-quoted-string flags, schema cookies and the C API remain
 unfinished. The date/time and other missing scalar functions are unavailable in
 new CHECK expressions. Full planner, prepare-time validation and native diagnostic
 compatibility are not established. Existing query materialization and STRICT

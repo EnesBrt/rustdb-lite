@@ -32,6 +32,7 @@ impl Connection {
             .map(|field| {
                 let typ = eval::affinity_type(field.affinity);
                 Column {
+                    location: Default::default(),
                     generated: None,
                     single_type_token: !typ.is_empty(),
                     name: field.name,

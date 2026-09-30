@@ -45,7 +45,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Lexing | UTF-8 SQL, comments, quoted identifiers, strings, BLOBs, decimal/hex numbers, numeric underscores, ordinary parameters |
 | Expressions | Arithmetic/bit operations, comparisons, NULL logic, IS/IS NOT, BETWEEN, IN lists, CASE, CAST, COLLATE, LIKE/ESCAPE/GLOB ([scope](PATTERNS.md)), scalar functions; row comparisons and membership ([scope](ROW_VALUES.md)) |
 | Tables | Rowid and WITHOUT ROWID tables; declared-type affinity; column/table PRIMARY KEY, UNIQUE and CHECK constraints (including composite keys), NOT NULL, DEFAULT, collations, constraint-name syntax |
-| Schema edits | ALTER TABLE ADD/DROP COLUMN ([scope](ALTER_TABLE.md)), SET/DROP NOT NULL and named CHECK edits ([scope](ALTER_CONSTRAINTS.md)), table RENAME ([scope](RENAME.md)); dependency validation and atomic rollback |
+| Schema edits | ALTER TABLE ADD/DROP COLUMN ([scope](ALTER_TABLE.md)), SET/DROP NOT NULL and named CHECK edits ([scope](ALTER_CONSTRAINTS.md)), table RENAME ([scope](RENAME.md)) and column RENAME ([scope](RENAME_COLUMN.md)); dependency validation and atomic rollback |
 | Generated columns | VIRTUAL/STORED dependencies, lazy reads, typed writes, constraints and physical layouts; [scope](GENERATED.md) |
 | Primary-key storage | WITHOUT ROWID index B-trees, composite keys and index suffixes; see [WITHOUT_ROWID.md](WITHOUT_ROWID.md) |
 | Views and table snapshots | CREATE/DROP VIEW, optional view column lists, CREATE TABLE AS SELECT/VALUES/WITH; main schema, metadata and image interchange; see [VIEWS.md](VIEWS.md) |
@@ -81,8 +81,9 @@ behaviors, not complete compatibility of every expression/feature combination.
 - No temporary schemas, triggers, window functions,
   virtual tables, foreign keys, ATTACH,
   extension loading, or C ABI.
-- Column renames remain unfinished;
-  see [ALTER_TABLE.md](ALTER_TABLE.md) and [ALTER_CONSTRAINTS.md](ALTER_CONSTRAINTS.md) for implemented edits and remaining gaps.
+- Schema edits cover the implemented main-schema surface; see [ALTER_TABLE.md](ALTER_TABLE.md),
+  [ALTER_CONSTRAINTS.md](ALTER_CONSTRAINTS.md) and [RENAME_COLUMN.md](RENAME_COLUMN.md)
+  for remaining compatibility gaps.
 - Aggregates owned by an outer query (such as
   `SELECT (SELECT sum(t.x)) FROM t`) remain unsupported.
   FROM subqueries cannot refer to sibling FROM sources. Scalar subqueries return
@@ -98,8 +99,10 @@ behaviors, not complete compatibility of every expression/feature combination.
 - No date/time, JSON, math, formatting, or other functions outside the list above.
   LIKE/ESCAPE and GLOB use the default case rules; case_sensitive_like, ICU
   folding and pattern search optimization remain pending; see [PATTERNS.md](PATTERNS.md).
-  Tcl parameter suffixes and general double-quoted-string fallback are pending;
-  the fallback is supported in generated-column and index declarations.
+  Tcl parameter suffixes and configurable DQS flags remain pending. Unresolved
+  double-quoted expression names use the native string fallback; bracket/backtick
+  identifiers and parenthesized DEFAULT expressions do not. Column renames
+  normalize schema literals as described in [RENAME_COLUMN.md](RENAME_COLUMN.md).
 - Schema-inspection pragmas support the table/view/index subset above, both argument
   syntaxes, primary-key positions, default SQL, index origin, collation names,
   directions, and auxiliary rowid entries. table_list adds strict flags and an empty
@@ -218,7 +221,7 @@ storage classes and value bytes/bits before and after native file interchange.
 
 Constraint policies and their persistence/error behavior are documented in
 [CONFLICTS.md](CONFLICTS.md). The statement probe compares 316 policy, counter,
-transaction and image-interchange scenarios against SQLite 3.53.4. A remaining
-metadata difference is that an unaliased hidden rowid projection is named `rowid`
-even when native SQLite names it after an INTEGER PRIMARY KEY alias; explicit
-result aliases avoid that difference.
+transaction and image-interchange scenarios against SQLite 3.53.4. Column-rename
+coverage adds 1,035 scenarios and seven Rust tests, including declared-case and
+INTEGER PRIMARY KEY result labels, schema literals, and bounded atomic edits;
+see [RENAME_COLUMN.md](RENAME_COLUMN.md).

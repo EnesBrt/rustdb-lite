@@ -2,8 +2,8 @@
 
 The safe engine implements `ALTER TABLE [main.]old RENAME TO new` for ordinary,
 STRICT and WITHOUT ROWID tables. This complements [column additions/removals](ALTER_TABLE.md)
-and [constraint edits](ALTER_CONSTRAINTS.md). Column RENAME and the complete
-SQLite rewrite remain unfinished.
+and [constraint edits](ALTER_CONSTRAINTS.md). [Column renames](RENAME_COLUMN.md)
+are also implemented; the complete SQLite rewrite remains unfinished.
 
 ## Schema and name resolution
 
@@ -63,7 +63,6 @@ after failed or rolled-back renames.
 
 Table renames apply to the currently implemented schema surface. Foreign keys,
 triggers, virtual tables, temporary/attached schemas, legacy_alter_table and
-writable_schema behavior, general double-quoted-string fallback, exact native
+writable_schema behavior, configurable double-quoted-string flags, exact native
 diagnostics, the C API and full query planning remain unfinished. Column renames
-are not implemented. The parser's source coordinates and binder tracing provide
-infrastructure for continuing that work, not evidence that it is complete.
+and their quote-normalization behavior are documented in [RENAME_COLUMN.md](RENAME_COLUMN.md).

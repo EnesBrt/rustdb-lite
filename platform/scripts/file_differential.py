@@ -443,6 +443,26 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'rename-column-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(id INTEGER PRIMARY KEY AUTOINCREMENT,a TEXT UNIQUE,s INT AS(length(a)) STORED);INSERT INTO t(a) VALUES('é🦀');CREATE INDEX ix ON t((a||s)) WHERE a IS NOT NULL;CREATE VIEW v AS SELECT id,a AS value,s,\"future\" AS literal FROM t;")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                assert connection.execute('SELECT s,literal FROM v').fetchall()==[(2,'future')]
+                run(SQL,path,'ALTER TABLE t RENAME COLUMN a TO future')
+                assert connection.execute('SELECT s,literal FROM v').fetchall()==[(2,'future')]
+                before=path.read_bytes()
+                run(SQL,path,'ALTER TABLE t RENAME future TO id',expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,'BEGIN','ALTER TABLE t RENAME future TO other',"INSERT INTO t(other) VALUES('rollback')",'ROLLBACK')
+                assert path.read_bytes()==before
+                connection.execute('ALTER TABLE t RENAME future TO peer')
+                run(SQL,path,'ALTER TABLE t RENAME peer TO final',"INSERT INTO t(final) VALUES('next')")
+                assert connection.execute('SELECT id,s,literal FROM v ORDER BY id').fetchall()==[(1,2,'future'),(2,4,'future')]
+                assert connection.execute('SELECT * FROM sqlite_sequence').fetchall()==[('t',2)]
+                connection.close()
+                assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'

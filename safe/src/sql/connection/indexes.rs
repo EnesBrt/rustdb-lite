@@ -145,8 +145,10 @@ pub(super) fn declaration(
         if let ExprKind::Literal(Value::Text(name)) = &target.kind {
             target.kind = ExprKind::Column {
                 qualifier: None,
+                qualifier_location: Default::default(),
                 name: name.to_string()?,
                 quoted: false,
+                double_quoted: false,
             };
         }
         let bound = bind(table, &expr, false, fuel)?;

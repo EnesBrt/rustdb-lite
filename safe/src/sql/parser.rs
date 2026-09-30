@@ -46,8 +46,10 @@ pub enum ExprKind {
     Boolean(bool),
     Column {
         qualifier: Option<String>,
+        qualifier_location: Location,
         name: String,
         quoted: bool,
+        double_quoted: bool,
     },
     Slot(usize, Affinity, Collation),
     Generated(super::eval::generated::Reference),
@@ -157,6 +159,7 @@ impl Expr {
 }
 #[derive(Clone, Debug)]
 pub struct Column {
+    pub location: Location,
     pub generated: Option<(Expr, bool)>,
     pub single_type_token: bool,
     pub name: String,
@@ -279,6 +282,7 @@ pub enum UpsertAction {
 }
 #[derive(Clone, Debug)]
 pub struct IndexColumn {
+    pub location: Location,
     pub name: String,
     pub collation: Option<Collation>,
     pub collation_name: Option<String>,
@@ -328,6 +332,11 @@ impl Conflict {
 #[derive(Clone, Debug)]
 pub enum Alter {
     Rename(String),
+    RenameColumn {
+        old: String,
+        new: String,
+        quoted: bool,
+    },
     Add {
         column: Box<Column>,
         sql: String,
@@ -761,6 +770,7 @@ impl Parser<'_> {
         self.expect("(")?;
         let mut columns = Vec::new();
         loop {
+            let location = self.location(self.at);
             let name = self.name()?;
             let collation_name = if self.eat("COLLATE") {
                 Some(self.name()?)
@@ -776,6 +786,7 @@ impl Parser<'_> {
                 self.eat("ASC");
             }
             columns.push(IndexColumn {
+                location,
                 name,
                 collation,
                 collation_name,
@@ -821,6 +832,7 @@ impl Parser<'_> {
     }
     fn column(&mut self) -> Result<(Column, bool)> {
         let mut autoincrement = false;
+        let location = self.location(self.at);
         let name = self.name()?;
         let type_start = self.at;
         while matches!(self.peek(), Kind::Word(_, _) | Kind::String(_))
@@ -877,6 +889,7 @@ impl Parser<'_> {
             }
         }
         let mut column = Column {
+            location,
             generated: None,
             single_type_token: self.at == type_start + 1,
             name,
@@ -954,6 +967,7 @@ impl Parser<'_> {
                         qualifier: None,
                         name,
                         quoted,
+                        ..
                     } = &default.kind
                     {
                         if !quoted
@@ -1218,8 +1232,19 @@ impl Parser<'_> {
             self.expect("TABLE")?;
             let name = self.table_name()?;
             let action = if self.eat("RENAME") {
-                self.expect("TO")?;
-                Alter::Rename(self.name()?)
+                if self.eat("TO") {
+                    Alter::Rename(self.name()?)
+                } else {
+                    self.eat("COLUMN");
+                    let old = self.name()?;
+                    self.expect("TO")?;
+                    let quoted = matches!(self.peek(), Kind::Word(_, true) | Kind::String(_));
+                    Alter::RenameColumn {
+                        old,
+                        new: self.name()?,
+                        quoted,
+                    }
+                }
             } else if self.eat("ADD") {
                 if self.is("CONSTRAINT") || self.is("CHECK") {
                     let start = self.tokens[self.at].start;
@@ -2107,7 +2132,11 @@ impl Parser<'_> {
             let token = self.peek().clone();
             self.at += 1;
             match token {
-                Kind::String(s) => Expr::literal(Value::Text(Text::utf8(&s))),
+                Kind::String(s) => {
+                    let mut expr = Expr::literal(Value::Text(Text::utf8(&s)));
+                    expr.location = self.location(self.at - 1);
+                    expr
+                }
                 Kind::Blob(b) => {
                     let mut expr = Expr::literal(Value::Blob(b));
                     let token = &self.tokens[self.at - 1];
@@ -2213,15 +2242,20 @@ impl Parser<'_> {
                         } else {
                             (None, name)
                         };
-                        let location = if qualifier.is_some() {
+                        let qualifier_location = if qualifier.is_some() {
                             self.location(self.at - 3)
                         } else {
-                            self.location(self.at - 1)
+                            Location::default()
                         };
+                        let location = self.location(self.at - 1);
+                        let double_quoted =
+                            self.sql.as_bytes()[self.tokens[self.at - 1].start] == b'"';
                         let mut expr = self.make(ExprKind::Column {
                             qualifier,
+                            qualifier_location,
                             name,
                             quoted,
+                            double_quoted,
                         })?;
                         expr.location = location;
                         expr

@@ -3,6 +3,7 @@
 use super::*;
 use crate::sql::lexer::{lex, Kind};
 use parser::{Alter, Binary, Unary};
+mod column;
 mod constraints;
 mod rename;
 
@@ -64,6 +65,7 @@ pub(super) fn record_default(
             qualifier: None,
             name,
             quoted: false,
+            ..
         } if name.eq_ignore_ascii_case("true") || name.eq_ignore_ascii_case("false") => {
             Value::Integer(i64::from(name.eq_ignore_ascii_case("true")))
         }
@@ -181,6 +183,9 @@ impl Connection {
         let mut result_columns = Vec::new();
         match action {
             Alter::Rename(new) => return self.rename_table(id, new, context),
+            Alter::RenameColumn { old, new, quoted } => {
+                return self.rename_column(id, old, new, *quoted, context)
+            }
             Alter::Add {
                 column,
                 sql: definition,
@@ -290,8 +295,10 @@ impl Connection {
                             location: Default::default(),
                             kind: ExprKind::Column {
                                 qualifier: None,
+                                qualifier_location: Default::default(),
                                 name: "TRUE".into(),
                                 quoted: false,
+                                double_quoted: false,
                             },
                             depth: 1,
                             token: None,

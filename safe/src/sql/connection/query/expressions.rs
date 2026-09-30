@@ -174,19 +174,26 @@ struct Binding<'a, 'b, 'c, 'd> {
     context: &'c mut Eval<'d>,
 }
 impl Resolver for Binding<'_, '_, '_, '_> {
+    fn double_quoted_strings(&self) -> bool {
+        true
+    }
+    fn literal(&mut self, expr: &Expr, name: &str) -> Result<()> {
+        if let Some(rename) = &mut self.expressions.runtime.rename {
+            if !rename.fix_quotes {
+                return Ok(());
+            }
+            if let Some((start, end)) = expr.location.0 {
+                self.context.fuel.spend()?;
+                rename.strings.insert(start, (end, name.into()));
+            }
+        }
+        Ok(())
+    }
     fn resolved(&mut self, expr: &Expr, field: &Field) -> Result<()> {
-        if field.rename_table
-            && matches!(
-                expr.kind,
-                ExprKind::Column {
-                    qualifier: Some(_),
-                    ..
-                }
-            )
-        {
+        if field.rename_target {
             if let Some(rename) = &mut self.expressions.runtime.rename {
                 self.context.fuel.spend()?;
-                rename.mark(expr.location);
+                rename.reference(expr, false);
             }
         }
         Ok(())
@@ -202,10 +209,10 @@ impl Resolver for Binding<'_, '_, '_, '_> {
             if let Some(slot) = eval::resolve_field(&frame.fields, qualifier, name)? {
                 let bound =
                     eval::field(&frame.fields, slot, Some(frame_index), qualifier.is_some())?;
-                if frame.fields[slot].rename_table && qualifier.is_some() && !shadowed {
+                if frame.fields[slot].rename_target {
                     if let Some(rename) = &mut self.expressions.runtime.rename {
                         self.context.fuel.spend()?;
-                        rename.mark(expr.location);
+                        rename.reference(expr, shadowed);
                     }
                 }
                 fn columns(expr: &Expr, reads: &mut BTreeSet<(usize, usize)>) {

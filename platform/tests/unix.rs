@@ -57,6 +57,62 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn column_rename_persists_dependencies_literals_and_rollback() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    for sql in [
+        "CREATE TABLE t(id INTEGER PRIMARY KEY AUTOINCREMENT,a INT UNIQUE,s AS(a*2) STORED)",
+        "INSERT INTO t(a) VALUES(2)",
+        "CREATE INDEX ix ON t((a+s)) WHERE a>0",
+        "CREATE VIEW v AS SELECT id,a AS value,s,\"future\" AS literal FROM t",
+        "ALTER TABLE t RENAME COLUMN a TO future",
+    ] {
+        c.execute(sql, &[]).unwrap();
+    }
+    drop(c);
+    let mut c = open(&path);
+    let before = fs::read(&path).unwrap();
+    assert!(c.execute("ALTER TABLE t RENAME future TO id", &[]).is_err());
+    assert_eq!(fs::read(&path).unwrap(), before);
+    for sql in [
+        "BEGIN",
+        "ALTER TABLE t RENAME future TO other",
+        "INSERT INTO t(other) VALUES(3)",
+        "ROLLBACK",
+    ] {
+        c.execute(sql, &[]).unwrap();
+    }
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("INSERT INTO t(future) VALUES(4)", &[]).unwrap();
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT * FROM v ORDER BY id", &[]).unwrap().rows,
+        vec![
+            vec![
+                Value::Integer(1),
+                Value::Integer(2),
+                Value::Integer(4),
+                Value::Text(Text::utf8("future"))
+            ],
+            vec![
+                Value::Integer(2),
+                Value::Integer(4),
+                Value::Integer(8),
+                Value::Text(Text::utf8("future"))
+            ]
+        ]
+    );
+    assert_eq!(
+        c.execute("SELECT seq FROM sqlite_sequence", &[])
+            .unwrap()
+            .rows,
+        vec![vec![Value::Integer(2)]]
+    );
+}
+
+#[test]
 fn table_rename_persists_views_indexes_sequence_and_rollback() {
     let temp = Temp::new();
     let path = temp.db();

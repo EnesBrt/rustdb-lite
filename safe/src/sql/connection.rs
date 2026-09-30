@@ -98,7 +98,7 @@ impl StoredTable {
                 .iter()
                 .enumerate()
                 .map(|(i, c)| Field {
-                    rename_table: false,
+                    rename_target: false,
                     nested: None,
                     merged: Vec::new(),
                     generated: self.generated.as_ref().filter(|_| c.virtual_column()).map(
@@ -121,12 +121,14 @@ impl StoredTable {
                 .collect();
         if !self.without_rowid {
             fields.push(Field {
-                rename_table: false,
+                rename_target: false,
                 nested: None,
                 merged: Vec::new(),
                 generated: None,
                 table: alias.into(),
-                name: "rowid".into(),
+                name: self
+                    .alias()
+                    .map_or_else(|| "rowid".into(), |i| self.columns[i].name.clone()),
                 affinity: Affinity::Integer,
                 collation: Collation::Binary,
                 hidden: true,
@@ -635,7 +637,7 @@ impl Connection {
                         if contains_parameter(default) {
                             return Err(error("parameters prohibited in schema"));
                         }
-                        eval::bind(default, &[], &[], false)?;
+                        eval::bind_default(default)?;
                     }
                     for check in &column.checks {
                         if contains_parameter(check) {
@@ -1673,11 +1675,18 @@ impl Connection {
             let mut source_fields = data.fields(&source.alias);
             if let Some(rename) = &mut runtime.rename {
                 let target = matches!(&data, query::SourceData::Table(t, _) if t.name.eq_ignore_ascii_case(&rename.table));
-                if target {
+                if target && rename.column.is_none() {
                     rename.mark(source.location);
                 }
-                for field in &mut source_fields {
-                    field.rename_table = target && !source.explicit_alias;
+                for (i, field) in source_fields.iter_mut().enumerate() {
+                    field.rename_target = target
+                        && match rename.column {
+                            None => !source.explicit_alias,
+                            Some(column) => {
+                                i == column
+                                    || matches!(&data, query::SourceData::Table(t, _) if i == t.columns.len() && t.alias() == Some(column))
+                            }
+                        };
                     // Native schema-rename resolution uses the projected names
                     // of a parenthesized join, without its execution-only origins.
                     field.nested = None;
@@ -1728,6 +1737,7 @@ impl Connection {
         let mut projection = Vec::new();
         let mut columns = Vec::new();
         let mut aliases = Vec::new();
+        let mut star_aliases = Vec::new();
         let nested = if query.nested_from {
             let parts = sources
                 .iter()
@@ -1754,9 +1764,19 @@ impl Connection {
                 )?;
                 let label = item.alias.clone().unwrap_or_else(|| {
                     if let ExprKind::Column { name, .. } = &expr.kind {
+                        if matches!(bound.kind, ExprKind::Literal(Value::Text(_))) {
+                            return item.label.clone();
+                        }
                         if let ExprKind::Slot(slot, ..) = &bound.kind {
-                            if let Some(f) = fields.get(*slot).filter(|f| f.nested.is_some()) {
+                            if let Some(f) = fields.get(*slot) {
                                 return f.name.clone();
+                            }
+                        }
+                        if let ExprKind::Generated(reference) = &bound.kind {
+                            if reference.outer.is_none() {
+                                if let Some(f) = fields.get(reference.offset + reference.column) {
+                                    return f.name.clone();
+                                }
                             }
                         }
                         name.clone()
@@ -1773,9 +1793,11 @@ impl Connection {
                 let mut count = 0;
                 for (i, f) in fields.iter().enumerate() {
                     if f.wildcard(item.star.as_deref()) {
-                        if item.star.is_some() && f.rename_table {
+                        if item.star.is_some() && f.rename_target {
                             if let Some(rename) = &mut runtime.rename {
-                                rename.mark(item.location);
+                                if rename.column.is_none() {
+                                    rename.mark(item.location);
+                                }
                             }
                         }
                         if projection.len() >= 2000 {
@@ -1808,8 +1830,10 @@ impl Connection {
                                         token: None,
                                         kind: ExprKind::Column {
                                             qualifier: None,
+                                            qualifier_location: Default::default(),
                                             name: f.name.clone(),
                                             quoted: false,
+                                            double_quoted: false,
                                         },
                                     },
                                     &fields,
@@ -1826,6 +1850,13 @@ impl Connection {
                 if count == 0 {
                     return Err(error("wildcard has no matching table"));
                 }
+                star_aliases.extend(
+                    columns
+                        .iter()
+                        .cloned()
+                        .zip(projection.iter().cloned())
+                        .skip(columns.len() - count),
+                );
             }
         }
         let mut deferred_on = Vec::new();
@@ -1880,8 +1911,10 @@ impl Connection {
                     ..
                 } = &expr.kind
                 {
-                    if let Some((_, value)) =
-                        aliases.iter().find(|(a, _)| a.eq_ignore_ascii_case(name))
+                    if let Some((_, value)) = aliases
+                        .iter()
+                        .chain(&star_aliases)
+                        .find(|(a, _)| a.eq_ignore_ascii_case(name))
                     {
                         return Ok(value.clone());
                     }
@@ -2559,12 +2592,7 @@ fn defaults(table: &StoredTable) -> Result<Vec<Option<Expr>>> {
     table
         .columns
         .iter()
-        .map(|c| {
-            c.default
-                .as_ref()
-                .map(|x| eval::bind(x, &[], &[], false))
-                .transpose()
-        })
+        .map(|c| c.default.as_ref().map(eval::bind_default).transpose())
         .collect()
 }
 fn checks(table: &StoredTable) -> Result<Vec<Expr>> {

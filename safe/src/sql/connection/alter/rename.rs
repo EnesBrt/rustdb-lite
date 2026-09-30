@@ -21,6 +21,7 @@ impl Rewrite<'_> {
         self.fuel.spend()?;
         if let ExprKind::Column {
             qualifier: Some(name),
+            qualifier_location,
             name: column,
             ..
         } = &expr.kind
@@ -28,7 +29,7 @@ impl Rewrite<'_> {
             if name.eq_ignore_ascii_case(self.old)
                 && self.columns.iter().any(|c| c.eq_ignore_ascii_case(column))
             {
-                self.mark(expr.location)?;
+                self.mark(*qualifier_location)?;
             }
         }
         for child in expr.children() {
@@ -178,7 +179,9 @@ impl Connection {
             let Statement::CreateView { query, .. } = parsed.statement else {
                 return Err(Error::Corrupt("view declaration missing"));
             };
-            let edits = self.rename_references(&query, &name, context)?;
+            let edits = self
+                .rename_references(&query, &name, None, false, context)?
+                .edits;
             let rewrite = Rewrite {
                 old: &name,
                 columns: &names,

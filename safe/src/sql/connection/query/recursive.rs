@@ -226,7 +226,7 @@ impl Connection {
                 }
                 parts.push(part);
             }
-            let order = compound_order(&query.order, &parts, |expr, fields| {
+            let order = compound_order(&query.order, &parts, &query.cores, |expr, fields| {
                 if runtime.rename.is_some() {
                     self.expressions(scope.clone(), runtime).bind(
                         expr,
