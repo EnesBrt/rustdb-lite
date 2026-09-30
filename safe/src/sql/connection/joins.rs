@@ -3,13 +3,138 @@
 use super::*;
 use alloc::boxed::Box;
 
-pub(super) fn using(
-    fields: &mut [Field],
+pub(super) struct NestedProjection {
+    pub columns: Vec<String>,
+    pub expressions: Vec<Expr>,
+    pub origins: Vec<eval::NestedField>,
+}
+pub(super) fn nested_projection(
+    fields: &[Field],
+    sources: &[(&parser::Source, usize, usize)],
+    context: &mut Eval<'_>,
+) -> Result<NestedProjection> {
+    let mut result = NestedProjection {
+        columns: Vec::new(),
+        expressions: Vec::new(),
+        origins: Vec::new(),
+    };
+    let mut bytes = 0usize;
+    let mut constraints = Vec::new();
+    for (source, start, width) in sources {
+        constraints.push(names(
+            &fields[..start + width],
+            *start,
+            source,
+            context.fuel,
+        )?);
+    }
+    let mut push = |name: String, expr: Expr, mut origin: eval::NestedField| -> Result<()> {
+        context.fuel.spend()?;
+        if origin.using
+            && result
+                .origins
+                .iter()
+                .any(|n| n.using && n.column.eq_ignore_ascii_case(&origin.column))
+        {
+            origin.no_expand = true;
+        }
+        bytes = bytes
+            .checked_add(
+                name.len()
+                    + origin.table.len()
+                    + origin.column.len()
+                    + core::mem::size_of::<Expr>()
+                    + core::mem::size_of::<eval::NestedField>(),
+            )
+            .ok_or(Error::Limit("nested join columns"))?;
+        if bytes > context.limits.max_database_bytes || result.columns.len() >= 2000 {
+            return Err(Error::Limit("nested join columns"));
+        }
+        result.columns.push(name);
+        result.expressions.push(expr);
+        result.origins.push(origin);
+        Ok(())
+    };
+    for (i, (_, start, width)) in sources.iter().enumerate() {
+        let next = constraints.get(i + 1).map_or(&[][..], Vec::as_slice);
+        for name in next {
+            let expression = eval::bind(
+                &Expr {
+                    depth: 1,
+                    token: None,
+                    kind: ExprKind::Column {
+                        qualifier: None,
+                        name: name.clone(),
+                        quoted: false,
+                    },
+                },
+                fields,
+                &[],
+                false,
+            )?;
+            push(
+                name.clone(),
+                expression,
+                eval::NestedField {
+                    table: String::new(),
+                    column: name.clone(),
+                    rowid: false,
+                    no_expand: false,
+                    using: true,
+                    group: 0,
+                },
+            )?;
+        }
+        for (slot, field) in fields.iter().enumerate().take(start + width).skip(*start) {
+            if field.nested.as_ref().is_some_and(|n| n.rowid) {
+                continue;
+            }
+            let name = if field.hidden {
+                let Some(alias) = ["_ROWID_", "ROWID", "OID"].into_iter().find(|name| {
+                    !fields[*start..start + width]
+                        .iter()
+                        .any(|f| !f.hidden && f.name.eq_ignore_ascii_case(name))
+                }) else {
+                    continue;
+                };
+                String::from(alias)
+            } else {
+                field.name.clone()
+            };
+            let mut origin = field.nested.clone().unwrap_or_else(|| eval::NestedField {
+                table: field.table.clone(),
+                column: field.name.clone(),
+                rowid: field.hidden,
+                no_expand: false,
+                using: false,
+                group: 0,
+            });
+            origin.using = false;
+            origin.no_expand |= constraints[i]
+                .iter()
+                .chain(next)
+                .any(|n| n.eq_ignore_ascii_case(&name));
+            push(name, eval::generated::field(field, slot, None)?, origin)?;
+        }
+    }
+    Ok(result)
+}
+
+pub(super) fn references_after(expr: &Expr, width: usize) -> bool {
+    match &expr.kind {
+        ExprKind::Slot(i, ..) => *i >= width,
+        ExprKind::Generated(r) => r.outer.is_none() && r.offset + r.column >= width,
+        ExprKind::BoundSubquery(q) => q.dependencies.iter().any(|i| *i >= width),
+        _ => expr.children().iter().any(|e| references_after(e, width)),
+    }
+}
+
+fn names(
+    fields: &[Field],
     start: usize,
     source: &parser::Source,
-    has_right: bool,
     fuel: &mut Fuel,
-) -> Result<Vec<Expr>> {
+) -> Result<Vec<String>> {
     let names = if source.natural {
         let mut names = Vec::new();
         for right in &fields[start..] {
@@ -28,6 +153,16 @@ pub(super) fn using(
     } else {
         source.using.clone().unwrap_or_default()
     };
+    Ok(names)
+}
+pub(super) fn using(
+    fields: &mut [Field],
+    start: usize,
+    source: &parser::Source,
+    has_right: bool,
+    fuel: &mut Fuel,
+) -> Result<Vec<Expr>> {
+    let names = names(fields, start, source, fuel)?;
     let mut constraints = Vec::new();
     for name in names {
         fuel.spend()?;
@@ -70,6 +205,21 @@ pub(super) fn using(
             kind: ExprKind::Binary(parser::Binary::Equal, Box::new(lhs), Box::new(rhs)),
         });
         fields[right].qualified_only = true;
+        if fields[right]
+            .nested
+            .as_ref()
+            .is_some_and(|n| n.using || !source.right)
+        {
+            for field in &mut fields[start..] {
+                if field
+                    .nested
+                    .as_ref()
+                    .is_some_and(|n| n.column.eq_ignore_ascii_case(&name))
+                {
+                    field.unqualified_hidden = true;
+                }
+            }
+        }
         if source.right {
             if source.left {
                 if fields[first].merged.is_empty() {

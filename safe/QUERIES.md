@@ -3,7 +3,8 @@
 The safe engine implements derived FROM tables, ordinary and recursive common
 table expressions (CTEs), VALUES queries, UNION/UNION ALL/INTERSECT/EXCEPT, and
 scalar/EXISTS/IN subqueries with correlated columns. INNER/CROSS/LEFT/RIGHT/FULL
-joins support ON, USING and NATURAL, including merged-column values and types;
+joins support ON, USING and NATURAL, including parenthesized groups, merged-column
+values and types, result aliases in ON and permitted forward ON references;
 see [JOINS.md](JOINS.md). Stored views use the same
 query machinery; [VIEWS.md](VIEWS.md) describes their schema and scope rules.
 This expands the [experimental SQL subset](SQL.md); it does not complete SQLite's
@@ -73,10 +74,10 @@ Row-value subqueries, `value IN table_name` shorthand, windows, the
 optimizing planner and index access paths remain unimplemented. Aggregates owned
 by an outer query, such as `SELECT (SELECT sum(t.x)) FROM t`, are rejected with an
 unsupported error; relocating these aggregates into the owning query is pending.
-ON clauses currently resolve against preceding/current sources; native inner-join
-references to sources appearing later in FROM remain unsupported.
-Parenthesized join groups are unsupported; a parenthesized FROM source must be a
-query. FROM sources cannot reference siblings as if they were lateral subqueries.
+FROM sources cannot reference siblings as if they were lateral subqueries.
+Parenthesized join groups preserve the tested native alias, wildcard and rowid
+namespaces; [JOINS.md](JOINS.md) describes their materialization limits and ON
+dependency rules.
 
 Derived tables, views and CTEs are materialized. AS MATERIALIZED and AS NOT MATERIALIZED
 both currently use materialization. Their distinct cache-sharing behavior across

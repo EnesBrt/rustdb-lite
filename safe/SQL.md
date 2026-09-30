@@ -54,7 +54,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | STRICT tables | Six declared types, ANY preservation, primary-key nullability, type errors and transaction behavior; see [STRICT.md](STRICT.md) |
 | UPSERT | ON CONFLICT targets, multiple clauses, DO NOTHING/DO UPDATE, excluded values and conditional updates; see [UPSERT.md](UPSERT.md) |
 | RETURNING | Buffered row projections on INSERT/UPSERT, UPDATE and DELETE, expression subqueries, aliases and counters; see [RETURNING.md](RETURNING.md) |
-| Queries | Projection, stars, aliases, filtering, comma/inner/cross/left/right/full joins with ON, USING and NATURAL ([scope](JOINS.md)), DISTINCT, GROUP BY, HAVING, ORDER BY, NULLS FIRST/LAST, LIMIT/OFFSET |
+| Queries | Projection, stars, aliases, filtering, comma/inner/cross/left/right/full joins with ON, USING, NATURAL and parenthesized groups ([scope](JOINS.md)), DISTINCT, GROUP BY, HAVING, ORDER BY, NULLS FIRST/LAST, LIMIT/OFFSET |
 | Query composition | Derived FROM tables, ordinary/recursive WITH, VALUES queries, UNION [ALL]/INTERSECT/EXCEPT; see [QUERIES.md](QUERIES.md) |
 | Expression subqueries | Scalar, EXISTS, single-column IN/NOT IN, correlated columns in queries and data changes; statement-local caching for uncorrelated results |
 | Aggregates | count, sum, total, avg, min, max, group_concat, string_agg; single-argument DISTINCT |

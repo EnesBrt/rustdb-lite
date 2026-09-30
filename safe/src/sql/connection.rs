@@ -96,6 +96,7 @@ impl StoredTable {
                 .iter()
                 .enumerate()
                 .map(|(i, c)| Field {
+                    nested: None,
                     merged: Vec::new(),
                     generated: self.generated.as_ref().filter(|_| c.virtual_column()).map(
                         |schema| eval::generated::Reference {
@@ -111,11 +112,13 @@ impl StoredTable {
                     collation: c.collation,
                     hidden: false,
                     qualified_only: false,
+                    unqualified_hidden: false,
                     declared_type: c.declared_type.clone(),
                 })
                 .collect();
         if !self.without_rowid {
             fields.push(Field {
+                nested: None,
                 merged: Vec::new(),
                 generated: None,
                 table: alias.into(),
@@ -124,6 +127,7 @@ impl StoredTable {
                 collation: Collation::Binary,
                 hidden: true,
                 qualified_only: false,
+                unqualified_hidden: false,
                 declared_type: "INTEGER".into(),
             });
         }
@@ -1659,14 +1663,20 @@ impl Connection {
                 schema_only,
                 source_cap,
             )?;
-            let source_fields = data.fields(&source.alias);
+            let mut source_fields = data.fields(&source.alias);
+            for field in &mut source_fields {
+                if let Some(nested) = &mut field.nested {
+                    nested.group = fields.len();
+                }
+            }
             for column in &source_fields {
                 field_bytes = field_bytes
                     .checked_add(
                         source.alias.len()
                             + column.name.len()
                             + column.declared_type.len()
-                            + core::mem::size_of::<Field>(),
+                            + core::mem::size_of::<Field>()
+                            + column.extra_bytes(),
                     )
                     .ok_or(Error::Limit("query field bytes"))?;
             }
@@ -1676,7 +1686,7 @@ impl Connection {
             let start = fields.len();
             let width = source_fields.len();
             fields.extend(source_fields);
-            let mut constraints = joins::using(
+            let constraints = joins::using(
                 &mut fields,
                 start,
                 source,
@@ -1694,20 +1704,23 @@ impl Connection {
             if field_bytes > context.limits.max_database_bytes {
                 return Err(Error::Limit("query field bytes"));
             }
-            let on = source
-                .on
-                .as_ref()
-                .map(|x| {
-                    self.expressions(scope.clone(), runtime)
-                        .bind(x, &fields, &[], false, context)
-                })
-                .transpose()?;
-            constraints.extend(on);
             sources.push((source, data, constraints, start, width));
         }
         let mut projection = Vec::new();
         let mut columns = Vec::new();
         let mut aliases = Vec::new();
+        let nested = if query.nested_from {
+            let parts = sources
+                .iter()
+                .map(|(source, _, _, start, width)| (*source, *start, *width))
+                .collect::<Vec<_>>();
+            let output = joins::nested_projection(&fields, &parts, context)?;
+            columns = output.columns;
+            projection = output.expressions;
+            Some(output.origins)
+        } else {
+            None
+        };
         for item in &query.items {
             if projection.len() >= 2000 {
                 return Err(Error::Limit("result columns"));
@@ -1722,6 +1735,11 @@ impl Connection {
                 )?;
                 let label = item.alias.clone().unwrap_or_else(|| {
                     if let ExprKind::Column { name, .. } = &expr.kind {
+                        if let ExprKind::Slot(slot, ..) = &bound.kind {
+                            if let Some(f) = fields.get(*slot).filter(|f| f.nested.is_some()) {
+                                return f.name.clone();
+                            }
+                        }
                         name.clone()
                     } else {
                         item.label.clone()
@@ -1735,54 +1753,71 @@ impl Connection {
             } else {
                 let mut count = 0;
                 for (i, f) in fields.iter().enumerate() {
-                    if !f.hidden
-                        && (!f.qualified_only || item.star.is_some())
-                        && item
-                            .star
-                            .as_ref()
-                            .is_none_or(|s| s.eq_ignore_ascii_case(&f.table))
-                    {
+                    if f.wildcard(item.star.as_deref()) {
                         if projection.len() >= 2000 {
                             return Err(Error::Limit("result columns"));
                         }
                         columns.push(f.name.clone());
-                        let merge_star = sources
-                            .iter()
-                            .enumerate()
-                            .find(|(_, (_, _, _, start, width))| i >= *start && i < start + width)
-                            .is_some_and(|(source_index, (_, _, _, start, width))| {
-                                query.sources[source_index + 1..].iter().any(|s| s.right)
-                                    && fields[start + width..].iter().any(|right| {
-                                        right.qualified_only
-                                            && right.name.eq_ignore_ascii_case(&f.name)
-                                    })
-                            });
+                        let merge_star = f.nested.is_none()
+                            && sources
+                                .iter()
+                                .enumerate()
+                                .find(|(_, (_, _, _, start, width))| {
+                                    i >= *start && i < start + width
+                                })
+                                .is_some_and(|(source_index, (_, _, _, start, width))| {
+                                    query.sources[source_index + 1..].iter().any(|s| s.right)
+                                        && fields[start + width..].iter().any(|right| {
+                                            right.qualified_only
+                                                && right.name.eq_ignore_ascii_case(&f.name)
+                                        })
+                                });
                         // SQLite also expands a qualified wildcard through the
                         // merged name when that source precedes a RIGHT/FULL join
                         // and a later USING clause includes the column.
-                        projection.push(if merge_star {
-                            eval::bind(
-                                &Expr {
-                                    depth: 1,
-                                    token: None,
-                                    kind: ExprKind::Column {
-                                        qualifier: None,
-                                        name: f.name.clone(),
-                                        quoted: false,
+                        projection.push(
+                            if merge_star || (query.sources.len() == 1 && f.nested.is_some()) {
+                                eval::bind(
+                                    &Expr {
+                                        depth: 1,
+                                        token: None,
+                                        kind: ExprKind::Column {
+                                            qualifier: None,
+                                            name: f.name.clone(),
+                                            quoted: false,
+                                        },
                                     },
-                                },
-                                &fields,
-                                &[],
-                                true,
-                            )?
-                        } else {
-                            eval::field(&fields, i, None, item.star.is_some())?
-                        });
+                                    &fields,
+                                    &[],
+                                    true,
+                                )?
+                            } else {
+                                eval::field(&fields, i, None, item.star.is_some())?
+                            },
+                        );
                         count += 1;
                     }
                 }
                 if count == 0 {
                     return Err(error("wildcard has no matching table"));
+                }
+            }
+        }
+        let mut deferred_on = Vec::new();
+        for (source, _, constraints, start, width) in &mut sources {
+            if let Some(on) = &source.on {
+                let on = self
+                    .expressions(scope.clone(), runtime)
+                    .bind(on, &fields, &aliases, false, context)?;
+                let forward = joins::references_after(&on, *start + *width);
+                if forward && (source.left || source.right || query.sources.iter().any(|s| s.right))
+                {
+                    return Err(error("ON clause references tables to its right"));
+                }
+                if forward {
+                    deferred_on.push(on);
+                } else {
+                    constraints.push(on);
                 }
             }
         }
@@ -1854,6 +1889,7 @@ impl Connection {
         }
         if schema_only {
             return Ok(query::Data {
+                nested,
                 fields,
                 projection,
                 column_types: None,
@@ -1924,6 +1960,19 @@ impl Connection {
         let mut bytes = 0;
         for row in rows {
             context.fuel.spend()?;
+            let mut included = true;
+            for on in &deferred_on {
+                if !self
+                    .expressions(scope.clone(), runtime)
+                    .filter(Some(on), &row, context)?
+                {
+                    included = false;
+                    break;
+                }
+            }
+            if !included {
+                continue;
+            }
             if self
                 .expressions(scope.clone(), runtime)
                 .filter(filter.as_ref(), &row, context)?
@@ -2075,6 +2124,7 @@ impl Connection {
             output = sort(output, &order, context.fuel, context.encoding)?;
         }
         Ok(query::Data {
+            nested,
             fields,
             projection,
             column_types: None,

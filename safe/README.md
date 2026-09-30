@@ -123,6 +123,7 @@ python3 safe/scripts/without_rowid_differential.py
 python3 safe/scripts/generated_differential.py
 python3 safe/scripts/expression_index_differential.py
 python3 safe/scripts/join_differential.py
+python3 safe/scripts/join_scope_differential.py
 python3 safe/scripts/check_targets.py
 ```
 

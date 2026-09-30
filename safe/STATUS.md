@@ -24,7 +24,7 @@ is a separate `legacy/` project.
 | Query optimizer, complete schema/SQL semantics | Not implemented |
 | Explicit/automatic index schemas and uniqueness | Column/expression keys and partial predicates; fresh-image rebuilds; [scope](EXPRESSION_INDEXES.md) |
 | Table constraints and schema inspection | Composite PRIMARY KEY/UNIQUE, table CHECK, named-constraint syntax, six inspection pragmas |
-| Joins | INNER/CROSS/LEFT/RIGHT/FULL, ON/USING/NATURAL, merged values and correlated scopes; [scope](JOINS.md) |
+| Joins | INNER/CROSS/LEFT/RIGHT/FULL, ON/USING/NATURAL, parenthesized namespaces, merged values and correlated/forward ON scopes; [scope](JOINS.md) |
 | Derived tables, CTEs and compound queries | Implemented with bounded materialization and recursive work queues; [limits and differences](QUERIES.md) |
 | Expression subqueries | Scalar, EXISTS, single-column IN, correlated reads and DML; outer-owned aggregates/row-value subqueries pending |
 | Views and CREATE TABLE AS SELECT | Main-schema views, lazy dependency resolution, metadata and native image interchange; [scope and limits](VIEWS.md) |
@@ -41,7 +41,7 @@ is a separate `legacy/` project.
 
 ## Verified locally, 2026-09-30
 
-- 124 core Rust integration tests pass in debug and release builds, including
+- 130 core Rust integration tests pass in debug and release builds, including
   3,000 deterministic database mutations, 3,000 mutations of valid native WAL
   seeds, 5,000 malformed-SQL mutations, and 3,000 journal mutations, with bounded
   budgets and panic detection.
@@ -74,10 +74,10 @@ is a separate `legacy/` project.
   Interrupted recovery, exclusive-lock lifetime, and journaled SQL transaction
   reopen tests also pass. These are adapter-contract simulations, not
   OS/power-loss tests.
-- Eighteen platform Rust tests pass in debug/release, covering real files, recovery,
+- Nineteen platform Rust tests pass in debug/release, covering real files, recovery,
   path/sidecar guards, lock lifetime, CTE/subquery data changes, views, CREATE TABLE
   AS SELECT and an eight-thread contention race.
-- Ninety-five native file interchange/lock/SQL scenarios pass on macOS ARM64. They include
+- 104 native file interchange/lock/SQL scenarios pass on macOS ARM64. They include
   persistent native connections across updates of all three text encodings and
   updates of both auto-vacuum modes. 210 real process-interruption/partial-write
   recovery points cover ordinary and pointer-map files and match native SQLite.
@@ -164,6 +164,14 @@ is a separate `legacy/` project.
   malformed prefixes, row limits and 72 image combinations. A Unix test and nine
   native file cases verify persisted views and INSERT SELECT, failed writes and
   rollback; see [JOINS.md](JOINS.md).
+- 754 join-scope/name/rowid/ON-dependency/image scenarios pass against SQLite
+  3.53.4. Six additional Rust tests cover parenthesized association, group and
+  original aliases, merged/physical columns, result metadata, bindings, recursive
+  singleton groups, correlated forward references, malformed prefixes, resource
+  limits and 72 image combinations. A Unix test and nine native file cases verify
+  grouped-view persistence, INSERT SELECT, rollback and failed writes. Group
+  materialization and planner-dependent evaluation remain bounded differences;
+  see [JOINS.md](JOINS.md).
 - The separate Unix adapter compiles for macOS ARM64, Linux x86-64/i686/s390x,
   Android ARM64 and iOS ARM64. Only the macOS adapter has runtime evidence here.
 - Floating-point comparisons use exact IEEE-754 bit patterns. Text comparisons
@@ -224,6 +232,7 @@ python3 safe/scripts/without_rowid_differential.py
 python3 safe/scripts/generated_differential.py
 python3 safe/scripts/expression_index_differential.py
 python3 safe/scripts/join_differential.py
+python3 safe/scripts/join_scope_differential.py
 python3 safe/scripts/check_targets.py
 python3 platform/scripts/file_differential.py
 python3 platform/scripts/check_targets.py
@@ -237,10 +246,10 @@ ignored `build/safe-*.log`. The source inventory can be regenerated with
 
 ## Published CI evidence
 
-[GitHub Actions run 36685922829](https://github.com/EnesBrt/rustdb-lite/actions/runs/36685922829)
-passed all 17 jobs for commit `5c4cc91` on 2026-09-30. That baseline includes
-118 core and 17 Unix adapter Rust integration tests, including expression and
-partial indexes.
+[GitHub Actions run 36687653682](https://github.com/EnesBrt/rustdb-lite/actions/runs/36687653682)
+passed all 17 jobs for commit `c91b6f7` on 2026-09-30. That baseline includes
+124 core and 18 Unix adapter Rust integration tests, including outer joins and
+USING/NATURAL column merging.
 Core debug/release/doc tests passed on Ubuntu 24.04, macOS 14 ARM64 and Windows
 2022; Unix adapter debug/release/doc and native file comparisons passed on Ubuntu
 and macOS. The native differential, minimum-Rust and cross-compilation jobs also
@@ -248,5 +257,5 @@ passed.
 
 These results establish execution of the tested subset on those runners, not
 complete platform or durability support. Other target runtime tests remain
-pending. New join coverage is recorded above and is included in subsequent CI
+pending. New join-scope coverage is recorded above and is included in subsequent CI
 runs; the linked baseline does not establish its cross-platform behavior.

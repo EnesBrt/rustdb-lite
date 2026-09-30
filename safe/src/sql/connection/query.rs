@@ -58,7 +58,7 @@ pub(super) struct Runtime {
     materialized_bytes: usize,
     recursive: Vec<(usize, usize)>,
     outer: Vec<expressions::Frame>,
-    outer_reads: BTreeSet<usize>,
+    outer_reads: BTreeSet<(usize, usize)>,
     tables_read: BTreeSet<String>,
     scalar_cache: BTreeMap<(usize, usize), Rc<Vec<Vec<Value>>>>,
     field_scopes: Vec<Rc<[Field]>>,
@@ -115,6 +115,7 @@ pub(super) struct Data {
     pub(super) fields: Vec<Field>,
     pub(super) projection: Vec<Expr>,
     pub(super) column_types: Option<CompoundTypes>,
+    pub(super) nested: Option<Vec<eval::NestedField>>,
 }
 impl Data {
     fn comparison_collations(&self) -> Vec<Option<Collation>> {
@@ -161,6 +162,7 @@ impl Data {
                     .map(|t| t[i].clone())
                     .unwrap_or_else(|| ColumnType::expression(e, &self.fields));
                 Field {
+                    nested: self.nested.as_ref().map(|fields| fields[i].clone()),
                     merged: Vec::new(),
                     generated: None,
                     table: alias.into(),
@@ -169,6 +171,7 @@ impl Data {
                     collation: typ.collation,
                     hidden: false,
                     qualified_only: false,
+                    unqualified_hidden: false,
                     declared_type: typ.declared_type,
                 }
             })
@@ -526,6 +529,7 @@ impl Connection {
                 .collect();
         }
         Ok(Data {
+            nested: None,
             fields: last.fields,
             projection: last.projection,
             column_types: Some(types),
@@ -597,6 +601,7 @@ impl Connection {
             projection = bound;
         }
         Ok(Data {
+            nested: None,
             fields: Vec::new(),
             result: QueryResult {
                 columns: (1..=projection.len())

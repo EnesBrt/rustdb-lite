@@ -187,6 +187,7 @@ pub struct Ordering {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct Select {
+    pub nested_from: bool,
     pub items: Vec<SelectItem>,
     pub sources: Vec<Source>,
     pub filter: Option<Expr>,
@@ -1509,106 +1510,164 @@ impl Parser<'_> {
         }
         Ok(items)
     }
+    fn parse_sources(&mut self) -> Result<Vec<Source>> {
+        let mut sources = Vec::new();
+        let mut left = false;
+        let mut right = false;
+        let mut natural = false;
+        loop {
+            let start = self.at;
+            let mut nested = None;
+            let query = if self.eat("(") {
+                let query = if self.is("SELECT") || self.is("WITH") || self.is("VALUES") {
+                    Some(Box::new(self.query()?))
+                } else {
+                    if self.recursion >= self.limits.max_expr_depth.min(32) {
+                        return Err(Error::Limit("join nesting"));
+                    }
+                    self.recursion += 1;
+                    let result = self.parse_sources();
+                    self.recursion -= 1;
+                    nested = Some(result?);
+                    None
+                };
+                self.expect(")")?;
+                query
+            } else {
+                None
+            };
+            let name = if query.is_some() || nested.is_some() {
+                String::new()
+            } else {
+                self.table_name()?
+            };
+            let qualified = query.is_none() && self.at == start + 3;
+            let explicit_alias = self.alias()?;
+            let alias = explicit_alias.clone().unwrap_or_else(|| name.clone());
+            let on = if self.eat("ON") {
+                Some(self.expr(0)?)
+            } else {
+                None
+            };
+            let using = if self.eat("USING") {
+                Some(self.names()?)
+            } else {
+                None
+            };
+            if (natural && (on.is_some() || using.is_some()))
+                || (on.is_some() && using.is_some())
+                || (sources.is_empty() && (on.is_some() || using.is_some()))
+            {
+                return Err(error("invalid join constraint"));
+            }
+            let mut source = Source {
+                name,
+                qualified,
+                query,
+                alias,
+                left,
+                right,
+                natural,
+                using,
+                on,
+            };
+            if let Some(mut inside) = nested {
+                if sources.is_empty()
+                    && explicit_alias.is_none()
+                    && source.on.is_none()
+                    && source.using.is_none()
+                {
+                    sources.append(&mut inside);
+                } else if inside.len() == 1 {
+                    let inner = inside.remove(0);
+                    source.alias = explicit_alias.unwrap_or_else(|| inner.name.clone());
+                    source.name = inner.name;
+                    source.qualified = inner.qualified;
+                    source.query = inner.query;
+                    sources.push(source);
+                } else {
+                    source.query = Some(Box::new(Query {
+                        with: Vec::new(),
+                        operators: Vec::new(),
+                        order: Vec::new(),
+                        limit: None,
+                        offset: None,
+                        cores: vec![QueryCore::Select(Box::new(Select {
+                            nested_from: true,
+                            items: Vec::new(),
+                            sources: inside,
+                            filter: None,
+                            group: Vec::new(),
+                            having: None,
+                            order: Vec::new(),
+                            limit: None,
+                            offset: None,
+                            distinct: false,
+                        }))],
+                    }));
+                    sources.push(source);
+                }
+            } else {
+                sources.push(source);
+            }
+            left = false;
+            right = false;
+            natural = false;
+            if self.eat(",") {
+                continue;
+            }
+            let mut outer = false;
+            let mut inner = false;
+            let mut count = 0;
+            loop {
+                if self.eat("NATURAL") {
+                    natural = true;
+                } else if self.eat("LEFT") {
+                    left = true;
+                    outer = true;
+                } else if self.eat("RIGHT") {
+                    right = true;
+                    outer = true;
+                } else if self.eat("FULL") {
+                    left = true;
+                    right = true;
+                    outer = true;
+                } else if self.eat("OUTER") {
+                    outer = true;
+                } else if self.eat("INNER") || self.eat("CROSS") {
+                    inner = true;
+                } else {
+                    break;
+                }
+                count += 1;
+                if count > 3 {
+                    return Err(error("invalid join type"));
+                }
+            }
+            if (inner && outer) || (outer && !left && !right) {
+                return Err(error("invalid join type"));
+            }
+            if self.eat("JOIN") {
+                continue;
+            }
+            if count != 0 {
+                return Err(self.expected("JOIN"));
+            }
+            break;
+        }
+        Ok(sources)
+    }
     fn select_core(&mut self) -> Result<Select> {
         let distinct = self.eat("DISTINCT");
         if !distinct {
             self.eat("ALL");
         }
         let items = self.select_items()?;
-        let mut sources = Vec::new();
-        if self.eat("FROM") {
-            let mut left = false;
-            let mut right = false;
-            let mut natural = false;
-            loop {
-                let start = self.at;
-                let query = if self.eat("(") {
-                    let query = self.query()?;
-                    self.expect(")")?;
-                    Some(Box::new(query))
-                } else {
-                    None
-                };
-                let name = if query.is_some() {
-                    String::new()
-                } else {
-                    self.table_name()?
-                };
-                let qualified = query.is_none() && self.at == start + 3;
-                let alias = self.alias()?.unwrap_or_else(|| name.clone());
-                let on = if self.eat("ON") {
-                    Some(self.expr(0)?)
-                } else {
-                    None
-                };
-                let using = if self.eat("USING") {
-                    Some(self.names()?)
-                } else {
-                    None
-                };
-                if (natural && (on.is_some() || using.is_some()))
-                    || (on.is_some() && using.is_some())
-                    || (sources.is_empty() && (on.is_some() || using.is_some()))
-                {
-                    return Err(error("invalid join constraint"));
-                }
-                sources.push(Source {
-                    name,
-                    qualified,
-                    query,
-                    alias,
-                    left,
-                    right,
-                    natural,
-                    using,
-                    on,
-                });
-                left = false;
-                right = false;
-                natural = false;
-                if self.eat(",") {
-                    continue;
-                }
-                let mut outer = false;
-                let mut inner = false;
-                let mut count = 0;
-                loop {
-                    if self.eat("NATURAL") {
-                        natural = true;
-                    } else if self.eat("LEFT") {
-                        left = true;
-                        outer = true;
-                    } else if self.eat("RIGHT") {
-                        right = true;
-                        outer = true;
-                    } else if self.eat("FULL") {
-                        left = true;
-                        right = true;
-                        outer = true;
-                    } else if self.eat("OUTER") {
-                        outer = true;
-                    } else if self.eat("INNER") || self.eat("CROSS") {
-                        inner = true;
-                    } else {
-                        break;
-                    }
-                    count += 1;
-                    if count > 3 {
-                        return Err(error("invalid join type"));
-                    }
-                }
-                if (inner && outer) || (outer && !left && !right) {
-                    return Err(error("invalid join type"));
-                }
-                if self.eat("JOIN") {
-                    continue;
-                }
-                if count != 0 {
-                    return Err(self.expected("JOIN"));
-                }
-                break;
-            }
-        }
+        let sources = if self.eat("FROM") {
+            self.parse_sources()?
+        } else {
+            Vec::new()
+        };
         let filter = self.optional_where()?;
         let group = if self.eat("GROUP") {
             self.expect("BY")?;
@@ -1622,6 +1681,7 @@ impl Parser<'_> {
             None
         };
         Ok(Select {
+            nested_from: false,
             items,
             sources,
             filter,

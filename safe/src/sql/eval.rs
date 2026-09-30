@@ -16,6 +16,7 @@ use core::cmp::Ordering;
 pub mod generated;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Field {
+    pub nested: Option<NestedField>,
     pub generated: Option<generated::Reference>,
     /// Physical columns supplying an unqualified USING/NATURAL value.
     /// One slot selects a RIGHT value; multiple slots form a FULL coalesce.
@@ -27,7 +28,114 @@ pub struct Field {
     pub hidden: bool,
     /// Pseudo-table fields such as UPSERT's excluded require a qualifier.
     pub qualified_only: bool,
+    pub unqualified_hidden: bool,
     pub declared_type: String,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub struct NestedField {
+    pub table: String,
+    pub column: String,
+    pub rowid: bool,
+    pub no_expand: bool,
+    pub using: bool,
+    pub group: usize,
+}
+impl Field {
+    pub fn extra_bytes(&self) -> usize {
+        self.merged.len() * core::mem::size_of::<usize>()
+            + self
+                .nested
+                .as_ref()
+                .map_or(0, |n| n.table.len() + n.column.len())
+    }
+    pub fn wildcard(&self, qualifier: Option<&str>) -> bool {
+        if self.hidden {
+            return false;
+        }
+        if let Some(n) = &self.nested {
+            !n.rowid
+                && qualifier.map_or(!n.no_expand && !self.qualified_only, |q| {
+                    q.eq_ignore_ascii_case(&n.table)
+                })
+        } else {
+            (!self.qualified_only || qualifier.is_some())
+                && qualifier.is_none_or(|q| q.eq_ignore_ascii_case(&self.table))
+        }
+    }
+}
+/// Parenthesized FROM sources retain original names and expose their generated
+/// column names through a group alias. An explicit USING output ends the name
+/// search within that group, as in the native nested-FROM resolver.
+pub fn resolve_field(
+    fields: &[Field],
+    qualifier: Option<&str>,
+    name: &str,
+) -> Result<Option<usize>> {
+    let rowid = ["rowid", "_rowid_", "oid"]
+        .iter()
+        .any(|n| n.eq_ignore_ascii_case(name));
+    let mut real = Vec::new();
+    let mut hidden = Vec::new();
+    let mut at = 0;
+    while at < fields.len() {
+        let f = &fields[at];
+        if let Some(origin) = &f.nested {
+            let end = at
+                + fields[at..]
+                    .iter()
+                    .take_while(|f| f.nested.as_ref().is_some_and(|n| n.group == origin.group))
+                    .count();
+            let mut found = Vec::new();
+            for (i, f) in fields.iter().enumerate().take(end).skip(at) {
+                let n = f
+                    .nested
+                    .as_ref()
+                    .ok_or(Error::Corrupt("nested field group"))?;
+                if (f.qualified_only || f.unqualified_hidden) && qualifier.is_none() {
+                    continue;
+                }
+                if qualifier.is_some_and(|q| !q.eq_ignore_ascii_case(&n.table)) {
+                    continue;
+                }
+                if n.rowid {
+                    if rowid {
+                        hidden.push(i);
+                    }
+                } else if n.column.eq_ignore_ascii_case(name) {
+                    found.push(i);
+                    if n.using {
+                        break;
+                    }
+                }
+            }
+            if found.is_empty()
+                && qualifier
+                    .is_some_and(|q| !f.table.is_empty() && q.eq_ignore_ascii_case(&f.table))
+            {
+                found.extend((at..end).filter(|i| fields[*i].name.eq_ignore_ascii_case(name)));
+            }
+            real.extend(found);
+            at = end;
+        } else {
+            if (!(f.qualified_only || f.unqualified_hidden) || qualifier.is_some())
+                && qualifier.is_none_or(|q| q.eq_ignore_ascii_case(&f.table))
+            {
+                if f.hidden {
+                    if rowid {
+                        hidden.push(at);
+                    }
+                } else if f.name.eq_ignore_ascii_case(name) {
+                    real.push(at);
+                }
+            }
+            at += 1;
+        }
+    }
+    let found = if real.is_empty() { hidden } else { real };
+    if found.len() > 1 {
+        return Err(error(format!("ambiguous column: {name}")));
+    }
+    Ok(found.first().copied())
 }
 pub fn field(fields: &[Field], slot: usize, outer: Option<usize>, qualified: bool) -> Result<Expr> {
     let f = fields.get(slot).ok_or(Error::Corrupt("query field slot"))?;
@@ -71,6 +179,8 @@ pub struct BoundSubquery {
     pub affinity: Affinity,
     pub collation: Option<Collation>,
     pub correlated: bool,
+    /// Columns read from the immediate containing SELECT.
+    pub dependencies: Vec<usize>,
     pub tables: Vec<String>,
     pub declared_type: String,
 }
@@ -212,39 +322,7 @@ pub fn bind_with(
                 name,
                 quoted,
             } => {
-                let mut found = fields.iter().enumerate().filter(|(_, f)| {
-                    !f.hidden
-                        && (!f.qualified_only || qualifier.is_some())
-                        && f.name.eq_ignore_ascii_case(name)
-                        && qualifier
-                            .as_ref()
-                            .is_none_or(|q| q.eq_ignore_ascii_case(&f.table))
-                });
-                let first = found.next();
-                if found.next().is_some() {
-                    return Err(error(format!("ambiguous column: {name}")));
-                }
-                let first = if first.is_none()
-                    && ["rowid", "_rowid_", "oid"]
-                        .iter()
-                        .any(|n| name.eq_ignore_ascii_case(n))
-                {
-                    let mut hidden = fields.iter().enumerate().filter(|(_, f)| {
-                        f.hidden
-                            && (!f.qualified_only || qualifier.is_some())
-                            && qualifier
-                                .as_ref()
-                                .is_none_or(|q| q.eq_ignore_ascii_case(&f.table))
-                    });
-                    let item = hidden.next();
-                    if hidden.next().is_some() {
-                        return Err(error(format!("ambiguous column: {name}")));
-                    }
-                    item
-                } else {
-                    first
-                };
-                if let Some((i, _)) = first {
+                if let Some(i) = resolve_field(fields, qualifier.as_deref(), name)? {
                     return field(fields, i, None, qualifier.is_some());
                 } else if qualifier.is_none() {
                     if let Some((_, value)) =

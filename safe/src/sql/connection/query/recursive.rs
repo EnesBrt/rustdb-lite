@@ -198,6 +198,7 @@ impl Connection {
             return Err(error("common table column count does not match query"));
         }
         let mut shape = Data {
+            nested: None,
             fields: data.fields.clone(),
             projection: data.projection.clone(),
             column_types: data.column_types.clone(),

@@ -59,7 +59,7 @@ not a statement that these components have been implemented.
    execution, collations/functions, schema changes, constraints, triggers, views,
    transactions, pragmas, and public connection/statement APIs. An experimental
    scan-based in-memory subset now exists, including inner/outer joins with
-   ON/USING/NATURAL, aggregates, constraints,
+   ON/USING/NATURAL, parenthesized join namespaces, aggregates, constraints,
    derived tables, ordinary/recursive CTEs, compound queries, scalar/EXISTS/IN and
    correlated subqueries, stored views, CREATE TABLE AS SELECT, prepared parameters,
    statement rollback, and savepoints. The optimizer and

@@ -33,7 +33,7 @@ impl Runtime {
         for f in fields {
             bytes = bytes
                 .checked_add(core::mem::size_of::<Field>())
-                .and_then(|n| n.checked_add(f.merged.len() * core::mem::size_of::<usize>()))
+                .and_then(|n| n.checked_add(f.extra_bytes()))
                 .and_then(|n| n.checked_add(f.table.len()))
                 .and_then(|n| n.checked_add(f.name.len()))
                 .and_then(|n| n.checked_add(f.declared_type.len()))
@@ -164,39 +164,28 @@ struct Binding<'a, 'b, 'c, 'd> {
 impl Resolver for Binding<'_, '_, '_, '_> {
     fn column(&mut self, qualifier: Option<&str>, name: &str) -> Result<Option<Expr>> {
         for (frame_index, frame) in self.expressions.runtime.outer.iter().enumerate().rev() {
-            let matches = |f: &&Field| {
-                (!f.qualified_only || qualifier.is_some())
-                    && qualifier.is_none_or(|q| q.eq_ignore_ascii_case(&f.table))
-            };
-            let mut found: Vec<_> = frame
-                .fields
-                .iter()
-                .enumerate()
-                .filter(|(_, f)| matches(f) && !f.hidden && f.name.eq_ignore_ascii_case(name))
-                .collect();
-            if found.is_empty()
-                && ["rowid", "_rowid_", "oid"]
-                    .iter()
-                    .any(|n| n.eq_ignore_ascii_case(name))
-            {
-                found = frame
-                    .fields
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, f)| matches(f) && f.hidden)
-                    .collect();
-            }
-            if found.len() > 1 {
-                return Err(error(format!("ambiguous column: {name}")));
-            }
-            if let Some((slot, _)) = found.first() {
-                self.expressions.runtime.outer_reads.insert(frame_index);
-                return Ok(Some(eval::field(
-                    &frame.fields,
-                    *slot,
-                    Some(frame_index),
-                    qualifier.is_some(),
-                )?));
+            if let Some(slot) = eval::resolve_field(&frame.fields, qualifier, name)? {
+                let bound =
+                    eval::field(&frame.fields, slot, Some(frame_index), qualifier.is_some())?;
+                fn columns(expr: &Expr, reads: &mut BTreeSet<(usize, usize)>) {
+                    match &expr.kind {
+                        ExprKind::Outer(frame, slot, ..) => {
+                            reads.insert((*frame, *slot));
+                        }
+                        ExprKind::Generated(r) => {
+                            if let Some(frame) = r.outer {
+                                reads.insert((frame, r.offset + r.column));
+                            }
+                        }
+                        _ => {
+                            for child in expr.children() {
+                                columns(child, reads);
+                            }
+                        }
+                    }
+                }
+                columns(&bound, &mut self.expressions.runtime.outer_reads);
+                return Ok(Some(bound));
             }
         }
         Ok(None)
@@ -222,9 +211,14 @@ impl Resolver for Binding<'_, '_, '_, '_> {
         let tables = core::mem::replace(&mut runtime.tables_read, saved_tables);
         runtime.tables_read.extend(tables.iter().cloned());
         let correlated = !used.is_empty() || runtime.returning_reads(&source.query, &e.scope);
+        let dependencies = used
+            .iter()
+            .filter(|(frame, _)| *frame == outer_depth)
+            .map(|(_, slot)| *slot)
+            .collect();
         runtime
             .outer_reads
-            .extend(used.into_iter().filter(|i| *i < outer_depth));
+            .extend(used.into_iter().filter(|(frame, _)| *frame < outer_depth));
         runtime.cache = saved_cache;
         runtime.outer.pop();
         let data = result?;
@@ -235,6 +229,7 @@ impl Resolver for Binding<'_, '_, '_, '_> {
             source: source.clone(),
             fields,
             correlated,
+            dependencies,
             tables: tables.into_iter().collect(),
             affinity: data
                 .projection

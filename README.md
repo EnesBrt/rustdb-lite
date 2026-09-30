@@ -20,8 +20,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
 - Safe SQL parsing and execution: table operations, expressions, joins, aggregates,
   column/composite/table constraints, prepared parameters, schema-inspection
   pragmas, and in-memory transactions/savepoints.
-- INNER/CROSS/LEFT/RIGHT/FULL joins with ON, USING and NATURAL, merged columns
-  and correlated outer rows; see [join support](safe/JOINS.md).
+- INNER/CROSS/LEFT/RIGHT/FULL joins with ON, USING and NATURAL, merged columns,
+  parenthesized groups and correlated scopes; see [join support](safe/JOINS.md).
 - Derived tables, ordinary/recursive CTEs, VALUES queries, and UNION/INTERSECT/EXCEPT;
   see [query execution and remaining differences](safe/QUERIES.md).
 - Scalar, EXISTS and single-column IN subqueries, including correlated reads in
@@ -62,8 +62,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
 - An offline inspection utility with `info`, `schema`, and physical `rows` output.
 
 SQLite's own `integrity_check` accepts generated files at all eight page sizes.
-124 core Rust integration tests include 14,000 malformed-input mutations
-and 600 simulated commit failure/crash variants. Eighteen additional adapter tests
+130 core Rust integration tests include 14,000 malformed-input mutations
+and 600 simulated commit failure/crash variants. Nineteen additional adapter tests
 exercise real files and concurrent threads.
 The separate C oracle validates 956 SQL expression/query/error/snapshot cases and
 32 storage scenarios covering file construction, existing database reads, and WAL
@@ -78,9 +78,10 @@ Another 316 scenarios compare conflict policies, errors, counters, transaction s
 and encoded images, plus 592 UPSERT, 311 RETURNING, 268 AUTOINCREMENT and 2,608
 STRICT/type/catalog scenarios, plus 1,654 WITHOUT ROWID, 1,368 generated-column
 and 2,078 expression/partial-index scenarios. Another 579 scenarios compare joins,
-merged-column types, correlated outer rows and persisted views.
+merged-column types, correlated outer rows and persisted views, plus 754 scenarios
+for parenthesized namespaces, rowids, ON dependencies and encoded images.
 Incremental-vacuum scheduling and free-page retention remain pending.
-The Unix adapter passes 95 native file interchange/locking/SQL scenarios and 210 real interrupted
+The Unix adapter passes 104 native file interchange/locking/SQL scenarios and 210 real interrupted
 commit/partial-write recovery points. These are not hardware power-loss tests. The core
 compiles for nine targets, including 32-bit, big-endian,
 Windows, Linux, Android, iOS, WebAssembly, and embedded targets. **Only macOS ARM64
