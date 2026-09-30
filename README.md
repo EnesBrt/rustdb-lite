@@ -36,6 +36,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
   see [schema edits and remaining ALTER work](safe/ALTER_TABLE.md).
 - ALTER COLUMN SET/DROP NOT NULL and named CHECK edits, with validation of existing
   rows and preserved schema text; see [constraint edits](safe/ALTER_CONSTRAINTS.md).
+- Table RENAME with bound view references, index/sequence updates and atomic rollback;
+  see [rename behavior and limits](safe/RENAME.md).
 - Stored views and CREATE TABLE AS SELECT, with schema metadata, transactional
   creation/deletion and native database interchange; see [view support](safe/VIEWS.md).
 - All five constraint conflict policies, statement overrides, schema ON CONFLICT,
@@ -72,8 +74,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
 - An offline inspection utility with `info`, `schema`, and physical `rows` output.
 
 SQLite's own `integrity_check` accepts generated files at all eight page sizes.
-162 core Rust integration tests include 14,000 malformed-input mutations
-and 600 simulated commit failure/crash variants. Twenty-four additional adapter tests
+168 core Rust integration tests include 14,000 malformed-input mutations
+and 600 simulated commit failure/crash variants. Twenty-five additional adapter tests
 exercise real files and concurrent threads.
 The separate C oracle validates 956 SQL expression/query/error/snapshot cases and
 32 storage scenarios covering file construction, existing database reads, and WAL
@@ -99,8 +101,9 @@ sequences, schema expressions and database interchange.
 Another 2,943 scenarios compare ALTER column edits, record defaults, dependencies,
 rollback, schema text and encoded image interchange. Another 1,653 scenarios cover
 constraint edits, nullability, conflict policies, boolean branches and persistence.
+Another 514 scenarios compare table renames, scoped references, schema text and files.
 Incremental-vacuum scheduling and free-page retention remain pending.
-The Unix adapter passes 149 native file interchange/locking/SQL scenarios and
+The Unix adapter passes 158 native file interchange/locking/SQL scenarios and
 210 real interrupted commit/partial-write recovery points. These are not hardware
 power-loss tests. The core
 compiles for nine targets, including 32-bit, big-endian,

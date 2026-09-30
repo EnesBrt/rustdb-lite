@@ -16,11 +16,21 @@ use alloc::{
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Expr {
+    pub location: Location,
     pub kind: ExprKind,
     pub depth: usize,
     /// Spelling retained where SQLite compares schema expressions lexically
     /// (large/real numeric literals, blobs, and CAST type names).
     pub token: Option<String>,
+}
+/// Source coordinates used for schema rewrites, excluded from semantic AST
+/// equality (the same expression can occur at different SQL byte offsets).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Location(pub Option<(usize, usize)>);
+impl PartialEq for Location {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
 }
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
@@ -107,6 +117,7 @@ pub enum Binary {
 impl Expr {
     pub fn literal(value: Value) -> Self {
         Self {
+            location: Location::default(),
             kind: ExprKind::Literal(value),
             depth: 1,
             token: None,
@@ -178,6 +189,7 @@ impl Column {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct SelectItem {
+    pub location: Location,
     pub expr: Option<Expr>,
     pub star: Option<String>,
     pub alias: Option<String>,
@@ -185,6 +197,8 @@ pub struct SelectItem {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct Source {
+    pub location: Location,
+    pub explicit_alias: bool,
     pub name: String,
     pub qualified: bool,
     pub query: Option<Box<Query>>,
@@ -313,6 +327,7 @@ impl Conflict {
 }
 #[derive(Clone, Debug)]
 pub enum Alter {
+    Rename(String),
     Add {
         column: Box<Column>,
         sql: String,
@@ -500,6 +515,9 @@ pub fn parse(sql: &str, limits: SqlLimits) -> Result<Vec<PreparedStatement>> {
 impl Parser<'_> {
     fn peek(&self) -> &Kind {
         &self.tokens[self.at].kind
+    }
+    fn location(&self, at: usize) -> Location {
+        Location(Some((self.tokens[at].start, self.tokens[at].end)))
     }
     fn is(&self, s: &str) -> bool {
         match self.peek() {
@@ -950,6 +968,7 @@ impl Parser<'_> {
                                 || name.eq_ignore_ascii_case("false"))
                         {
                             Expr {
+                                location: Default::default(),
                                 kind: ExprKind::Boolean(name.eq_ignore_ascii_case("true")),
                                 depth: 1,
                                 token: None,
@@ -1198,7 +1217,10 @@ impl Parser<'_> {
         if self.eat("ALTER") {
             self.expect("TABLE")?;
             let name = self.table_name()?;
-            let action = if self.eat("ADD") {
+            let action = if self.eat("RENAME") {
+                self.expect("TO")?;
+                Alter::Rename(self.name()?)
+            } else if self.eat("ADD") {
                 if self.is("CONSTRAINT") || self.is("CHECK") {
                     let start = self.tokens[self.at].start;
                     let name = if self.eat("CONSTRAINT") {
@@ -1679,9 +1701,11 @@ impl Parser<'_> {
     fn select_items(&mut self) -> Result<Vec<SelectItem>> {
         let mut items = Vec::new();
         loop {
+            let location = self.location(self.at);
             let start = self.tokens[self.at].start;
             let item = if self.eat("*") {
                 SelectItem {
+                    location: Default::default(),
                     expr: None,
                     star: None,
                     alias: None,
@@ -1700,6 +1724,7 @@ impl Parser<'_> {
                 let name = self.name()?;
                 self.at += 2;
                 SelectItem {
+                    location: Default::default(),
                     expr: None,
                     star: Some(name),
                     alias: None,
@@ -1710,13 +1735,14 @@ impl Parser<'_> {
                 let end = self.tokens[self.at - 1].end;
                 let alias = self.alias()?;
                 SelectItem {
+                    location: Default::default(),
                     expr: Some(expr),
                     star: None,
                     label: self.sql[start..end].to_string(),
                     alias,
                 }
             };
-            items.push(item);
+            items.push(SelectItem { location, ..item });
             if !self.eat(",") {
                 break;
             }
@@ -1755,6 +1781,11 @@ impl Parser<'_> {
                 self.table_name()?
             };
             let qualified = query.is_none() && self.at == start + 3;
+            let location = if name.is_empty() {
+                Location::default()
+            } else {
+                self.location(self.at - 1)
+            };
             let explicit_alias = self.alias()?;
             let alias = explicit_alias.clone().unwrap_or_else(|| name.clone());
             let on = if self.eat("ON") {
@@ -1774,6 +1805,8 @@ impl Parser<'_> {
                 return Err(error("invalid join constraint"));
             }
             let mut source = Source {
+                location,
+                explicit_alias: explicit_alias.is_some(),
                 name,
                 qualified,
                 query,
@@ -1795,6 +1828,8 @@ impl Parser<'_> {
                     let inner = inside.remove(0);
                     source.alias = explicit_alias.unwrap_or_else(|| inner.name.clone());
                     source.name = inner.name;
+                    source.location = inner.location;
+                    source.explicit_alias |= inner.explicit_alias;
                     source.qualified = inner.qualified;
                     source.query = inner.query;
                     sources.push(source);
@@ -1958,6 +1993,7 @@ impl Parser<'_> {
     }
     fn make(&self, kind: ExprKind) -> Result<Expr> {
         let mut expr = Expr {
+            location: Default::default(),
             kind,
             depth: 1,
             token: None,
@@ -2177,11 +2213,18 @@ impl Parser<'_> {
                         } else {
                             (None, name)
                         };
-                        self.make(ExprKind::Column {
+                        let location = if qualifier.is_some() {
+                            self.location(self.at - 3)
+                        } else {
+                            self.location(self.at - 1)
+                        };
+                        let mut expr = self.make(ExprKind::Column {
                             qualifier,
                             name,
                             quoted,
-                        })?
+                        })?;
+                        expr.location = location;
+                        expr
                     }
                 }
                 _ => {
@@ -2331,18 +2374,22 @@ impl Parser<'_> {
             let start = self.at;
             let name = self.table_name()?;
             let qualified = self.at == start + 3;
+            let location = self.location(self.at - 1);
             if self.eat("(") {
                 self.expect(")")?;
             }
             let select = Select {
                 nested_from: false,
                 items: vec![SelectItem {
+                    location: Default::default(),
                     expr: None,
                     star: None,
                     alias: None,
                     label: String::new(),
                 }],
                 sources: vec![Source {
+                    location,
+                    explicit_alias: false,
                     alias: name.clone(),
                     name,
                     qualified,

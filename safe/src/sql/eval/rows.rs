@@ -110,6 +110,7 @@ impl<'a> Input<'a> {
             ExprKind::BoundSubquery(q) if q.columns.len() > 1 => {
                 let meta = &q.columns[column];
                 let base = Expr {
+                    location: Default::default(),
                     kind: if let Some(collation) = meta.collation {
                         ExprKind::Slot(column, meta.affinity, collation)
                     } else {
@@ -120,6 +121,7 @@ impl<'a> Input<'a> {
                 };
                 if let Some(collation) = meta.explicit_collation {
                     Expr {
+                        location: Default::default(),
                         kind: ExprKind::Collate(Box::new(base), collation),
                         depth: 2,
                         token: None,
@@ -263,6 +265,7 @@ impl Eval<'_> {
                 }
                 let meta = &query.columns[column];
                 let rhs = Expr {
+                    location: Default::default(),
                     kind: ExprKind::Slot(
                         column,
                         meta.affinity,

@@ -49,6 +49,7 @@ impl Scope {
 }
 #[derive(Default)]
 pub(super) struct Runtime {
+    pub(super) rename: Option<RenameTrace>,
     // Declaration, lexical scope and RETURNING program; the value flag marks
     // explicit MATERIALIZED results shared with the data-changing program.
     cache: BTreeMap<(usize, usize, usize), (Rc<Data>, bool)>,
@@ -66,6 +67,27 @@ pub(super) struct Runtime {
     pub(super) existence: Option<usize>,
     returning_table: Option<String>,
     pub(super) returning_site: usize,
+}
+pub(super) struct RenameTrace {
+    pub(super) table: String,
+    pub(super) edits: BTreeMap<usize, usize>,
+    pending: Vec<(Box<Query>, Option<Rc<Scope>>)>,
+    seen: BTreeSet<usize>,
+}
+impl RenameTrace {
+    pub(super) fn new(table: &str) -> Self {
+        Self {
+            table: table.into(),
+            edits: BTreeMap::new(),
+            pending: Vec::new(),
+            seen: BTreeSet::new(),
+        }
+    }
+    pub(super) fn mark(&mut self, location: parser::Location) {
+        if let Some((start, end)) = location.0 {
+            self.edits.insert(start, end);
+        }
+    }
 }
 impl Runtime {
     pub(super) fn inherit_materialized(&mut self, other: &Self, fuel: &mut Fuel) -> Result<()> {
@@ -162,6 +184,7 @@ impl Data {
                     .map(|t| t[i].clone())
                     .unwrap_or_else(|| ColumnType::expression(e, &self.fields));
                 Field {
+                    rename_table: false,
                     nested: self.nested.as_ref().map(|fields| fields[i].clone()),
                     merged: Vec::new(),
                     generated: None,
@@ -230,6 +253,42 @@ impl Runtime {
     }
 }
 impl Connection {
+    pub(super) fn rename_references(
+        &self,
+        query: &Query,
+        table: &str,
+        context: &mut Eval<'_>,
+    ) -> Result<BTreeMap<usize, usize>> {
+        let mut runtime = Runtime {
+            rename: Some(RenameTrace::new(table)),
+            ..Runtime::default()
+        };
+        self.query(query, context, None, &mut runtime, true)?;
+        let mut trace = runtime
+            .rename
+            .take()
+            .ok_or(Error::Corrupt("missing rename trace"))?;
+        // SQLite also visits unused CTE declarations. Their semantic errors do
+        // not invalidate a view, but successfully resolved references still
+        // participate in the edit. Each declaration is visited at most once.
+        while let Some((query, scope)) = trace.pending.pop() {
+            context.fuel.spend()?;
+            let mut runtime = Runtime {
+                rename: Some(trace),
+                ..Runtime::default()
+            };
+            if let Err(error @ Error::Limit(_)) =
+                self.query(&query, context, scope, &mut runtime, true)
+            {
+                return Err(error);
+            }
+            trace = runtime
+                .rename
+                .take()
+                .ok_or(Error::Corrupt("missing CTE rename trace"))?;
+        }
+        Ok(trace.edits)
+    }
     pub(super) fn view_query(
         &self,
         index: usize,
@@ -279,6 +338,7 @@ impl Connection {
         let scalars = core::mem::take(&mut runtime.scalar_cache);
         let outer = core::mem::take(&mut runtime.outer);
         let reads = core::mem::take(&mut runtime.outer_reads);
+        let rename = runtime.rename.take();
         let view = &self.state.views[index];
         let result = self.query(&view.query, context, None, runtime, schema_only);
         runtime.active = active;
@@ -287,6 +347,7 @@ impl Connection {
         runtime.scalar_cache = scalars;
         runtime.outer = outer;
         runtime.outer_reads = reads;
+        runtime.rename = rename;
         runtime.views.pop();
         result
     }
@@ -404,6 +465,14 @@ impl Connection {
     ) -> Result<Data> {
         context.fuel.spend()?;
         let scope = Scope::extend(scope, &query.with, runtime)?;
+        if let Some(rename) = &mut runtime.rename {
+            for table in &query.with {
+                context.fuel.spend()?;
+                if rename.seen.insert(table.id) {
+                    rename.pending.push((table.query.clone(), scope.clone()));
+                }
+            }
+        }
         if query.cores.len() == 1 {
             if let QueryCore::Select(select) = &query.cores[0] {
                 let mut select = (**select).clone();
@@ -491,7 +560,13 @@ impl Connection {
             }
             parts.push(part);
         }
-        let order = compound_order(&query.order, &parts)?;
+        let order = compound_order(&query.order, &parts, |expr, fields| {
+            if runtime.rename.is_some() {
+                self.expressions(scope.clone(), runtime)
+                    .bind(expr, fields, &[], true, context)?;
+            }
+            Ok(())
+        })?;
         let mut types = CompoundTypes::default();
         for part in &parts {
             types.add_data(part, context)?;
@@ -616,7 +691,11 @@ impl Connection {
     }
 }
 
-fn compound_order(order: &[Ordering], parts: &[Data]) -> Result<Vec<Ordering>> {
+fn compound_order(
+    order: &[Ordering],
+    parts: &[Data],
+    mut matched: impl FnMut(&Expr, &[Field]) -> Result<()>,
+) -> Result<Vec<Ordering>> {
     order
         .iter()
         .map(|term| {
@@ -650,6 +729,7 @@ fn compound_order(order: &[Ordering], parts: &[Data]) -> Result<Vec<Ordering>> {
                     }
                     if let Ok(bound) = eval::bind(expression, &part.fields, &[], true) {
                         if let Some(i) = part.projection.iter().position(|e| *e == bound) {
+                            matched(expression, &part.fields)?;
                             found = Some((i, &part.projection[i]));
                             break;
                         }
@@ -659,6 +739,7 @@ fn compound_order(order: &[Ordering], parts: &[Data]) -> Result<Vec<Ordering>> {
             let (slot, selected) = found
                 .ok_or_else(|| error("ORDER BY term does not match a compound result column"))?;
             let mut expr = Expr {
+                location: Default::default(),
                 token: None,
                 depth: 1,
                 kind: ExprKind::Slot(
@@ -669,6 +750,7 @@ fn compound_order(order: &[Ordering], parts: &[Data]) -> Result<Vec<Ordering>> {
             };
             if let ExprKind::Collate(_, collation) = &term.expr.kind {
                 expr = Expr {
+                    location: Default::default(),
                     token: None,
                     depth: 2,
                     kind: ExprKind::Collate(Box::new(expr), *collation),

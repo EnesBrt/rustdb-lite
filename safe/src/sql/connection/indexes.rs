@@ -16,6 +16,7 @@ pub(super) fn matches_target(
         compare_expression(table, target, &key.signature) < 2
     } else {
         let wrapped = Expr {
+            location: Default::default(),
             kind: ExprKind::Collate(Box::new(key.signature.clone()), collation),
             depth: key.signature.depth + 1,
             token: None,

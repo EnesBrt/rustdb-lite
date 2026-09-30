@@ -60,6 +60,7 @@ pub(super) fn nested_projection(
         for name in next {
             let expression = eval::bind(
                 &Expr {
+                    location: Default::default(),
                     depth: 1,
                     token: None,
                     kind: ExprKind::Column {
@@ -200,6 +201,7 @@ pub(super) fn using(
         };
         let rhs = eval::generated::field(&fields[right], right, None)?;
         constraints.push(Expr {
+            location: Default::default(),
             depth: 1 + lhs.depth.max(rhs.depth),
             token: None,
             kind: ExprKind::Binary(parser::Binary::Equal, Box::new(lhs), Box::new(rhs)),

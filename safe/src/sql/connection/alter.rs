@@ -4,6 +4,7 @@ use super::*;
 use crate::sql::lexer::{lex, Kind};
 use parser::{Alter, Binary, Unary};
 mod constraints;
+mod rename;
 
 struct ColumnSpan {
     start: usize,
@@ -88,6 +89,7 @@ pub(super) fn record_default(
                 return Ok(None);
             };
             let signed = Expr {
+                location: Default::default(),
                 kind: ExprKind::Unary(Unary::Minus, alloc::boxed::Box::new(Expr::literal(value))),
                 depth: 2,
                 token: None,
@@ -99,6 +101,7 @@ pub(super) fn record_default(
                 return Ok(None);
             };
             let cast = Expr {
+                location: Default::default(),
                 kind: ExprKind::Cast(alloc::boxed::Box::new(Expr::literal(value)), *cast),
                 depth: 2,
                 token: None,
@@ -177,6 +180,7 @@ impl Connection {
         let mut validate = false;
         let mut result_columns = Vec::new();
         match action {
+            Alter::Rename(new) => return self.rename_table(id, new, context),
             Alter::Add {
                 column,
                 sql: definition,
@@ -278,10 +282,12 @@ impl Connection {
                     return Err(error("parameters prohibited in schema"));
                 }
                 let condition = Expr {
+                    location: Default::default(),
                     kind: ExprKind::Binary(
                         Binary::IsNot,
                         expression.clone(),
                         alloc::boxed::Box::new(Expr {
+                            location: Default::default(),
                             kind: ExprKind::Column {
                                 qualifier: None,
                                 name: "TRUE".into(),

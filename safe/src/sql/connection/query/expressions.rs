@@ -174,11 +174,40 @@ struct Binding<'a, 'b, 'c, 'd> {
     context: &'c mut Eval<'d>,
 }
 impl Resolver for Binding<'_, '_, '_, '_> {
-    fn column(&mut self, qualifier: Option<&str>, name: &str) -> Result<Option<Expr>> {
+    fn resolved(&mut self, expr: &Expr, field: &Field) -> Result<()> {
+        if field.rename_table
+            && matches!(
+                expr.kind,
+                ExprKind::Column {
+                    qualifier: Some(_),
+                    ..
+                }
+            )
+        {
+            if let Some(rename) = &mut self.expressions.runtime.rename {
+                self.context.fuel.spend()?;
+                rename.mark(expr.location);
+            }
+        }
+        Ok(())
+    }
+    fn column(
+        &mut self,
+        expr: &Expr,
+        qualifier: Option<&str>,
+        name: &str,
+        mut shadowed: bool,
+    ) -> Result<Option<Expr>> {
         for (frame_index, frame) in self.expressions.runtime.outer.iter().enumerate().rev() {
             if let Some(slot) = eval::resolve_field(&frame.fields, qualifier, name)? {
                 let bound =
                     eval::field(&frame.fields, slot, Some(frame_index), qualifier.is_some())?;
+                if frame.fields[slot].rename_table && qualifier.is_some() && !shadowed {
+                    if let Some(rename) = &mut self.expressions.runtime.rename {
+                        self.context.fuel.spend()?;
+                        rename.mark(expr.location);
+                    }
+                }
                 fn columns(expr: &Expr, reads: &mut BTreeSet<(usize, usize)>) {
                     match &expr.kind {
                         ExprKind::Outer(frame, slot, ..) => {
@@ -199,6 +228,8 @@ impl Resolver for Binding<'_, '_, '_, '_> {
                 columns(&bound, &mut self.expressions.runtime.outer_reads);
                 return Ok(Some(bound));
             }
+            shadowed |= qualifier
+                .is_some_and(|q| frame.fields.iter().any(|f| f.table.eq_ignore_ascii_case(q)));
         }
         Ok(None)
     }

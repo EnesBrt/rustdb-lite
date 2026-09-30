@@ -226,7 +226,18 @@ impl Connection {
                 }
                 parts.push(part);
             }
-            let order = compound_order(&query.order, &parts)?;
+            let order = compound_order(&query.order, &parts, |expr, fields| {
+                if runtime.rename.is_some() {
+                    self.expressions(scope.clone(), runtime).bind(
+                        expr,
+                        fields,
+                        &[],
+                        true,
+                        context,
+                    )?;
+                }
+                Ok(())
+            })?;
             let mut types = CompoundTypes::default();
             for part in &parts {
                 types.add_data(part, context)?;

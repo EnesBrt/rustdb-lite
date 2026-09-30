@@ -412,11 +412,34 @@ def main():
                 assert path.read_bytes()==before
                 run(SQL,path,'ALTER TABLE t DROP CONSTRAINT nonempty','ALTER TABLE t ALTER a DROP NOT NULL','UPDATE t SET a=NULL WHERE id=1')
                 assert connection.execute('SELECT a,s FROM t ORDER BY id').fetchall()==[(None,None),('rust',4)]
-                connection.execute('ALTER TABLE t ADD CONSTRAINT native_check CHECK(id>0)')
+                # The persistent Python peer can predate this ALTER grammar;
+                # issue new syntax through the pinned 3.53.4 reference instead.
+                native(path,'ALTER TABLE t ADD CONSTRAINT native_check CHECK(id>0)')
                 run(SQL,path,'ALTER TABLE t DROP CONSTRAINT native_check')
                 connection.execute("UPDATE t SET a='again' WHERE id=1")
                 run(SQL,path,'ALTER TABLE t ALTER a SET NOT NULL')
                 assert connection.execute('SELECT s FROM t ORDER BY id').fetchall()==[(5,),(4,)]
+                connection.close()
+                assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
+                cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'rename-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(id INTEGER PRIMARY KEY AUTOINCREMENT,a TEXT UNIQUE,s INT AS(length(a)) STORED);INSERT INTO t(a) VALUES('é🦀');CREATE INDEX ix ON t((s+1)) WHERE t.a IS NOT NULL;CREATE VIEW v AS SELECT t.* FROM t;")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                assert connection.execute('SELECT s FROM v').fetchall()==[(2,)]
+                run(SQL,path,'ALTER TABLE t RENAME TO renamed')
+                assert connection.execute('SELECT s FROM v').fetchall()==[(2,)]
+                assert connection.execute('SELECT * FROM sqlite_sequence').fetchall()==[('renamed',1)]
+                before=path.read_bytes()
+                run(SQL,path,'ALTER TABLE renamed RENAME TO ix',expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,'BEGIN','ALTER TABLE renamed RENAME TO other',"INSERT INTO other(a) VALUES('rollback')",'ROLLBACK')
+                assert path.read_bytes()==before
+                connection.execute('ALTER TABLE renamed RENAME TO peer')
+                run(SQL,path,'ALTER TABLE peer RENAME TO final',"INSERT INTO final(a) VALUES('next')")
+                assert connection.execute('SELECT id,s FROM v ORDER BY id').fetchall()==[(1,2),(2,4)]
+                assert connection.execute('SELECT * FROM sqlite_sequence').fetchall()==[('final',2)]
                 connection.close()
                 assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
                 cases+=1

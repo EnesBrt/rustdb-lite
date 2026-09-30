@@ -57,6 +57,52 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn table_rename_persists_views_indexes_sequence_and_rollback() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    for sql in [
+        "CREATE TABLE t(id INTEGER PRIMARY KEY AUTOINCREMENT,a INT UNIQUE,s AS(a*2) STORED)",
+        "INSERT INTO t(a) VALUES(2)",
+        "CREATE INDEX ix ON t((s+1)) WHERE t.a>0",
+        "CREATE VIEW v AS SELECT t.* FROM t",
+        "ALTER TABLE t RENAME TO renamed",
+    ] {
+        c.execute(sql, &[]).unwrap();
+    }
+    drop(c);
+    let mut c = open(&path);
+    let before = fs::read(&path).unwrap();
+    assert!(c.execute("ALTER TABLE renamed RENAME TO ix", &[]).is_err());
+    assert_eq!(fs::read(&path).unwrap(), before);
+    for sql in [
+        "BEGIN",
+        "ALTER TABLE renamed RENAME TO other",
+        "INSERT INTO other(a) VALUES(3)",
+        "ROLLBACK",
+    ] {
+        c.execute(sql, &[]).unwrap();
+    }
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("INSERT INTO renamed(a) VALUES(4)", &[]).unwrap();
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT * FROM v ORDER BY id", &[]).unwrap().rows,
+        vec![
+            vec![Value::Integer(1), Value::Integer(2), Value::Integer(4)],
+            vec![Value::Integer(2), Value::Integer(4), Value::Integer(8)]
+        ]
+    );
+    assert_eq!(
+        c.execute("SELECT * FROM sqlite_sequence", &[])
+            .unwrap()
+            .rows,
+        vec![vec![Value::Text(Text::utf8("renamed")), Value::Integer(2)]]
+    );
+}
+
+#[test]
 fn constraint_edits_persist_and_roll_back_with_generated_values() {
     let temp = Temp::new();
     let path = temp.db();

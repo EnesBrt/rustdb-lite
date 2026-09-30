@@ -98,6 +98,7 @@ impl StoredTable {
                 .iter()
                 .enumerate()
                 .map(|(i, c)| Field {
+                    rename_table: false,
                     nested: None,
                     merged: Vec::new(),
                     generated: self.generated.as_ref().filter(|_| c.virtual_column()).map(
@@ -120,6 +121,7 @@ impl StoredTable {
                 .collect();
         if !self.without_rowid {
             fields.push(Field {
+                rename_table: false,
                 nested: None,
                 merged: Vec::new(),
                 generated: None,
@@ -1669,6 +1671,18 @@ impl Connection {
                 source_cap,
             )?;
             let mut source_fields = data.fields(&source.alias);
+            if let Some(rename) = &mut runtime.rename {
+                let target = matches!(&data, query::SourceData::Table(t, _) if t.name.eq_ignore_ascii_case(&rename.table));
+                if target {
+                    rename.mark(source.location);
+                }
+                for field in &mut source_fields {
+                    field.rename_table = target && !source.explicit_alias;
+                    // Native schema-rename resolution uses the projected names
+                    // of a parenthesized join, without its execution-only origins.
+                    field.nested = None;
+                }
+            }
             for field in &mut source_fields {
                 if let Some(nested) = &mut field.nested {
                     nested.group = fields.len();
@@ -1759,6 +1773,11 @@ impl Connection {
                 let mut count = 0;
                 for (i, f) in fields.iter().enumerate() {
                     if f.wildcard(item.star.as_deref()) {
+                        if item.star.is_some() && f.rename_table {
+                            if let Some(rename) = &mut runtime.rename {
+                                rename.mark(item.location);
+                            }
+                        }
                         if projection.len() >= 2000 {
                             return Err(Error::Limit("result columns"));
                         }
@@ -1784,6 +1803,7 @@ impl Connection {
                             if merge_star || (query.sources.len() == 1 && f.nested.is_some()) {
                                 eval::bind(
                                     &Expr {
+                                        location: Default::default(),
                                         depth: 1,
                                         token: None,
                                         kind: ExprKind::Column {

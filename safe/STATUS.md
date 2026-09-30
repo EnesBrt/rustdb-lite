@@ -23,7 +23,7 @@ is a separate `legacy/` project.
 | WITHOUT ROWID tables | Primary index storage, secondary suffixes, key-based SQL mutations, metadata and encoded interchange; [scope](WITHOUT_ROWID.md) |
 | Query optimizer, complete schema/SQL semantics | Not implemented |
 | Explicit/automatic index schemas and uniqueness | Column/expression keys and partial predicates; fresh-image rebuilds; [scope](EXPRESSION_INDEXES.md) |
-| ALTER TABLE | Column ADD/DROP ([scope](ALTER_TABLE.md)), SET/DROP NOT NULL and named CHECK edits ([scope](ALTER_CONSTRAINTS.md)); schema validation and transactional persistence |
+| ALTER TABLE | Column ADD/DROP ([scope](ALTER_TABLE.md)), SET/DROP NOT NULL and named CHECK edits ([scope](ALTER_CONSTRAINTS.md)), table RENAME ([scope](RENAME.md)); schema validation and transactional persistence |
 | Table constraints and schema inspection | Composite PRIMARY KEY/UNIQUE, table CHECK, named-constraint syntax, six inspection pragmas |
 | Joins | INNER/CROSS/LEFT/RIGHT/FULL, ON/USING/NATURAL, parenthesized namespaces, merged values and correlated/forward ON scopes; [scope](JOINS.md) |
 | Aggregate modifiers | FILTER, input ORDER BY, DISTINCT and min/max bare-column selection; [scope](AGGREGATES.md) |
@@ -45,7 +45,7 @@ is a separate `legacy/` project.
 
 ## Verified locally, 2026-09-30
 
-- 162 core Rust integration tests pass in debug and release builds, including
+- 168 core Rust integration tests pass in debug and release builds, including
   3,000 deterministic database mutations, 3,000 mutations of valid native WAL
   seeds, 5,000 malformed-SQL mutations, and 3,000 journal mutations, with bounded
   budgets and panic detection.
@@ -78,10 +78,10 @@ is a separate `legacy/` project.
   Interrupted recovery, exclusive-lock lifetime, and journaled SQL transaction
   reopen tests also pass. These are adapter-contract simulations, not
   OS/power-loss tests.
-- Twenty-four platform Rust tests pass in debug/release, covering real files, recovery,
+- Twenty-five platform Rust tests pass in debug/release, covering real files, recovery,
   path/sidecar guards, lock lifetime, CTE/subquery data changes, views, CREATE TABLE
   AS SELECT and an eight-thread contention race.
-- 149 native file interchange/lock/SQL scenarios pass on macOS ARM64. They include
+- 158 native file interchange/lock/SQL scenarios pass on macOS ARM64. They include
   persistent native connections across updates of all three text encodings and
   updates of both auto-vacuum modes. 210 real process-interruption/partial-write
   recovery points cover ordinary and pointer-map files and match native SQLite.
@@ -203,7 +203,7 @@ is a separate `legacy/` project.
   stored-value preservation, rollback, malformed prefixes, limits and 72 image
   configurations. A Unix test and nine native file cases verify persistent readers,
   commit/reopen and unchanged files after rejected edits. The native statement
-  harness now observes metadata after possible step-time reprepare. Renames and
+  harness now observes metadata after possible step-time reprepare. Column renames and
   double-quoted-string normalization remain pending; see
   [ALTER_TABLE.md](ALTER_TABLE.md).
 - 1,653 ALTER constraint/nullability/policy/schema/image scenarios pass against
@@ -213,6 +213,11 @@ is a separate `legacy/` project.
   file cases cover persistent peers, commit/reopen and failed-edit isolation.
   General schema/SQL and platform limits remain; see
   [ALTER_CONSTRAINTS.md](ALTER_CONSTRAINTS.md).
+- 514 table rename/scope/metadata/transaction/image scenarios pass against SQLite
+  3.53.4. Six Rust tests cover preserved values/indexes/sequences, bound references,
+  comments, prepared reuse, rollback, resource limits and 72 image configurations.
+  A Unix test and nine native file cases cover persistent peers and failed-edit
+  isolation. Column renames remain pending; see [RENAME.md](RENAME.md).
 - The separate Unix adapter compiles for macOS ARM64, Linux x86-64/i686/s390x,
   Android ARM64 and iOS ARM64. Only the macOS adapter has runtime evidence here.
 - Floating-point comparisons use exact IEEE-754 bit patterns. Text comparisons
@@ -279,6 +284,7 @@ python3 safe/scripts/row_value_differential.py
 python3 safe/scripts/pattern_differential.py
 python3 safe/scripts/alter_differential.py
 python3 safe/scripts/alter_constraint_differential.py
+python3 safe/scripts/rename_differential.py
 python3 safe/scripts/check_targets.py
 python3 platform/scripts/file_differential.py
 python3 platform/scripts/check_targets.py
@@ -303,5 +309,14 @@ passed.
 
 These results establish execution of the tested subset on those runners, not
 complete platform or durability support. Other target runtime tests remain
-pending. New ALTER constraint coverage is recorded above and is included in subsequent CI
-runs; the linked baseline does not establish its cross-platform behavior.
+pending. New ALTER constraint and table-rename coverage is recorded above; the
+linked baseline does not establish its cross-platform behavior.
+
+[Run 36703631562](https://github.com/EnesBrt/rustdb-lite/actions/runs/36703631562)
+for `9a75a17` passed 16 of 17 jobs, including the 162 core tests on all three OS
+runners, the 24 adapter tests on both Unix runners, and the full native SQL
+comparisons. The Linux file-comparison step failed because its Python SQLite
+predates ALTER ADD CHECK syntax. The harness now uses the pinned 3.53.4 executable
+for that native edit and retains Python as a persistent reader. This correction
+and the new table-rename coverage require a subsequent passing CI run; the failed
+run does not establish complete CI success for `9a75a17`.

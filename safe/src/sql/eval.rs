@@ -19,6 +19,7 @@ mod patterns;
 pub mod rows;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Field {
+    pub rename_table: bool,
     pub nested: Option<NestedField>,
     pub generated: Option<generated::Reference>,
     /// Physical columns supplying an unqualified USING/NATURAL value.
@@ -170,6 +171,7 @@ pub fn coalesced(mut args: Vec<Expr>) -> Result<Expr> {
         return Err(Error::Limit("merged expression depth"));
     }
     Ok(Expr {
+        location: Default::default(),
         depth,
         token: None,
         kind: ExprKind::Merged(args),
@@ -196,10 +198,19 @@ pub struct QueryColumn {
     pub declared_type: String,
 }
 pub trait Resolver {
+    fn resolved(&mut self, _: &Expr, _: &Field) -> Result<()> {
+        Ok(())
+    }
     fn double_quoted_strings(&self) -> bool {
         false
     }
-    fn column(&mut self, qualifier: Option<&str>, name: &str) -> Result<Option<Expr>>;
+    fn column(
+        &mut self,
+        expr: &Expr,
+        qualifier: Option<&str>,
+        name: &str,
+        shadowed: bool,
+    ) -> Result<Option<Expr>>;
     fn query(&mut self, source: &Subquery, fields: &[Field]) -> Result<BoundSubquery>;
 }
 pub trait Subqueries {
@@ -234,7 +245,7 @@ impl Resolver for GeneratedBinding {
     fn double_quoted_strings(&self) -> bool {
         true
     }
-    fn column(&mut self, _: Option<&str>, _: &str) -> Result<Option<Expr>> {
+    fn column(&mut self, _: &Expr, _: Option<&str>, _: &str, _: bool) -> Result<Option<Expr>> {
         Ok(None)
     }
     fn query(&mut self, _: &Subquery, _: &[Field]) -> Result<BoundSubquery> {
@@ -245,7 +256,7 @@ pub fn bind_generated(expr: &Expr, fields: &[Field]) -> Result<Expr> {
     bind_with(expr, fields, &[], false, &mut GeneratedBinding)
 }
 impl Resolver for NoQueries {
-    fn column(&mut self, _: Option<&str>, _: &str) -> Result<Option<Expr>> {
+    fn column(&mut self, _: &Expr, _: Option<&str>, _: &str, _: bool) -> Result<Option<Expr>> {
         Ok(None)
     }
     fn query(&mut self, _: &Subquery, _: &[Field]) -> Result<BoundSubquery> {
@@ -348,6 +359,7 @@ pub fn bind_with(
                 quoted,
             } => {
                 if let Some(i) = resolve_field(fields, qualifier.as_deref(), name)? {
+                    resolver.resolved(expr, &fields[i])?;
                     return field(fields, i, None, qualifier.is_some());
                 } else if qualifier.is_none() {
                     if let Some((_, value)) =
@@ -355,7 +367,7 @@ pub fn bind_with(
                     {
                         return inner(value, fields, &[], allow, inside, resolver);
                     }
-                    if let Some(outer) = resolver.column(None, name)? {
+                    if let Some(outer) = resolver.column(expr, None, name, false)? {
                         return Ok(outer);
                     }
                     if !quoted
@@ -367,7 +379,16 @@ pub fn bind_with(
                     } else {
                         return Err(error(format!("no such column: {name}")));
                     }
-                } else if let Some(outer) = resolver.column(qualifier.as_deref(), name)? {
+                } else if let Some(outer) = resolver.column(
+                    expr,
+                    qualifier.as_deref(),
+                    name,
+                    fields.iter().any(|f| {
+                        qualifier
+                            .as_ref()
+                            .is_some_and(|q| f.table.eq_ignore_ascii_case(q))
+                    }),
+                )? {
                     return Ok(outer);
                 } else {
                     return Err(error(format!("no such column: {name}")));
@@ -461,6 +482,7 @@ pub fn bind_with(
             _ => expr.kind.clone(),
         };
         let mut result = Expr {
+            location: Default::default(),
             kind,
             depth: 1,
             token: expr.token.clone(),
