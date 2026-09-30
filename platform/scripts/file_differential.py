@@ -354,6 +354,25 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'pattern-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(id INT PRIMARY KEY,name TEXT,literal INT AS(name LIKE '%!_%' ESCAPE '!') STORED);INSERT INTO t(id,name) VALUES(1,'A_one'),(2,'b_two'),(3,'É_été');CREATE VIEW v AS SELECT * FROM t WHERE name GLOB '[A-ZÉ]*';CREATE INDEX ix ON t((name LIKE 'A!_%' ESCAPE '!')) WHERE name GLOB '[A-Z]*';")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                run(SQL,path,'CREATE TABLE copied AS SELECT * FROM v')
+                expected=connection.execute('SELECT * FROM copied ORDER BY id').fetchall()
+                before=path.read_bytes()
+                run(SQL,path,'BEGIN',"UPDATE t SET name='R_more' WHERE name LIKE 'A!_%' ESCAPE '!'",'ROLLBACK')
+                assert path.read_bytes()==before
+                run(SQL,path,"UPDATE t SET name='bad' WHERE name LIKE '%' ESCAPE ''",expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,"UPDATE t SET name=lower(name) WHERE name GLOB '[A-Z]*'")
+                assert connection.execute('SELECT name,literal FROM t ORDER BY id').fetchall()==[('a_one',1),('b_two',1),('É_été',1)]
+                assert connection.execute('SELECT * FROM copied ORDER BY id').fetchall()==expected
+                assert connection.execute('SELECT id FROM v').fetchall()==[(3,)]
+                connection.close()
+                assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'

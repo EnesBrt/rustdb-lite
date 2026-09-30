@@ -62,7 +62,7 @@ not a statement that these components have been implemented.
    ON/USING/NATURAL, parenthesized join namespaces, filtered/ordered aggregates, constraints,
    derived tables, ordinary/recursive CTEs, compound queries, scalar/EXISTS/IN and
    correlated subqueries, row comparisons and multi-column assignments, stored
-   views, CREATE TABLE AS SELECT, prepared parameters,
+   views, CREATE TABLE AS SELECT, LIKE/ESCAPE/GLOB matching, prepared parameters,
    statement rollback, and savepoints. The optimizer and
    complete SQL/schema/API semantics remain unfinished; see [SQL.md](SQL.md).
 5. **Extensions:** safe function, collation, tokenizer, and virtual-table

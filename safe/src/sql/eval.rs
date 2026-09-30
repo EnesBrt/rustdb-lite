@@ -15,6 +15,7 @@ use core::cmp::Ordering;
 
 mod aggregates;
 pub mod generated;
+mod patterns;
 pub mod rows;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Field {
@@ -300,7 +301,7 @@ fn validate_call(name: &str, n: usize, star: bool, distinct: bool) -> Result<()>
         "typeof" | "length" | "octet_length" | "hex" | "lower" | "upper" | "abs" | "unicode" => {
             n == 1
         }
-        "ifnull" | "nullif" | "instr" => n == 2,
+        "ifnull" | "nullif" | "instr" | "glob" => n == 2,
         "replace" => n == 3,
         "substr" | "substring" => n == 2 || n == 3,
         "trim" | "ltrim" | "rtrim" | "unhex" => n == 1 || n == 2,
@@ -915,69 +916,7 @@ impl Eval<'_> {
                 _ => cmp != Ordering::Less,
             })));
         }
-        if op == Binary::Like || op == Binary::NotLike {
-            return Ok(boolean(Some(
-                self.like(&bv, &av, None)? ^ (op == Binary::NotLike),
-            )));
-        }
         scalar::arithmetic(op, av, bv, self.limits.max_value_bytes)
-    }
-    fn like(&mut self, pattern: &Value, text: &Value, escape: Option<&Value>) -> Result<bool> {
-        let p = scalar::text(pattern)?;
-        let t = scalar::text(text)?;
-        let p: Vec<char> = p.split('\0').next().unwrap_or("").chars().collect();
-        let t: Vec<char> = t.split('\0').next().unwrap_or("").chars().collect();
-        let escape = if let Some(v) = escape {
-            let s = scalar::text(v)?;
-            let mut chars = s.chars();
-            let first = chars
-                .next()
-                .ok_or_else(|| error("ESCAPE must be one character"))?;
-            if chars.next().is_some() {
-                return Err(error("ESCAPE must be one character"));
-            }
-            Some(first)
-        } else {
-            None
-        };
-        // Greedy wildcard matching, with bounded retries rather than recursive
-        // backtracking. SQL text/character positions remain Unicode codepoints.
-        let (mut i, mut j) = (0, 0);
-        let mut retry = None;
-        while j < t.len() {
-            self.fuel.spend()?;
-            if i < p.len() && Some(p[i]) != escape && p[i] == '%' {
-                i += 1;
-                retry = Some((i, j));
-                continue;
-            }
-            let (mut step, mut matches) = (1, false);
-            if i < p.len() {
-                if Some(p[i]) == escape {
-                    step = 2;
-                    if let Some(c) = p.get(i + 1) {
-                        matches = c.eq_ignore_ascii_case(&t[j]);
-                    }
-                } else {
-                    matches = p[i] == '_' || p[i].eq_ignore_ascii_case(&t[j]);
-                }
-            }
-            if matches {
-                i += step;
-                j += 1;
-            } else if let Some((next, consumed)) = retry {
-                let consumed = consumed + 1;
-                retry = Some((next, consumed));
-                i = next;
-                j = consumed;
-            } else {
-                return Ok(false);
-            }
-        }
-        while i < p.len() && p[i] == '%' && Some(p[i]) != escape {
-            i += 1;
-        }
-        Ok(i == p.len())
     }
     fn function(&mut self, name: &str, args: &[Expr], v: &[Value]) -> Result<Value> {
         let string = |s: String| Value::Text(Text::utf8(&s));
@@ -1037,6 +976,7 @@ impl Eval<'_> {
                 }
                 string(s)
             }
+            "like" | "glob" => self.pattern(name, &v[0], &v[1], v.get(2))?,
             _ if v.iter().any(scalar::null) => Value::Null,
             "length" => Value::Integer(if let Value::Blob(b) = &v[0] {
                 b.len()
@@ -1198,7 +1138,6 @@ impl Eval<'_> {
                     string(chars[a..z].iter().collect())
                 }
             }
-            "like" => boolean(Some(self.like(&v[0], &v[1], v.get(2))?)),
             _ => return Err(error(format!("unimplemented function: {name}"))),
         };
         Ok(value)

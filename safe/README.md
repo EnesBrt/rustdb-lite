@@ -24,6 +24,7 @@ indexes are described in [GENERATED.md](GENERATED.md) and
 [EXPRESSION_INDEXES.md](EXPRESSION_INDEXES.md). Join binding, merged-column
 values and outer-row execution are documented in [JOINS.md](JOINS.md). Row
 comparisons, membership and tuple assignments are described in [ROW_VALUES.md](ROW_VALUES.md).
+LIKE/ESCAPE/GLOB semantics and limits are documented in [PATTERNS.md](PATTERNS.md).
 
 ## Storage API
 
@@ -127,6 +128,7 @@ python3 safe/scripts/join_differential.py
 python3 safe/scripts/join_scope_differential.py
 python3 safe/scripts/aggregate_differential.py
 python3 safe/scripts/row_value_differential.py
+python3 safe/scripts/pattern_differential.py
 python3 safe/scripts/check_targets.py
 ```
 

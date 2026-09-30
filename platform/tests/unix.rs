@@ -57,6 +57,55 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn pattern_views_and_generated_values_persist_atomically() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    for sql in [
+        "CREATE TABLE t(id INT PRIMARY KEY,name TEXT,literal INT AS(name LIKE '%!_%' ESCAPE '!') STORED)",
+        "INSERT INTO t(id,name) VALUES(1,'A_one'),(2,'b_two')",
+        "CREATE VIEW v AS SELECT * FROM t WHERE name GLOB '[A-Z]*'",
+        "CREATE INDEX ix ON t((name LIKE 'A!_%' ESCAPE '!')) WHERE name GLOB 'A*'",
+        "CREATE TABLE copied AS SELECT * FROM v",
+    ] {
+        c.execute(sql, &[]).unwrap();
+    }
+    drop(c);
+    let mut c = open(&path);
+    let before = fs::read(&path).unwrap();
+    c.execute("BEGIN", &[]).unwrap();
+    c.execute(
+        "UPDATE t SET name='R_more' WHERE name LIKE 'A!_%' ESCAPE '!'",
+        &[],
+    )
+    .unwrap();
+    c.execute("ROLLBACK", &[]).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), before);
+    assert!(c
+        .execute("UPDATE t SET name='bad' WHERE name LIKE '%' ESCAPE ''", &[])
+        .is_err());
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute(
+        "UPDATE t SET name=lower(name) WHERE name GLOB '[A-Z]*'",
+        &[],
+    )
+    .unwrap();
+    drop(c);
+    let mut c = open(&path);
+    assert!(c.execute("SELECT * FROM v", &[]).unwrap().rows.is_empty());
+    assert_eq!(
+        c.execute("SELECT literal FROM t ORDER BY id", &[])
+            .unwrap()
+            .rows,
+        vec![vec![Value::Integer(1)], vec![Value::Integer(1)]]
+    );
+    assert_eq!(
+        c.execute("SELECT name FROM copied", &[]).unwrap().rows,
+        vec![vec![Value::Text(Text::utf8("A_one"))]]
+    );
+}
+
+#[test]
 fn row_value_updates_and_membership_views_persist_atomically() {
     let temp = Temp::new();
     let path = temp.db();

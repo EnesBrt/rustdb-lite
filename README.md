@@ -30,6 +30,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
   queries and data changes; statement-local caches and explicit resource bounds.
 - Row comparisons, table-name IN shorthand and multi-column UPDATE/UPSERT
   assignments; see [row-value support](safe/ROW_VALUES.md).
+- LIKE/NOT LIKE with ESCAPE and GLOB/NOT GLOB, including bracket sets, Unicode
+  boundaries and persisted schema expressions; see [pattern matching](safe/PATTERNS.md).
 - Stored views and CREATE TABLE AS SELECT, with schema metadata, transactional
   creation/deletion and native database interchange; see [view support](safe/VIEWS.md).
 - All five constraint conflict policies, statement overrides, schema ON CONFLICT,
@@ -66,8 +68,8 @@ The new crate in [`safe/`](safe/README.md) uses `#![forbid(unsafe_code)]`, has
 - An offline inspection utility with `info`, `schema`, and physical `rows` output.
 
 SQLite's own `integrity_check` accepts generated files at all eight page sizes.
-142 core Rust integration tests include 14,000 malformed-input mutations
-and 600 simulated commit failure/crash variants. Twenty-one additional adapter tests
+148 core Rust integration tests include 14,000 malformed-input mutations
+and 600 simulated commit failure/crash variants. Twenty-two additional adapter tests
 exercise real files and concurrent threads.
 The separate C oracle validates 956 SQL expression/query/error/snapshot cases and
 32 storage scenarios covering file construction, existing database reads, and WAL
@@ -88,8 +90,10 @@ Another 1,110 scenarios compare aggregate filters, input ordering, DISTINCT,
 result types, bare-column selection, correlated scopes and stored images.
 Another 3,446 scenarios compare row predicates, multi-column subqueries and
 assignments, NULL/type rules, correlated membership and encoded images.
+Another 9,607 scenarios compare LIKE/ESCAPE/GLOB values, errors, malformed byte
+sequences, schema expressions and database interchange.
 Incremental-vacuum scheduling and free-page retention remain pending.
-The Unix adapter passes 122 native file interchange/locking/SQL scenarios and
+The Unix adapter passes 131 native file interchange/locking/SQL scenarios and
 210 real interrupted commit/partial-write recovery points. These are not hardware
 power-loss tests. The core
 compiles for nine targets, including 32-bit, big-endian,

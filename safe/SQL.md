@@ -43,7 +43,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Area | Current implementation |
 | --- | --- |
 | Lexing | UTF-8 SQL, comments, quoted identifiers, strings, BLOBs, decimal/hex numbers, numeric underscores, ordinary parameters |
-| Expressions | Arithmetic/bit operations, comparisons, NULL logic, IS/IS NOT, BETWEEN, IN lists, CASE, CAST, COLLATE, LIKE, scalar functions; row comparisons and membership ([scope](ROW_VALUES.md)) |
+| Expressions | Arithmetic/bit operations, comparisons, NULL logic, IS/IS NOT, BETWEEN, IN lists, CASE, CAST, COLLATE, LIKE/ESCAPE/GLOB ([scope](PATTERNS.md)), scalar functions; row comparisons and membership ([scope](ROW_VALUES.md)) |
 | Tables | Rowid and WITHOUT ROWID tables; declared-type affinity; column/table PRIMARY KEY, UNIQUE and CHECK constraints (including composite keys), NOT NULL, DEFAULT, collations, constraint-name syntax |
 | Generated columns | VIRTUAL/STORED dependencies, lazy reads, typed writes, constraints and physical layouts; [scope](GENERATED.md) |
 | Primary-key storage | WITHOUT ROWID index B-trees, composite keys and index suffixes; see [WITHOUT_ROWID.md](WITHOUT_ROWID.md) |
@@ -58,7 +58,7 @@ have explicit limits. Transaction/savepoint snapshots consume additional memory;
 | Query composition | Derived FROM tables, ordinary/recursive WITH, VALUES queries, UNION [ALL]/INTERSECT/EXCEPT; see [QUERIES.md](QUERIES.md) |
 | Expression subqueries | Scalar and row-valued, EXISTS, IN/NOT IN, correlated columns in queries and data changes; statement-local caching for uncorrelated results |
 | Aggregates | count, sum, total, avg, min, max, group_concat, string_agg; DISTINCT, FILTER and input ORDER BY; [scope](AGGREGATES.md) |
-| Scalar functions | typeof, length, octet_length, hex, unhex, lower, upper, abs, unicode, char, ifnull, nullif, coalesce, iif/if, instr, replace, trim/ltrim/rtrim, substr/substring, min/max, like, changes, total_changes, last_insert_rowid |
+| Scalar functions | typeof, length, octet_length, hex, unhex, lower, upper, abs, unicode, char, ifnull, nullif, coalesce, iif/if, instr, replace, trim/ltrim/rtrim, substr/substring, min/max, like, glob, changes, total_changes, last_insert_rowid |
 | Collations | BINARY, ASCII NOCASE, RTRIM |
 | Transactions | BEGIN/COMMIT/ROLLBACK and nested savepoints over private owned memory |
 | Metadata | table_list/table_info/table_xinfo, index_list/index_info/index_xinfo pragmas; user_version, application_id, and read-only auto_vacuum |
@@ -93,7 +93,8 @@ behaviors, not complete compatibility of every expression/feature combination.
   AS MATERIALIZED/AS NOT MATERIALIZED both currently materialize; their distinct
   RETURNING cache-sharing behavior is implemented for the tested cases.
 - No date/time, JSON, math, formatting, or other functions outside the list above.
-  LIKE's infix ESCAPE syntax is pending; `like(pattern,text,escape)` is available.
+  LIKE/ESCAPE and GLOB use the default case rules; case_sensitive_like, ICU
+  folding and pattern search optimization remain pending; see [PATTERNS.md](PATTERNS.md).
   Tcl parameter suffixes and general double-quoted-string fallback are pending;
   the fallback is supported in generated-column and index declarations.
 - Schema-inspection pragmas support the table/view/index subset above, both argument
@@ -130,7 +131,8 @@ behaviors, not complete compatibility of every expression/feature combination.
 - Exhausting the largest rowid currently reports unsupported random allocation.
 - Default budgets: SQL 1 MiB, 32,768 tokens, expression depth 64, 100,000 rows,
   16 MiB/value, 64 MiB/database or result, 2,000,000 execution steps, 32,766
-  parameters, and 16 savepoints. Additional implementation caps are 1,024-byte
+  parameters, and 16 savepoints. LIKE/GLOB patterns have a 50,000-byte limit.
+  Additional implementation caps are 1,024-byte
   names, 1,000 function arguments, 2,000 table/result columns, 64 joined tables,
   1,024 tables/views combined, 2,000 indexes per table, 2,000 CTEs per WITH, 500 compound SELECT
   terms, 2,000 row-value components, and query nesting at most 32 (also bounded

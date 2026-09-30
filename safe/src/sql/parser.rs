@@ -103,8 +103,6 @@ pub enum Binary {
     IsNot,
     And,
     Or,
-    Like,
-    NotLike,
 }
 impl Expr {
     pub fn literal(value: Value) -> Self {
@@ -2048,7 +2046,7 @@ impl Parser<'_> {
                     ))?;
                     continue;
                 }
-                if self.is("BETWEEN") || self.is("IN") || self.is("LIKE") {
+                if self.is("BETWEEN") || self.is("IN") || self.is("LIKE") || self.is("GLOB") {
                     negated = true;
                 } else {
                     self.at -= 1;
@@ -2072,21 +2070,17 @@ impl Parser<'_> {
                 lhs = self.in_expr(lhs, negated)?;
                 continue;
             }
+            if (self.is("LIKE") || self.is("GLOB")) && min <= 35 {
+                let name = self.name()?.to_ascii_lowercase();
+                lhs = self.pattern_expr(lhs, name, negated)?;
+                continue;
+            }
             let op = if self.is("OR") {
                 Some((10, Binary::Or))
             } else if self.is("AND") {
                 Some((20, Binary::And))
             } else if self.is("IS") {
                 Some((35, Binary::Is))
-            } else if self.is("LIKE") {
-                Some((
-                    35,
-                    if negated {
-                        Binary::NotLike
-                    } else {
-                        Binary::Like
-                    },
-                ))
             } else {
                 match self.peek() {
                     Kind::Symbol(s) => match *s {
@@ -2132,6 +2126,26 @@ impl Parser<'_> {
             lhs = self.make(ExprKind::Binary(op, Box::new(lhs), Box::new(rhs)))?;
         }
         Ok(lhs)
+    }
+    fn pattern_expr(&mut self, lhs: Expr, name: String, negated: bool) -> Result<Expr> {
+        let pattern = self.expr(36)?;
+        let mut args = vec![pattern, lhs];
+        if self.eat("ESCAPE") {
+            args.push(self.expr(46)?);
+        }
+        let call = self.make(ExprKind::Call {
+            name,
+            args,
+            star: false,
+            distinct: false,
+            order: Vec::new(),
+            filter: None,
+        })?;
+        if negated {
+            self.make(ExprKind::Unary(Unary::Not, Box::new(call)))
+        } else {
+            Ok(call)
+        }
     }
     // Keep IN construction out of the recursive expression frame.
     fn in_expr(&mut self, mut lhs: Expr, negated: bool) -> Result<Expr> {
