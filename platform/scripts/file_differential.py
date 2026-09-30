@@ -395,6 +395,31 @@ def main():
                 connection.close()
                 assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
                 cases+=1
+        for encoding in ['UTF-8','UTF-16le','UTF-16be']:
+            for mode in [0,1,2]:
+                path=temp/f'alter-constraint-{encoding}-{mode}.db'
+                native(path,f"PRAGMA encoding='{encoding}';PRAGMA auto_vacuum={mode};CREATE TABLE t(id INT PRIMARY KEY,a TEXT,s INT AS(length(a)) STORED) STRICT,WITHOUT ROWID;INSERT INTO t(id,a) VALUES(1,'é🦀'),(2,'rust');CREATE INDEX ix ON t((s+1));")
+                connection=sqlite3.connect(path,isolation_level=None,timeout=0)
+                assert connection.execute('SELECT s FROM t ORDER BY id').fetchall()==[(2,),(4,)]
+                run(SQL,path,'ALTER TABLE t ALTER a SET NOT NULL ON CONFLICT IGNORE','ALTER TABLE t ADD CONSTRAINT nonempty CHECK(s>0)')
+                assert connection.execute('SELECT s FROM t ORDER BY id').fetchall()==[(2,),(4,)]
+                before=path.read_bytes()
+                run(SQL,path,'ALTER TABLE t ADD CHECK(s<0)',expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,"UPDATE t SET a=''",expect=1)
+                assert path.read_bytes()==before
+                run(SQL,path,'BEGIN','ALTER TABLE t DROP CONSTRAINT nonempty','ALTER TABLE t ALTER a DROP NOT NULL','UPDATE t SET a=NULL','ROLLBACK')
+                assert path.read_bytes()==before
+                run(SQL,path,'ALTER TABLE t DROP CONSTRAINT nonempty','ALTER TABLE t ALTER a DROP NOT NULL','UPDATE t SET a=NULL WHERE id=1')
+                assert connection.execute('SELECT a,s FROM t ORDER BY id').fetchall()==[(None,None),('rust',4)]
+                connection.execute('ALTER TABLE t ADD CONSTRAINT native_check CHECK(id>0)')
+                run(SQL,path,'ALTER TABLE t DROP CONSTRAINT native_check')
+                connection.execute("UPDATE t SET a='again' WHERE id=1")
+                run(SQL,path,'ALTER TABLE t ALTER a SET NOT NULL')
+                assert connection.execute('SELECT s FROM t ORDER BY id').fetchall()==[(5,),(4,)]
+                connection.close()
+                assert native(path,'PRAGMA integrity_check')==[{'integrity_check':'ok'}]
+                cases+=1
         scenarios=[(old,new,mode) for mode in [0,1,2] for old,new in [(2,8),(8,1),(0,3)]]
         for scenario,(old_count,new_count,mode) in enumerate(scenarios):
             old=temp/f'original-{scenario}.db';new=temp/f'next-{scenario}.db'

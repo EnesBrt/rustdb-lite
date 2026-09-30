@@ -313,8 +313,22 @@ impl Conflict {
 }
 #[derive(Clone, Debug)]
 pub enum Alter {
-    Add { column: Box<Column>, sql: String },
+    Add {
+        column: Box<Column>,
+        sql: String,
+    },
     Drop(String),
+    SetNotNull {
+        column: String,
+        sql: String,
+    },
+    DropNotNull(String),
+    AddCheck {
+        name: Option<String>,
+        expression: Box<Expr>,
+        sql: String,
+    },
+    DropConstraint(String),
 }
 #[derive(Clone, Debug)]
 pub enum Statement {
@@ -760,6 +774,33 @@ impl Parser<'_> {
         self.expect(")")?;
         Ok((columns, autoincrement))
     }
+    // Preserve trailing block comments in a constraint, but discard trailing
+    // line comments before inserting its text into a CREATE TABLE statement.
+    fn constraint_sql(&self, start: usize) -> String {
+        let mut end = self.tokens[self.at - 1].end;
+        let mut at = end;
+        let stop = self.tokens[self.at].start;
+        let bytes = self.sql.as_bytes();
+        while at < stop {
+            if bytes[at].is_ascii_whitespace() {
+                at += 1;
+            } else if bytes[at..].starts_with(b"--") {
+                while at < stop && bytes[at] != b'\n' {
+                    at += 1;
+                }
+            } else if bytes[at..].starts_with(b"/*") {
+                at += 2;
+                while at < stop && !bytes[at..].starts_with(b"*/") {
+                    at += 1;
+                }
+                at = (at + 2).min(stop);
+                end = at;
+            } else {
+                break;
+            }
+        }
+        self.sql[start..end].into()
+    }
     fn column(&mut self) -> Result<(Column, bool)> {
         let mut autoincrement = false;
         let name = self.name()?;
@@ -1158,27 +1199,68 @@ impl Parser<'_> {
             self.expect("TABLE")?;
             let name = self.table_name()?;
             let action = if self.eat("ADD") {
-                self.eat("COLUMN");
-                if ["CONSTRAINT", "CHECK", "PRIMARY", "UNIQUE", "FOREIGN"]
-                    .iter()
-                    .any(|s| self.is(s))
-                {
-                    return Err(Error::Unsupported("ALTER TABLE constraint edits"));
+                if self.is("CONSTRAINT") || self.is("CHECK") {
+                    let start = self.tokens[self.at].start;
+                    let name = if self.eat("CONSTRAINT") {
+                        Some(self.name()?)
+                    } else {
+                        None
+                    };
+                    self.expect("CHECK")?;
+                    self.expect("(")?;
+                    let expression = Box::new(self.expr(0)?);
+                    self.expect(")")?;
+                    self.on_conflict()?;
+                    Alter::AddCheck {
+                        name,
+                        expression,
+                        sql: self.constraint_sql(start),
+                    }
+                } else {
+                    self.eat("COLUMN");
+                    if ["CONSTRAINT", "CHECK", "PRIMARY", "UNIQUE", "FOREIGN"]
+                        .iter()
+                        .any(|s| self.is(s))
+                    {
+                        return Err(self.expected("column definition"));
+                    }
+                    let start = self.tokens[self.at].start;
+                    let (column, _) = self.column()?;
+                    let end = self.tokens[self.at - 1].end;
+                    Alter::Add {
+                        column: Box::new(column),
+                        sql: self.sql[start..end].into(),
+                    }
                 }
-                let start = self.tokens[self.at].start;
-                let (column, _) = self.column()?;
-                let end = self.tokens[self.at - 1].end;
-                Alter::Add {
-                    column: Box::new(column),
-                    sql: self.sql[start..end].into(),
+            } else if self.eat("ALTER") {
+                self.eat("COLUMN");
+                let column = self.name()?;
+                if self.eat("SET") {
+                    let start = self.tokens[self.at].start;
+                    self.expect("NOT")?;
+                    self.expect("NULL")?;
+                    self.on_conflict()?;
+                    Alter::SetNotNull {
+                        column,
+                        sql: self.constraint_sql(start),
+                    }
+                } else {
+                    self.expect("DROP")?;
+                    self.expect("NOT")?;
+                    self.expect("NULL")?;
+                    Alter::DropNotNull(column)
                 }
             } else {
                 self.expect("DROP")?;
-                self.eat("COLUMN");
-                if self.is("CONSTRAINT") {
-                    return Err(Error::Unsupported("ALTER TABLE constraint edits"));
+                if self.eat("CONSTRAINT") {
+                    Alter::DropConstraint(self.name()?)
+                } else {
+                    self.eat("COLUMN");
+                    if self.is("CONSTRAINT") {
+                        return Err(self.expected("column name"));
+                    }
+                    Alter::Drop(self.name()?)
                 }
-                Alter::Drop(self.name()?)
             };
             return Ok(Statement::Alter { name, action });
         }

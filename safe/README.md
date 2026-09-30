@@ -26,6 +26,7 @@ values and outer-row execution are documented in [JOINS.md](JOINS.md). Row
 comparisons, membership and tuple assignments are described in [ROW_VALUES.md](ROW_VALUES.md).
 LIKE/ESCAPE/GLOB semantics and limits are documented in [PATTERNS.md](PATTERNS.md).
 Schema column edits and remaining ALTER work are documented in [ALTER_TABLE.md](ALTER_TABLE.md).
+NOT NULL and CHECK edits are described in [ALTER_CONSTRAINTS.md](ALTER_CONSTRAINTS.md).
 
 ## Storage API
 
@@ -131,6 +132,7 @@ python3 safe/scripts/aggregate_differential.py
 python3 safe/scripts/row_value_differential.py
 python3 safe/scripts/pattern_differential.py
 python3 safe/scripts/alter_differential.py
+python3 safe/scripts/alter_constraint_differential.py
 python3 safe/scripts/check_targets.py
 ```
 

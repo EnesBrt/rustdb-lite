@@ -20,6 +20,10 @@ but ignores ON CONFLICT on a table CHECK constraint; the parser preserves this
 behavior. It rejects ON CONFLICT on a column CHECK. Repeated equivalent key
 constraints share one automatic index and must have compatible explicit policies.
 
+CHECK constraints evaluate boolean branches with NULL accepted, so unnecessary
+branches are not evaluated. Adding a CHECK to an existing table instead requires
+true for every existing row; see [constraint edits](ALTER_CONSTRAINTS.md).
+
 NOT NULL defaults are substituted before CHECK and key validation. A second
 pass checks substituted defaults that are themselves NULL. Key conflicts that
 cause IGNORE/FAIL/ABORT/ROLLBACK are resolved before replacement deletions.

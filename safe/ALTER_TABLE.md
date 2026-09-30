@@ -83,8 +83,9 @@ The shared native statement harness reads column metadata after stepping because
 SQLite can reprepare a statement after a schema change; pre-step metadata can be
 stale even when the executed query is correct.
 
-Remaining work includes table/column RENAME, ALTER COLUMN SET/DROP NOT NULL,
-ADD CHECK and DROP CONSTRAINT, temporary/attached schemas, foreign keys, triggers,
+ALTER COLUMN SET/DROP NOT NULL, ADD CHECK and DROP CONSTRAINT are described in
+[ALTER_CONSTRAINTS.md](ALTER_CONSTRAINTS.md). Remaining work includes table/column
+RENAME, temporary/attached schemas, foreign keys, triggers,
 virtual tables, legacy_alter_table/writable_schema behavior, schema cookies,
 prepare-time validation and the C API. Missing functions, such as date/time
 functions, remain unavailable in new defaults and generated expressions.

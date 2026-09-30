@@ -57,6 +57,56 @@ fn seed(path: &Path) {
     c.execute("INSERT INTO t VALUES(1,'old')", &[]).unwrap();
 }
 #[test]
+fn constraint_edits_persist_and_roll_back_with_generated_values() {
+    let temp = Temp::new();
+    let path = temp.db();
+    let mut c = open(&path);
+    for sql in [
+        "CREATE TABLE t(id INT PRIMARY KEY,a TEXT,s INT AS(length(a)) STORED) STRICT,WITHOUT ROWID",
+        "INSERT INTO t(id,a) VALUES(1,'é🦀'),(2,'rust')",
+        "CREATE INDEX ix ON t((s+1))",
+        "ALTER TABLE t ALTER a SET NOT NULL ON CONFLICT IGNORE",
+        "ALTER TABLE t ADD CONSTRAINT nonempty CHECK(s>0)",
+    ] {
+        c.execute(sql, &[]).unwrap();
+    }
+    drop(c);
+    let mut c = open(&path);
+    let before = fs::read(&path).unwrap();
+    assert!(c.execute("ALTER TABLE t ADD CHECK(s<0)", &[]).is_err());
+    assert_eq!(fs::read(&path).unwrap(), before);
+    assert!(c.execute("UPDATE t SET a=''", &[]).is_err());
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("BEGIN", &[]).unwrap();
+    c.execute("ALTER TABLE t DROP CONSTRAINT nonempty", &[])
+        .unwrap();
+    c.execute("ALTER TABLE t ALTER a DROP NOT NULL", &[])
+        .unwrap();
+    c.execute("UPDATE t SET a=NULL", &[]).unwrap();
+    c.execute("ROLLBACK", &[]).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), before);
+    c.execute("ALTER TABLE t DROP CONSTRAINT nonempty", &[])
+        .unwrap();
+    c.execute("ALTER TABLE t ALTER a DROP NOT NULL", &[])
+        .unwrap();
+    c.execute("UPDATE t SET a=NULL WHERE id=1", &[]).unwrap();
+    drop(c);
+    let mut c = open(&path);
+    assert_eq!(
+        c.execute("SELECT a,s FROM t ORDER BY id", &[])
+            .unwrap()
+            .rows,
+        vec![
+            vec![Value::Null, Value::Null],
+            vec![Value::Text(Text::utf8("rust")), Value::Integer(4)]
+        ]
+    );
+    assert!(c
+        .execute("ALTER TABLE t ALTER a SET NOT NULL", &[])
+        .is_err());
+}
+
+#[test]
 fn alter_columns_persist_and_failed_edits_leave_files_unchanged() {
     let temp = Temp::new();
     let path = temp.db();

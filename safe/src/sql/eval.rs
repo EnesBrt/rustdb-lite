@@ -588,6 +588,53 @@ pub struct Eval<'a> {
     pub last_rowid: i64,
 }
 impl Eval<'_> {
+    /// Test a boolean branch. CHECK accepts true or NULL, while schema
+    /// validation can require true. The null policy determines which logical
+    /// branches can be skipped without evaluating their expressions.
+    pub fn condition(
+        &mut self,
+        expr: &Expr,
+        row: &[Value],
+        want: bool,
+        null_matches: bool,
+    ) -> Result<bool> {
+        if expr.depth > self.limits.max_expr_depth.min(64) {
+            return Err(Error::Limit("SQL expression depth"));
+        }
+        self.fuel.spend()?;
+        let literal = |e: &Expr| match e.kind {
+            ExprKind::Literal(Value::Integer(n))
+                if e.token.is_none() && (0..=i64::from(i32::MAX)).contains(&n) =>
+            {
+                Some(n != 0)
+            }
+            ExprKind::Boolean(v) => Some(v),
+            _ => None,
+        };
+        match &expr.kind {
+            ExprKind::Unary(Unary::Not, e) => return self.condition(e, row, !want, null_matches),
+            ExprKind::Collate(e, _) => return self.condition(e, row, want, null_matches),
+            ExprKind::Binary(op @ (Binary::And | Binary::Or), a, b) => {
+                let decisive = *op == Binary::Or;
+                if literal(a) == Some(decisive) || literal(b) == Some(decisive) {
+                    return Ok(decisive == want);
+                }
+                let a = self.condition(a, row, want, null_matches)?;
+                if a == (decisive == want) {
+                    return Ok(a);
+                }
+                return self.condition(b, row, want, null_matches);
+            }
+            ExprKind::Binary(op @ (Binary::Is | Binary::IsNot), a, b) => {
+                if let ExprKind::Boolean(right) = b.kind {
+                    let equal = want ^ (*op == Binary::IsNot);
+                    return self.condition(a, row, if equal { right } else { !right }, !equal);
+                }
+            }
+            _ => {}
+        }
+        Ok(scalar::truth(&self.eval(expr, row, None)?)?.map_or(null_matches, |v| v == want))
+    }
     pub fn eval(
         &mut self,
         expr: &Expr,

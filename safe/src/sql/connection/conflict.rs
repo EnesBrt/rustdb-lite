@@ -119,7 +119,7 @@ pub(super) fn check(
             strict::values(table, row.values)?;
             type_checked = true;
         }
-        if scalar::truth(&context.eval(check, &values, None)?)? == Some(false) {
+        if !context.condition(check, &values, true, true)? {
             let action = policy.resolve(Conflict::Abort);
             return Ok(violation(
                 if action == Conflict::Replace {

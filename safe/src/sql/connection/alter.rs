@@ -2,7 +2,8 @@
 //! schema validator, retaining row identities and stored generated values.
 use super::*;
 use crate::sql::lexer::{lex, Kind};
-use parser::{Alter, Unary};
+use parser::{Alter, Binary, Unary};
+mod constraints;
 
 struct ColumnSpan {
     start: usize,
@@ -230,6 +231,94 @@ impl Connection {
                     .end;
                 sql.insert_str(end, &format!(", {definition}"));
             }
+            Alter::SetNotNull {
+                column,
+                sql: definition,
+            } => {
+                let n = real_column(old, column)?;
+                let fields = old.fields(&old.name);
+                let bound = eval::generated::field(&fields[n], n, None)?;
+                for (&id, values) in &old.rows {
+                    context.fuel.spend()?;
+                    if scalar::null(&context.eval(&bound, &old.row(id, values), None)?) {
+                        return Err(Error::Constraint("NOT NULL constraint failed".into()));
+                    }
+                }
+                sql = constraints::drop(
+                    &sql,
+                    constraints::Target::NotNull(n),
+                    self.limits,
+                    context.fuel,
+                )?;
+                sql = constraints::add(&sql, definition, Some(n), self.limits, context.fuel)?;
+                result_columns.push("sqlite_fail('constraint failed', 19)".into());
+            }
+            Alter::DropNotNull(column) => {
+                sql = constraints::drop(
+                    &sql,
+                    constraints::Target::NotNull(real_column(old, column)?),
+                    self.limits,
+                    context.fuel,
+                )?;
+            }
+            Alter::DropConstraint(name) => {
+                sql = constraints::drop(
+                    &sql,
+                    constraints::Target::Name(name),
+                    self.limits,
+                    context.fuel,
+                )?;
+            }
+            Alter::AddCheck {
+                name,
+                expression,
+                sql: definition,
+            } => {
+                if contains_parameter(expression) {
+                    return Err(error("parameters prohibited in schema"));
+                }
+                let condition = Expr {
+                    kind: ExprKind::Binary(
+                        Binary::IsNot,
+                        expression.clone(),
+                        alloc::boxed::Box::new(Expr {
+                            kind: ExprKind::Column {
+                                qualifier: None,
+                                name: "TRUE".into(),
+                                quoted: false,
+                            },
+                            depth: 1,
+                            token: None,
+                        }),
+                    ),
+                    depth: expression.depth + 1,
+                    token: None,
+                };
+                let bound = eval::bind(&condition, &old.fields(&old.name), &[], false)?;
+                if let Some(name) = name {
+                    if constraints::has_name(&sql, name, self.limits, context.fuel)? {
+                        return Err(error(format!("constraint {name} already exists")));
+                    }
+                    result_columns.push(format!(
+                        "sqlite_fail('constraint {} already exists', 1)",
+                        name.replace('\'', "''")
+                    ));
+                } else {
+                    result_columns.push("sqlite_fail('constraint failed', 19)".into());
+                }
+                // A table-independent WHERE condition is evaluated before the
+                // scan, even when there are no records to validate.
+                if !row_dependent(&bound) {
+                    context.condition(&bound, &[], true, false)?;
+                }
+                for (&id, values) in &old.rows {
+                    context.fuel.spend()?;
+                    if context.condition(&bound, &old.row(id, values), true, false)? {
+                        return Err(Error::Constraint("CHECK constraint failed".into()));
+                    }
+                }
+                sql = constraints::add(&sql, definition, None, self.limits, context.fuel)?;
+            }
             Alter::Drop(column) => {
                 let n = old
                     .columns
@@ -275,13 +364,13 @@ impl Connection {
         }
         let new_id = builder.index(name)?;
         let mut table = builder.state.tables.remove(new_id);
-        let expected = if dropped.is_some() {
-            self.state.tables[id].columns.len() - 1
-        } else {
-            self.state.tables[id].columns.len() + 1
+        let expected = match action {
+            Alter::Drop(_) => self.state.tables[id].columns.len() - 1,
+            Alter::Add { .. } => self.state.tables[id].columns.len() + 1,
+            _ => self.state.tables[id].columns.len(),
         };
         if table.columns.len() != expected {
-            return Err(error("ALTER definition does not edit exactly one column"));
+            return Err(error("ALTER definition has an unexpected column count"));
         }
         let mut bytes = 0usize;
         for (&key, values) in &self.state.tables[id].rows {
@@ -289,7 +378,7 @@ impl Connection {
             let mut values = values.clone();
             if let Some(n) = dropped {
                 values.remove(n);
-            } else {
+            } else if matches!(action, Alter::Add { .. }) {
                 values.push(value.clone());
             }
             bytes = bytes
@@ -349,10 +438,25 @@ fn validate_rows(table: &StoredTable, context: &mut Eval<'_>) -> Result<()> {
         }
         let row = table.row(id, values);
         for check in &checks {
-            if scalar::truth(&context.eval(check, &row, None)?)? == Some(false) {
+            if !context.condition(check, &row, true, true)? {
                 return Err(Error::Constraint("CHECK constraint failed".into()));
             }
         }
     }
     Ok(())
+}
+
+fn real_column(table: &StoredTable, name: &str) -> Result<usize> {
+    table
+        .columns
+        .iter()
+        .position(|c| c.name.eq_ignore_ascii_case(name))
+        .ok_or_else(|| error(format!("no such column: {name}")))
+}
+
+fn row_dependent(expr: &Expr) -> bool {
+    matches!(
+        expr.kind,
+        ExprKind::Slot(..) | ExprKind::Generated(_) | ExprKind::Outer(..)
+    ) || expr.children().iter().any(|e| row_dependent(e))
 }
